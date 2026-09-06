@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AURALane — the worklist reorders itself</title>
+<style>
+/* AURALane — three colours: government blue, grey, white.
+   Urgency is carried by VALUE, not hue: the darker the chip, the sooner it
+   needs a human. Critical is near-navy, expedited is cornflower, routine is
+   grey, abstain is an outline. Position and the acuity number back it up, so
+   nothing depends on colour alone. */
+
+/* Poppins, vendored in web/fonts/ rather than pulled from a CDN — the page has to
+   render identically with no network. Two src URLs per face: the first resolves
+   when served at /, the second when index.html is opened straight off disk. */
+@font-face{font-family:Poppins;font-style:normal;font-weight:400;font-display:swap;
+  src:url(/web/fonts/poppins-400.woff2) format('woff2'),
+      url(fonts/poppins-400.woff2) format('woff2')}
+@font-face{font-family:Poppins;font-style:normal;font-weight:500;font-display:swap;
+  src:url(/web/fonts/poppins-500.woff2) format('woff2'),
+      url(fonts/poppins-500.woff2) format('woff2')}
+@font-face{font-family:Poppins;font-style:normal;font-weight:600;font-display:swap;
+  src:url(/web/fonts/poppins-600.woff2) format('woff2'),
+      url(fonts/poppins-600.woff2) format('woff2')}
+
+:root{
+  --b900:#16325C;   /* CRITICAL   */
+  --b700:#2C5AA0;   /* URGENT, header, primary action */
+  --b500:#6495ED;   /* EXPEDITED — cornflower */
+  --b100:#E8EFFB;
+  --g600:#6B7684;   /* ROUTINE */
+  --g400:#9AA5B1;   /* ABSTAIN outline */
+  --ink:#1F2933;
+  --soft:#52606D;
+  --faint:#7B8794;
+  --line:#E4E7EB;
+  --bg:#F5F7FA;
+  --panel:#FFFFFF;
+  --mono:ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:15px/1.45 Poppins,"Segoe UI",Carlito,Calibri,system-ui,sans-serif}
+
+header{background:var(--b700);color:#fff;padding:15px 24px;
+       display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+header h1{font-size:20px;margin:0;font-weight:600;letter-spacing:.2px}
+.tagline{font-size:13px;color:#D6E1F5}
+.badge{margin-left:auto;border:1px solid rgba(255,255,255,.45);padding:5px 13px;
+       border-radius:3px;font-size:11.5px;font-weight:600;letter-spacing:.7px}
+
+.bar{display:flex;gap:10px;align-items:center;padding:12px 24px;background:var(--panel);
+     border-bottom:1px solid var(--line);flex-wrap:wrap}
+button{font:inherit;font-weight:500;border:1px solid var(--line);background:#fff;
+       color:var(--soft);padding:8px 16px;border-radius:3px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--b700);color:var(--b700)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.primary{background:var(--b700);border-color:var(--b700);color:#fff;font-weight:600}
+button.primary:hover:not(:disabled){background:var(--b900);color:#fff}
+.store{font-size:12px;color:var(--faint)}
+.clock{font-variant-numeric:tabular-nums;font-weight:600;color:var(--b700);font-size:18px;
+       margin-left:auto;display:flex;align-items:center;gap:8px}
+.clock small{font-weight:400;color:var(--faint);font-size:12px}
+
+main{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 24px}
+/* min-width:0 — grid items default to min-width:auto, which lets a card's
+   fixed-width parts force the column wider than its 1fr share and scroll the page */
+.col{background:var(--panel);border:1px solid var(--line);
+     display:flex;flex-direction:column;min-width:0}
+.col > h2{margin:0;padding:7px 10px;font-size:14px;font-weight:600;font-family:var(--mono);
+          border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;
+          color:var(--faint)}
+.col > h2 .sub{font-weight:400;font-size:11px;color:var(--faint);margin-left:auto}
+/* the worklist scrolls inside its own box, so the page never grows with the queue */
+.list{padding:0;display:block;height:430px;overflow-y:auto}
+
+.study{display:flex;align-items:center;gap:10px;padding:4px 10px;cursor:pointer;
+       border-bottom:1px solid var(--line);background:#fff;
+       font-family:var(--mono);font-size:12px;line-height:1.35}
+.study:hover{background:#EEF2F8}
+.study .id{width:52px;flex:none;color:var(--faint)}
+.study .body{flex:1;min-width:0}
+.study .driver{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.study .meta{font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;
+             text-overflow:ellipsis}
+.study .acuity{width:38px;flex:none;text-align:right}
+.study .chip{width:74px;flex:none;font-size:11px}
+.study.jump{outline:1px solid var(--b700);outline-offset:-1px}
+.study[data-lane="CRITICAL"]  .chip{color:var(--b900);font-weight:700}
+.study[data-lane="URGENT"]    .chip{color:var(--b700)}
+.study[data-lane="EXPEDITED"] .chip{color:var(--b500)}
+.study[data-lane="ROUTINE"]   .chip{color:var(--g600)}
+.study[data-lane="ABSTAIN"]   .chip{color:var(--g400)}
+
+#waitsBox{padding:0 24px 10px}
+#waitsOut{margin:8px 0 0;font-family:var(--mono);font-size:12px;color:var(--soft);
+          white-space:pre;overflow-x:auto}
+
+.overlay{position:fixed;inset:0;background:rgba(31,41,51,.5);display:none;
+         align-items:center;justify-content:center;padding:24px;z-index:20}
+.overlay.on{display:flex}
+.modal{background:#fff;border-radius:4px;max-width:880px;width:100%;max-height:90vh;
+       overflow:auto;display:grid;grid-template-columns:340px 1fr}
+.modal img{width:100%;height:100%;object-fit:contain;background:var(--b900);
+           max-height:520px}
+.modal .info{padding:22px 24px}
+.modal h3{margin:0 0 3px;font-size:19px;font-weight:600}
+.modal .sub{color:var(--faint);font-size:12.5px;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 4px}
+th,td{text-align:left;padding:7px 4px;border-bottom:1px solid var(--line)}
+th{font-size:10.5px;letter-spacing:.7px;color:var(--faint);font-weight:600}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.why{font-size:13px;color:var(--soft);margin:12px 0 0}
+.verdict{display:flex;gap:10px;margin-top:18px}
+.verdict button{flex:1}
+.feedback{font-size:12px;color:var(--faint);margin-top:10px}
+.err-text{color:var(--b900);font-weight:600}
+footer{padding:12px 24px 28px;font-size:11.5px;color:var(--faint)}
+.err{background:#fff;border:1px solid var(--line);border-left:3px solid var(--b700);
+     color:var(--soft);padding:14px 18px;border-radius:3px;margin:18px 24px;font-size:13px}
+.loading{color:var(--faint)}
+@media(max-width:900px){main{grid-template-columns:1fr}.modal{grid-template-columns:1fr}}
+
+.count{font-size:12.5px;color:var(--faint);display:flex;align-items:center;gap:6px}
+.count input{font:inherit;font-size:13px;width:58px;padding:7px 8px;text-align:right;
+             border:1px solid var(--line);border-radius:3px;color:var(--ink)}
+
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AURALane</h1>
+  <span class="badge">NON-DIAGNOSTIC; DECISION SUPPORT ONLY</span>
+</header>
+
+<div class="bar">
+  <button id="run" class="primary">Start intake</button>
+  <label class="count"><input id="count" type="number" min="1" max="200" value="40"></label>
+  <button id="reset">Reset</button>
+  <button id="warm">Warm up model</button>
+  <button id="upload">Upload study</button>
+  <input id="file" type="file" accept="image/*" hidden>
+  <span class="clock"><span id="clock">00:00</span></span>
+</div>
+
+<div id="error" class="err" hidden></div>
+
+<main>
+  <section class="col fifo">
+    <h2 style="display: flex; justify-content: center; align-items: center; width: 100%;">FIFO WORKLIST</h2>   
+    <div class="list" id="fifo"></div>
+  </section>
+
+  <section class="col aura">
+    <h2 style="display: flex; justify-content: center; align-items: center; width: 100%;">AURALANE WORKLIST</h2>    
+    <div class="list" id="aura"></div>
+  </section>
+</main>
+
+<div id="waitsBox" hidden>
+  <button id="waits">Compute waits</button>
+  <pre id="waitsOut"></pre>
+</div>
+
+<footer id="foot"></footer>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <img id="mImg" alt="chest radiograph">
+    <div class="info">
+      <h3 id="mTitle">—</h3>
+      <div class="sub" id="mSub"></div>
+      <table>
+        <thead><tr><th>FINDING</th><th class="num">CONFIDENCE</th>
+        <th class="num">vs BASELINE</th><th class="num">URGENCY</th></tr></thead>
+        <tbody id="mRows"></tbody>
+      </table>
+      <div id="mWhy" style="font-size:13px;color:var(--soft);margin-top:10px"></div>
+      <div class="verdict">
+        <button id="agree" class="primary">Agree with lane</button>
+        <button id="disagree">Disagree</button>
+        <button id="close">Close</button>
+      </div>
+      <div id="mFeedback" style="font-size:12px;color:var(--faint);margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// lane ordering for the AURALane column; the colours now live in CSS
+const RANK = {CRITICAL:0, URGENT:1, ABSTAIN:2, EXPEDITED:3, ROUTINE:4};
+
+let Q = null;              // the whole scored pool, straight from scores.json
+let stream = [];           // the studies drawn for this run, in arrival order
+let timer = null, t = 0;
+let arrived = [];          // emitted so far — read ones stay here, for the statistics
+let read = new Set();      // uids marked read: hidden from both worklists
+let verdicts = {};
+
+const $ = id => document.getElementById(id);
+const mmss = m => String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+// uploads are extra arrivals — they never count toward finishing the drawn intake
+const seeded = () => arrived.filter(s => !s.uploaded).length;
+
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+const sample = (a,k) => shuffle(a.slice()).slice(0,k);
+
+// Draw n studies from the pool. This is a plain uniform draw — no lane quotas —
+// so the mix varies run to run the way real arrivals do. The one intervention:
+// if a draw happens to contain no CRITICAL (or no ABSTAIN), swap one in over a
+// ROUTINE, because a run showing neither demonstrates nothing. Arrival order is
+// then shuffled, so where the critical study lands is chance, not our choice.
+function drawIntake(n){
+  n = Math.min(n, Q.studies.length);
+  let picked = sample(Q.studies, n);
+
+  const ensure = lane => {
+    if(picked.some(s => s.lane === lane)) return;
+    const have = new Set(picked);
+    const cand = Q.studies.filter(s => s.lane === lane && !have.has(s));
+    if(!cand.length) return;
+    const routineSlots = picked.map((s,i)=>[s,i]).filter(([s])=>s.lane==='ROUTINE').map(([,i])=>i);
+    const slots = routineSlots.length ? routineSlots : picked.map((_,i)=>i);
+    picked[slots[Math.floor(Math.random()*slots.length)]] =
+      cand[Math.floor(Math.random()*cand.length)];
+  };
+  if(n >= 3) ensure('CRITICAL');
+  if(n >= 6) ensure('ABSTAIN');
+
+  return shuffle(picked).map((s,i)=>({
+    ...s, poolId:s.id, id:'ST-'+String(i+1).padStart(3,'0'), uid:i,
+    arrival_index:i, arrival_minute:i*Q.arrival_gap_minutes
+  }));
+}
+
+async function load(){
+  try{
+    const r = await fetch('/api/queue');
+    if(!r.ok) throw new Error((await r.json()).error || r.statusText);
+    Q = await r.json();
+  }catch(e){
+    try{                                    // no server? run straight off the file
+      const r2 = await fetch('../scores.json');
+      const raw = await r2.json();
+      Q = localQueue(raw);
+    }catch(e2){
+      $('error').hidden = false;
+      $('error').textContent = 'Could not load the worklist. Run `python prepare.py` '
+        + 'to generate scores.json, then `python server.py`. (' + e.message + ')';
+      return;
+    }
+  }
+  $('foot').textContent = 'Model: ' + (Q.model||'densenet121-res224-all')
+    + ' · temperature ' + (Q.temperature ?? '1.6')
+    + ' · operating points ' + (Q.reference_fitted ? 'fitted on this corpus' : 'from the shipped reference')
+    + ' · public, openly licensed images only, no real patient records.';
+  reset();
+}
+
+function localQueue(raw){                   // mirrors queue_builder.py for the no-server path
+  return {read_minutes:6, arrival_gap_minutes:4, model:raw.model,
+          temperature:raw.temperature, reference_fitted:raw.reference_fitted,
+          pool_size:raw.studies.length, studies:raw.studies};
+}
+
+function card(s, opts={}){
+  const el = document.createElement('div');
+  el.className = 'study' + (opts.jump?' jump':'');
+  el.dataset.lane = s.lane;
+  el.innerHTML = `
+    <div class="id">${s.id}</div>
+    <div class="body">
+      <div class="driver">${s.driver}</div>
+      <div class="meta">arr ${mmss(s.arrival_minute)} · conf ${s.confidence}</div>
+    </div>
+    <div class="acuity">${s.lane==='ABSTAIN' ? '--' : s.acuity}</div>
+    <div class="chip">${s.lane}</div>`;
+  el.onclick = () => openStudy(s);
+  return el;
+}
+
+function auraSort(a,b){
+  if(RANK[a.lane]!==RANK[b.lane]) return RANK[a.lane]-RANK[b.lane];
+  return b.acuity-a.acuity;
+}
+
+function render(justArrived){
+  const live = arrived.filter(s => !read.has(s.uid));   // read studies leave both queues
+  const fifo = live.slice().sort((a,b)=>a.arrival_index-b.arrival_index);
+  const aura = live.slice().sort(auraSort);
+  const f = $('fifo'), a = $('aura');
+  f.innerHTML=''; a.innerHTML='';
+  fifo.forEach(s => f.appendChild(card(s)));
+  aura.forEach(s => a.appendChild(card(s,{
+      jump:s===justArrived && s.lane==='CRITICAL'})));
+}
+
+function simulate(order, list){
+  // one radiologist, one study every read_minutes; pick per policy from what has arrived
+  const R = Q.read_minutes, waits = {};
+  let clock = 0, remaining = list.slice();
+  while(remaining.length){
+    clock += R;
+    const here = remaining.filter(s => s.arrival_minute <= clock);
+    if(!here.length) continue;
+    const pick = order==='fifo'
+      ? here.sort((x,y)=>x.arrival_index-y.arrival_index)[0]
+      : here.sort(auraSort)[0];
+    waits[pick.uid] = clock - pick.arrival_minute;
+    remaining = remaining.filter(s=>s!==pick);
+  }
+  return waits;
+}
+
+// Run both policies over everything that arrived and print the totals. Called on
+// demand from the button, not live, so nothing recomputes while studies stream in.
+function computeWaits(){
+  const list = arrived.filter(s=>!s.uploaded);
+  if(!list.length){ $('waitsOut').textContent = 'Nothing has arrived yet.'; return; }
+  const wf = simulate('fifo',list), wa = simulate('aura',list);
+  const crits = list.filter(s=>s.lane==='CRITICAL');
+  const sum  = (w,set) => set.reduce((x,s)=>x+(w[s.uid]??0),0);
+  const mean = (w,set) => set.length ? Math.round(sum(w,set)/set.length) : null;
+  const col  = v => String(v===null ? '--' : v).padStart(9);
+  const row  = (label,f,a) => label.padEnd(22) + col(f) + col(a);
+
+  $('waitsOut').textContent = [
+    `${list.length} studies · ${crits.length} critical · read cadence ${Q.read_minutes} min`,
+    '',
+    ''.padEnd(22) + 'FIFO'.padStart(9) + 'AURALANE'.padStart(9),
+    row('total wait (min)',      sum(wf,list),  sum(wa,list)),
+    row('mean wait (min)',       mean(wf,list), mean(wa,list)),
+    row('mean wait, critical',   mean(wf,crits), mean(wa,crits)),
+  ].join('\n');
+}
+
+const runDone = () => stream.length && seeded() >= stream.length;
+
+function tick(){
+  t += Q.arrival_gap_minutes;
+  $('clock').textContent = mmss(t);
+  const next = stream.find(s => !arrived.includes(s));
+  if(next){ arrived.push(next); render(next); }
+  if(runDone()) stop();
+}
+
+function start(){
+  if(timer) return;
+  if(!stream.length || runDone()){        // fresh run — draw a new random intake
+    const n = Math.max(1, Math.min(200, parseInt($('count').value,10) || 20));
+    reset();
+    stream = drawIntake(n);
+  }
+  $('run').textContent = 'Stop intake';
+  $('waitsBox').hidden = true;              // only offered once the run is paused
+  timer = setInterval(tick, 1100);
+  tick();
+}
+function stop(){
+  clearInterval(timer); timer=null;
+  $('run').textContent = runDone() ? 'Start intake' : 'Resume';
+  $('waitsBox').hidden = !arrived.length;
+  $('waitsOut').textContent = '';
+}
+function reset(){
+  clearInterval(timer); timer=null; t=0; arrived=[]; stream=[]; read=new Set(); verdicts={};
+  $('clock').textContent='00:00'; $('run').textContent='Start intake'; $('run').disabled=false;
+  $('fifo').innerHTML=''; $('aura').innerHTML='';
+  $('waitsBox').hidden=true; $('waitsOut').textContent='';
+  $('upload').textContent='Upload study'; $('upload').disabled=false;
+  $('error').hidden=true;
+}
+
+function openStudy(s){
+  $('mImg').src = s.image;
+  $('mTitle').textContent = s.id + ' — ' + s.driver;
+  $('mSub').textContent = (s.lane==='ABSTAIN'
+    ? 'No lane assigned · ' + s.sla
+    : s.lane + ' · ' + s.sla + ' · acuity ' + s.acuity)
+    + (s.filename ? ' · ' + s.filename : '')
+    + (s.poolId ? ' (pool ' + s.poolId + ')' : '');
+  $('mRows').innerHTML = s.top_findings.map(f=>`<tr>
+      <td>${f.name}</td><td class="num">${f.confidence}</td>
+      <td class="num">${(f.signal*100).toFixed(0)}%</td>
+      <td class="num">${f.urgency}</td></tr>`).join('');
+  $('mWhy').textContent = s.lane==='ABSTAIN'
+    ? `${s.driver} sits ${(s.signal*100).toFixed(0)}% above baseline but not `
+      + `clearly enough to own a lane. AURALane refuses to guess and hands it to a human.`
+    : `${s.driver} sits ${(s.signal*100).toFixed(0)}% above its own baseline. Weighted by `
+      + `clinical urgency ${s.top_findings[0].urgency}, that gives acuity ${s.acuity} → ${s.lane}.`;
+  $('mFeedback').textContent = verdicts[s.uid] ? 'Recorded: ' + verdicts[s.uid] : '';
+  $('overlay').classList.add('on');
+  $('overlay').dataset.uid = s.uid;
+}
+
+$('run').onclick = () => timer ? stop() : start();
+$('waits').onclick = computeWaits;
+$('reset').onclick = reset;
+$('close').onclick = () => $('overlay').classList.remove('on');
+$('overlay').onclick = e => { if(e.target===$('overlay')) $('overlay').classList.remove('on'); };
+// agreeing with the lane IS reading the study: it leaves both worklists
+$('agree').onclick = () => {
+  const uid = Number($('overlay').dataset.uid);
+  verdicts[uid] = 'Agree';
+  read.add(uid);
+  $('overlay').classList.remove('on');
+  render();
+};
+$('disagree').onclick = () => {
+  const uid = $('overlay').dataset.uid;
+  verdicts[uid] = 'Disagree';
+  $('mFeedback').textContent = 'Recorded: Disagree'
+    + ' — in production this row feeds the retraining set.';
+};
+$('warm').onclick = async () => {
+  $('warm').disabled = true; $('warm').textContent = 'Warming…';
+  $('error').hidden = true;
+  try{
+    const r = await fetch('/api/warm', {method:'POST'});
+    if(!r.ok) throw new Error('server returned ' + r.status
+      + ' — check the server console for the traceback');
+    const j = await r.json();
+    $('warm').textContent = 'Warm (' + j.seconds + 's)';
+  }catch(e){
+    $('warm').textContent = 'Warm up model';
+    $('warm').disabled = false;
+    $('error').hidden = false;
+    $('error').textContent = 'Warm-up failed: ' + e.message;
+  }
+};
+
+// ---- live upload -----------------------------------------------------------
+// A jury-supplied image, scored in-process and dropped into both queues. It
+// always arrives LAST — that is the honest FIFO position for something that
+// just landed — so wherever it appears on the right is the reordering, live.
+let uploads = 0;
+
+$('upload').onclick = () => $('file').click();
+
+$('file').onchange = async e => {
+  const f = e.target.files[0];
+  if(!f) return;
+  e.target.value = '';                    // let the same file be picked again
+  if(!Q){ return; }
+  const btn = $('upload');
+  btn.disabled = true; btn.textContent = 'Scoring…'; $('error').hidden = true;
+  try{
+    const fd = new FormData(); fd.append('file', f);
+    const r = await fetch('/api/score', {method:'POST', body:fd});
+    if(!r.ok) throw new Error('server returned ' + r.status
+      + (r.status===500 ? 'the model failed to load or the image could not be read'
+                        : ''));
+    const s = await r.json();
+    s.id = 'LIVE-' + (++uploads);
+    s.image = URL.createObjectURL(f);
+    s.uploaded = true;
+    s.uid = 100000 + uploads;             // never collides with a drawn study's uid
+    s.arrival_index = 100000 + uploads;   // always behind the drawn intake
+    s.arrival_minute = t;
+    arrived.push(s);
+    render(s);
+    btn.textContent = 'Upload study' + s.id + ': '
+      + (s.lane==='ABSTAIN' ? 'abstained' : s.lane + ' ' + s.acuity)
+      + ' (' + s.inference_ms + 'ms)';
+  }catch(err){
+    btn.textContent = 'Upload study';
+    $('error').hidden = false;
+    $('error').textContent = 'Live scoring failed: ' + err.message;
+  }
+  btn.disabled = false;
+};
+
+load();
+</script>
+</body>
+</html>

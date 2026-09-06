@@ -1,0 +1,9 @@
+# On Windows install CPU torch first, or pip pulls a ~2.5GB CUDA build:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch>=2.0
+torchxrayvision>=1.5
+scikit-image>=0.20
+numpy>=1.24
+fastapi>=0.110
+uvicorn>=0.27
+python-multipart>=0.0.9
