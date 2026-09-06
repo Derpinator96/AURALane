@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TorchXRayVision | Clinical Diagnostic & Radiological Intelligence Studio</title>
+    
+    <!-- Formal Medical Typography & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            /* Professional Medical Grade Palette */
+            --bg-body: #F8FAFC;
+            --bg-surface: #FFFFFF;
+            --bg-subtle: #F1F5F9;
+            --bg-viewer: #0B0F19;
+            --border-light: #E2E8F0;
+            --border-medium: #CBD5E1;
+            --border-dark: #94A3B8;
+            --border-focus: #0284C7;
+            
+            --brand-primary: #0F52BA;
+            --brand-navy: #0F172A;
+            --brand-blue: #0284C7;
+            --brand-teal: #0D9488;
+            --brand-slate: #334155;
+            
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
+            --text-muted: #64748B;
+            --text-light: #94A3B8;
+            
+            --danger: #DC2626;
+            --danger-bg: #FEF2F2;
+            --danger-border: #FCA5A5;
+            --danger-text: #991B1B;
+            
+            --warning: #D97706;
+            --warning-bg: #FFFBEB;
+            --warning-border: #FCD34D;
+            --warning-text: #92400E;
+            
+            --success: #16A34A;
+            --success-bg: #F0FDF4;
+            --success-border: #86EFAC;
+            --success-text: #166534;
+            
+            --info: #0284C7;
+            --info-bg: #F0F9FF;
+            --info-border: #BAE6FD;
+            --info-text: #075985;
+            
+            --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+            
+            --radius-xl: 14px;
+            --radius-lg: 10px;
+            --radius-md: 8px;
+            --radius-sm: 5px;
+            
+            --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mono: 'IBM Plex Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F1F5F9;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        /* Header Bar - Clinical Workstation Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            padding: 16px 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #0284C7, #0F52BA);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: #FFFFFF;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
+        }
+
+        .brand-title h1 {
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            color: var(--brand-navy);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-title .badge-version {
+            font-size: 10px;
+            font-weight: 700;
+            background: #E0F2FE;
+            color: #0369A1;
+            padding: 2px 8px;
+            border-radius: 12px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .brand-title p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 12px;
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--success-text);
+            font-weight: 600;
+        }
+
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            background-color: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+        }
+
+        .btn-header {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-medium);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .btn-header:hover {
+            background: var(--bg-subtle);
+            border-color: var(--brand-blue);
+            color: var(--brand-blue);
+        }
+
+        /* Selection & Configuration Panel */
+        .controls-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--brand-navy);
+            letter-spacing: -0.2px;
+        }
+
+        .section-title i {
+            color: var(--brand-blue);
+            font-size: 15px;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: 2.2fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1100px) {
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Filter Chips */
+        .category-filter-bar {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            margin-top: 4px;
+        }
+
+        .filter-chip {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-light);
+            color: var(--text-secondary);
+            padding: 5px 12px;
+            border-radius: 16px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+        }
+
+        .filter-chip:hover {
+            background: #E2E8F0;
+            color: var(--text-primary);
+        }
+
+        .filter-chip.active {
+            background: #E0F2FE;
+            border-color: #7DD3FC;
+            color: #0369A1;
+            font-weight: 700;
+        }
+
+        .sample-search-input {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-sm);
+            padding: 5px 10px;
+            color: var(--text-primary);
+            font-size: 11px;
+            font-family: inherit;
+            outline: none;
+            width: 170px;
+            transition: border-color 0.2s;
+        }
+        .sample-search-input:focus {
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+        }
+
+        .samples-carousel {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 6px 2px;
+            margin-top: 4px;
+        }
+
+        .sample-card {
+            min-width: 125px;
+            max-width: 125px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+            text-align: center;
+            box-shadow: var(--shadow-xs);
+        }
+
+        .sample-card:hover {
+            border-color: var(--brand-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .sample-card.active {
+            border-color: var(--brand-blue);
+            background: #F0F9FF;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+        }
+
+        .sample-card img {
+            width: 100%;
+            height: 60px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            background: #000;
+        }
+
+        .sample-info span {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+            max-width: 110px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sample-info small {
+            display: block;
+            font-size: 10px;
+            color: var(--brand-blue);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* File Upload Zone */
+        .upload-dropzone {
+            border: 2px dashed var(--border-medium);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: var(--bg-subtle);
+            height: 100%;
+            min-height: 110px;
+        }
+
+        .upload-dropzone:hover {
+            border-color: var(--brand-blue);
+            background: #F0F9FF;
+        }
+
+        .upload-dropzone i {
+            font-size: 24px;
+            color: var(--brand-blue);
+        }
+
+        .upload-dropzone p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .upload-dropzone input {
+            display: none;
+        }
+
+        /* Form Controls */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        select.custom-select {
+            width: 100%;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-xs);
+        }
+
+        select.custom-select:focus {
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+        }
+
+        /* Run Button */
+        .btn-analyze {
+            width: 100%;
+            background: linear-gradient(135deg, #0284C7, #0F52BA);
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 12px;
+            color: #FFFFFF;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+            transition: all 0.2s ease;
+            margin-top: auto;
+        }
+
+        .btn-analyze:hover {
+            background: linear-gradient(135deg, #0369A1, #1E40AF);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35);
+        }
+
+        .btn-analyze:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Main Workspace Grid */
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Studio Navigation Tabs */
+        .studio-nav-tabs {
+            display: flex;
+            background: var(--bg-subtle);
+            padding: 4px;
+            border-radius: var(--radius-md);
+            gap: 4px;
+            border: 1px solid var(--border-light);
+            overflow-x: auto;
+        }
+
+        .studio-tab-btn {
+            flex: 1;
+            padding: 9px 12px;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            white-space: nowrap;
+        }
+
+        .studio-tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .studio-tab-btn.active {
+            background: var(--bg-surface);
+            color: var(--brand-blue);
+            box-shadow: var(--shadow-xs);
+            font-weight: 700;
+        }
+
+        /* Organ System Sub-tabs */
+        .view-mode-tabs {
+            display: flex;
+            background: #FFFFFF;
+            padding: 2px;
+            border-radius: var(--radius-md);
+            gap: 4px;
+            border: 1px solid var(--border-light);
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-subtle);
+        }
+
+        .tab-btn.active {
+            background: #F0F9FF;
+            border-color: #BAE6FD;
+            color: #0369A1;
+            font-weight: 700;
+        }
+
+        /* Medical Diagnostic Canvas (Obsidian Viewer for DICOM/X-Rays) */
+        .viewer-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: var(--bg-viewer);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            border: 1px solid #1E293B;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .viewer-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: opacity 0.25s ease;
+        }
+
+        .layer-mask {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .layer-mask.visible {
+            opacity: 0.85;
+        }
+
+        /* Split View Canvas */
+        .viewer-container.split-mode {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            background: #05080F;
+        }
+
+        .viewer-container.split-mode .viewer-img {
+            position: relative;
+        }
+
+        /* Interactive Region Chips */
+        .regions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 6px;
+            max-height: 170px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .region-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+        }
+
+        .region-chip:hover {
+            border-color: var(--border-medium);
+            background: var(--bg-subtle);
+        }
+
+        .region-chip.active {
+            border-color: var(--brand-blue);
+            background: #F0F9FF;
+            box-shadow: 0 0 0 1px var(--brand-blue);
+        }
+
+        .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .region-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .region-coverage {
+            font-size: 10px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* Image Processing Console */
+        .proc-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 14px;
+        }
+
+        .range-slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .range-slider-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .range-slider-group label span {
+            font-family: var(--font-mono);
+            color: var(--brand-blue);
+            font-weight: 700;
+        }
+
+        .range-slider-group input[type="range"] {
+            accent-color: var(--brand-blue);
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        /* Top Findings Clinical Card */
+        .top-findings-card {
+            background: var(--danger-bg);
+            border: 1px solid var(--danger-border);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .top-findings-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--danger-text);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .findings-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .finding-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #FEE2E2;
+            border: 1px solid #FCA5A5;
+            color: #991B1B;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .finding-badge:hover {
+            transform: scale(1.02);
+            background: #FECACA;
+        }
+
+        .finding-badge.warning {
+            background: #FEF3C7;
+            border-color: #FCD34D;
+            color: #92400E;
+        }
+
+        /* Pathology List Table */
+        .pathology-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .pathology-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+
+        .pathology-item:hover {
+            border-color: var(--brand-blue);
+            background: #F8FAFC;
+        }
+
+        .pathology-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .pathology-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .confidence-val {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .meter-bar-track {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-subtle);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .meter-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .meter-bar-fill.danger { background: #DC2626; }
+        .meter-bar-fill.warning { background: #D97706; }
+        .meter-bar-fill.success { background: #16A34A; }
+
+        .confidence-val.danger { color: #DC2626; }
+        .confidence-val.warning { color: #D97706; }
+        .confidence-val.success { color: #16A34A; }
+
+        /* Loader Overlay */
+        .loader-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            border-radius: var(--radius-xl);
+        }
+
+        .loader-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .spinner {
+            width: 42px;
+            height: 42px;
+            border: 3px solid #E2E8F0;
+            border-left-color: var(--brand-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--brand-navy);
+            letter-spacing: -0.1px;
+        }
+
+        /* Print Mode Formal Medical Report */
+        @media print {
+            body {
+                background: #FFFFFF;
+                padding: 0;
+            }
+            .controls-card, .header-actions, .studio-nav-tabs, .view-mode-tabs, .proc-controls, #tabContentProcessing {
+                display: none !important;
+            }
+            header {
+                box-shadow: none;
+                border-bottom: 2px solid #000;
+                border-radius: 0;
+            }
+            .workspace-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="brand-container">
+            <div class="brand-icon">
+                <i class="fa-solid fa-lungs"></i>
+            </div>
+            <div class="brand-title">
+                <h1>TorchXRayVision Diagnostic Studio <span class="badge-version">PACS AI Workstation</span></h1>
+                <p>Chest Radiomics Deep Learning Engine • Grad-CAM Explainability • Anatomical Segregation</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div class="status-badge">
+                <span class="pulse-dot"></span>
+                Inference Engine Active
+            </div>
+            <button class="btn-header" onclick="exportReport()">
+                <i class="fa-solid fa-file-pdf"></i> Export Clinical Report
+            </button>
+        </div>
+    </header>
+
+    <!-- Controls Card -->
+    <div class="controls-card">
+        <div class="section-header">
+            <div class="section-title">
+                <i class="fa-solid fa-sliders"></i>
+                Radiological Input Selection & Neural Network Weights Configuration
+            </div>
+        </div>
+        
+        <div class="control-grid">
+            <!-- Sample Library Carousel -->
+            <div class="form-group">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px;">
+                    <label><i class="fa-solid fa-folder-open"></i> Clinical Scan Repository:</label>
+                    <input type="text" id="sampleSearch" class="sample-search-input" placeholder="Search test cases..." oninput="filterSampleCards()">
+                </div>
+                
+                <div class="category-filter-bar" id="categoryFilterBar">
+                    <button class="filter-chip active" onclick="filterCategory('All', this)">All Scans</button>
+                </div>
+
+                <div class="samples-carousel" id="samplesCarousel">
+                    <!-- Samples injected dynamically -->
+                </div>
+            </div>
+
+            <!-- Custom File Dropzone -->
+            <div class="form-group">
+                <label><i class="fa-solid fa-cloud-arrow-up"></i> Upload DICOM / Image Scan:</label>
+                <div class="upload-dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+                    <i class="fa-solid fa-file-medical"></i>
+                    <p id="uploadFilename">Click or Drag & Drop DICOM / Image</p>
+                    <input type="file" id="fileInput" accept=".png,.jpg,.jpeg,.dcm">
+                </div>
+            </div>
+
+            <!-- Model Selection & Trigger -->
+            <div class="form-group">
+                <label><i class="fa-solid fa-brain"></i> Neural Network Pretrained Weights:</label>
+                <select class="custom-select" id="modelSelect">
+                    <!-- Options injected dynamically -->
+                </select>
+                <button class="btn-analyze" id="btnAnalyze" onclick="runAnalysis()">
+                    <i class="fa-solid fa-microscope"></i> Run Clinical Diagnostic Pipeline
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace Grid -->
+    <div class="workspace-grid">
+        
+        <!-- Left Panel: Multi-Mode Interactive Visual Studio -->
+        <div class="panel-card" style="position: relative;">
+            <div class="loader-overlay" id="loaderOverlay">
+                <div class="spinner"></div>
+                <div class="loader-text" id="loaderText">Running PSPNet Anatomical Segmentation & DenseNet Inference...</div>
+            </div>
+
+            <!-- Studio Navigation Tabs -->
+            <div class="studio-nav-tabs">
+                <button class="studio-tab-btn active" id="studioTabSeg" onclick="switchStudioTab('segregation')">
+                    <i class="fa-solid fa-layer-group"></i> Anatomical Segregation
+                </button>
+                <button class="studio-tab-btn" id="studioTabGrad" onclick="switchStudioTab('gradcam')">
+                    <i class="fa-solid fa-fire"></i> Grad-CAM Saliency
+                </button>
+                <button class="studio-tab-btn" id="studioTabAE" onclick="switchStudioTab('autoencoder')">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Autoencoder Anomaly
+                </button>
+                <button class="studio-tab-btn" id="studioTabProc" onclick="switchStudioTab('processing')">
+                    <i class="fa-solid fa-sliders"></i> CLAHE & Contrast
+                </button>
+            </div>
+
+            <!-- Sub-controls for Segregation Organ Systems -->
+            <div class="view-mode-tabs" id="segregationSubTabs">
+                <button class="tab-btn active" onclick="setViewMode('composite')" id="tabComposite">
+                    <i class="fa-solid fa-object-group"></i> All Segments
+                </button>
+                <button class="tab-btn" onclick="setViewMode('system_Pulmonary')" id="tabPulmonary">
+                    <i class="fa-solid fa-lungs"></i> Pulmonary
+                </button>
+                <button class="tab-btn" onclick="setViewMode('system_Cardiovascular')" id="tabCardiovascular">
+                    <i class="fa-solid fa-heart-pulse"></i> Cardiovascular
+                </button>
+                <button class="tab-btn" onclick="setViewMode('system_Musculoskeletal')" id="tabMusculoskeletal">
+                    <i class="fa-solid fa-bone"></i> Skeletal
+                </button>
+                <button class="tab-btn" onclick="setViewMode('system_Diaphragmatic')" id="tabDiaphragmatic">
+                    <i class="fa-solid fa-wave-square"></i> Diaphragm
+                </button>
+                <button class="tab-btn" onclick="setViewMode('original')" id="tabOriginal">
+                    <i class="fa-solid fa-x-ray"></i> Original
+                </button>
+                <button class="tab-btn" style="margin-left: auto;" onclick="toggleSplitView()" id="btnSplitView">
+                    <i class="fa-solid fa-columns"></i> Split View
+                </button>
+            </div>
+
+            <!-- Main Viewer Canvas (Obsidian backdrop for DICOM accuracy) -->
+            <div class="viewer-container" id="viewerContainer">
+                <img id="imgOriginal" class="viewer-img" src="" alt="Original X-Ray" style="opacity: 1;">
+                <img id="imgComposite" class="viewer-img" src="" alt="Composite Segregation" style="opacity: 1;">
+                <img id="imgGradCam" class="viewer-img" src="" alt="Grad-CAM Heatmap" style="opacity: 0;">
+                <img id="imgAutoencoder" class="viewer-img" src="" alt="Autoencoder Map" style="opacity: 0;">
+                <img id="imgProcessed" class="viewer-img" src="" alt="Processed Image" style="opacity: 0;">
+                
+                <!-- Individual toggleable region masks -->
+                <div id="individualMasksContainer"></div>
+            </div>
+
+            <!-- Tab Content 1: Segregation Chips -->
+            <div id="tabContentSegregation" class="form-group">
+                <label><i class="fa-solid fa-eye"></i> Toggle 14 Target Anatomical Regions:</label>
+                <div class="regions-grid" id="regionsGrid">
+                    <span style="font-size: 11px; color: var(--text-muted);">Run diagnostic pipeline to render anatomical region masks.</span>
+                </div>
+            </div>
+
+            <!-- Tab Content 2: Grad-CAM Explainability Controls -->
+            <div id="tabContentGradcam" style="display: none;" class="form-group">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <label><i class="fa-solid fa-fire"></i> Select Target Pathology for Grad-CAM Feature Map:</label>
+                    <span id="gradcamStatus" style="font-size: 11px; color: var(--brand-blue); font-family: var(--font-mono); font-weight: 600;">Click any pathology to inspect saliency</span>
+                </div>
+                <div class="findings-list" id="gradcamTargetList">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+
+            <!-- Tab Content 3: Autoencoder Reconstruction Info -->
+            <div id="tabContentAutoencoder" style="display: none;" class="form-group">
+                <label><i class="fa-solid fa-circle-info"></i> ResNet-101 Autoencoder Reconstruction & Structural Residual Anomaly:</label>
+                <div style="display: flex; gap: 8px;">
+                    <button class="filter-chip active" onclick="setAEMode('overlay')">Anomaly Overlay</button>
+                    <button class="filter-chip" onclick="setAEMode('reconstruction')">Reconstructed Image</button>
+                    <button class="filter-chip" onclick="setAEMode('heatmap')">Residual Map</button>
+                </div>
+            </div>
+
+            <!-- Tab Content 4: Image Processing Sliders -->
+            <div id="tabContentProcessing" style="display: none;" class="form-group">
+                <div class="proc-controls">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="chkClahe" onchange="updateImageProcessing()">
+                        <label for="chkClahe">Enable CLAHE (Adaptive Histogram Equalization)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="chkInvert" onchange="updateImageProcessing()">
+                        <label for="chkInvert">Invert Grayscale (Black-on-White)</label>
+                    </div>
+                    <div class="range-slider-group">
+                        <label>Contrast: <span id="valContrast">1.0</span></label>
+                        <input type="range" id="rngContrast" min="0.5" max="2.5" step="0.1" value="1.0" oninput="updateImageProcessing()">
+                    </div>
+                    <div class="range-slider-group">
+                        <label>Brightness: <span id="valBrightness">0</span></label>
+                        <input type="range" id="rngBrightness" min="-50" max="50" step="5" value="0" oninput="updateImageProcessing()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Pathology Confidence Scores -->
+        <div class="panel-card">
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fa-solid fa-chart-bar"></i>
+                    Diagnostic Probabilities & Clinical Findings
+                </div>
+            </div>
+
+            <!-- Primary Clinical Findings Summary -->
+            <div class="top-findings-card" id="topFindingsCard" style="display: none;">
+                <div class="top-findings-title">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Primary Clinical Findings Detected:
+                </div>
+                <div class="findings-list" id="findingsList"></div>
+            </div>
+
+            <!-- Pathology List Bars -->
+            <div class="pathology-list-container" id="pathologyList">
+                <div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px;">
+                    <i class="fa-solid fa-stethoscope" style="font-size: 36px; margin-bottom: 12px; display: block; color: var(--brand-blue);"></i>
+                    Select an X-ray scan and click <strong>Run Clinical Diagnostic Pipeline</strong> to view findings.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        let allSamples = [];
+        let selectedSample = "";
+        let currentAnalysisData = null;
+        let selectedFile = null;
+        let currentCategoryFilter = "All";
+        let isSplitView = false;
+        let activeStudioTab = "segregation";
+        let currentAEData = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchSamplesAndModels();
+            setupDropzone();
+        });
+
+        async function fetchSamplesAndModels() {
+            try {
+                const res = await fetch("/api/samples");
+                const data = await res.json();
+                
+                allSamples = data.samples || [];
+
+                renderCategoryFilters(data.categories || []);
+                renderSamplesCarousel(allSamples);
+
+                if (allSamples.length > 0) {
+                    selectedSample = allSamples[0].filename;
+                }
+
+                const select = document.getElementById("modelSelect");
+                select.innerHTML = "";
+                for (const [key, label] of Object.entries(data.models)) {
+                    const opt = document.createElement("option");
+                    opt.value = key;
+                    opt.textContent = label;
+                    select.appendChild(opt);
+                }
+
+                runAnalysis();
+
+            } catch (err) {
+                console.error("Failed to fetch initial samples:", err);
+            }
+        }
+
+        function renderCategoryFilters(categories) {
+            const bar = document.getElementById("categoryFilterBar");
+            bar.innerHTML = `<button class="filter-chip active" onclick="filterCategory('All', this)">All Scans (${allSamples.length})</button>`;
+            
+            categories.forEach(cat => {
+                const count = allSamples.filter(s => s.category === cat).length;
+                const btn = document.createElement("button");
+                btn.className = "filter-chip";
+                btn.onclick = () => filterCategory(cat, btn);
+                btn.textContent = `${cat} (${count})`;
+                bar.appendChild(btn);
+            });
+        }
+
+        function filterCategory(cat, btnEl) {
+            currentCategoryFilter = cat;
+            document.querySelectorAll("#categoryFilterBar .filter-chip").forEach(b => b.classList.remove("active"));
+            if (btnEl) btnEl.classList.add("active");
+            filterSampleCards();
+        }
+
+        function filterSampleCards() {
+            const rawSearch = document.getElementById("sampleSearch").value;
+            const searchVal = rawSearch ? rawSearch.toLowerCase().trim() : "";
+            
+            const filtered = allSamples.filter(s => {
+                const matchesCat = (currentCategoryFilter === "All" || s.category === currentCategoryFilter);
+                const matchesSearch = !searchVal || 
+                    s.display_name.toLowerCase().includes(searchVal) ||
+                    s.title.toLowerCase().includes(searchVal) ||
+                    s.category.toLowerCase().includes(searchVal);
+                return matchesCat && matchesSearch;
+            });
+
+            renderSamplesCarousel(filtered);
+        }
+
+        function renderSamplesCarousel(samples) {
+            const carousel = document.getElementById("samplesCarousel");
+            carousel.innerHTML = "";
+
+            if (samples.length === 0) {
+                carousel.innerHTML = `<span style="font-size: 11px; color: var(--text-muted); padding: 10px;">No matching scans found.</span>`;
+                return;
+            }
+
+            samples.forEach((sample) => {
+                const card = document.createElement("div");
+                const isActive = (sample.filename === selectedSample);
+                card.className = `sample-card ${isActive ? 'active' : ''}`;
+                card.onclick = () => selectSample(sample.filename, card);
+                
+                const imgUrl = `/api/sample_img/${sample.filename}`;
+                card.innerHTML = `
+                    <img src="${imgUrl}" alt="${sample.display_name}" onerror="this.src='https://via.placeholder.com/100?text=X-Ray'">
+                    <div class="sample-info">
+                        <span title="${sample.title}">${sample.display_name}</span>
+                        <small>${sample.category}</small>
+                    </div>
+                `;
+                carousel.appendChild(card);
+            });
+        }
+
+        function selectSample(filename, cardEl) {
+            selectedSample = filename;
+            selectedFile = null;
+            document.getElementById("uploadFilename").textContent = "Click or Drag & Drop File";
+            
+            document.querySelectorAll(".sample-card").forEach(c => c.classList.remove("active"));
+            if (cardEl) cardEl.classList.add("active");
+        }
+
+        function setupDropzone() {
+            const dropzone = document.getElementById("dropzone");
+            const fileInput = document.getElementById("fileInput");
+
+            fileInput.addEventListener("change", (e) => {
+                if (e.target.files.length > 0) {
+                    selectedFile = e.target.files[0];
+                    selectedSample = "";
+                    document.getElementById("uploadFilename").textContent = selectedFile.name;
+                    document.querySelectorAll(".sample-card").forEach(c => c.classList.remove("active"));
+                }
+            });
+
+            dropzone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = "var(--brand-blue)";
+                dropzone.style.background = "#F0F9FF";
+            });
+
+            dropzone.addEventListener("dragleave", () => {
+                dropzone.style.borderColor = "var(--border-medium)";
+                dropzone.style.background = "var(--bg-subtle)";
+            });
+
+            dropzone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = "var(--border-medium)";
+                dropzone.style.background = "var(--bg-subtle)";
+                if (e.dataTransfer.files.length > 0) {
+                    selectedFile = e.dataTransfer.files[0];
+                    selectedSample = "";
+                    document.getElementById("uploadFilename").textContent = selectedFile.name;
+                    document.querySelectorAll(".sample-card").forEach(c => c.classList.remove("active"));
+                }
+            });
+        }
+
+        async function runAnalysis() {
+            const loader = document.getElementById("loaderOverlay");
+            const btn = document.getElementById("btnAnalyze");
+            
+            loader.classList.add("active");
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append("model_name", document.getElementById("modelSelect").value);
+            
+            if (selectedFile) {
+                formData.append("file", selectedFile);
+            } else if (selectedSample) {
+                formData.append("sample_name", selectedSample);
+            } else {
+                alert("Please select or upload an X-ray image scan.");
+                loader.classList.remove("active");
+                btn.disabled = false;
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/analyze", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    alert("Analysis error: " + (data.error || "Unknown server error"));
+                    return;
+                }
+
+                currentAnalysisData = data;
+                renderResults(data);
+
+                // Auto-fetch Grad-CAM for top pathology
+                if (data.pathologies && data.pathologies.length > 0) {
+                    fetchGradcam(data.pathologies[0].pathology);
+                }
+
+            } catch (err) {
+                console.error("Error during analysis pipeline:", err);
+                alert("Server request failed.");
+            } finally {
+                loader.classList.remove("active");
+                btn.disabled = false;
+            }
+        }
+
+        function renderResults(data) {
+            document.getElementById("imgOriginal").src = data.original_image;
+            document.getElementById("imgComposite").src = data.composite_segmentation;
+
+            const regionsGrid = document.getElementById("regionsGrid");
+            const masksContainer = document.getElementById("individualMasksContainer");
+            
+            regionsGrid.innerHTML = "";
+            masksContainer.innerHTML = "";
+
+            data.segmentation_regions.forEach(region => {
+                const maskImg = document.createElement("img");
+                maskImg.id = `maskLayer_${region.id}`;
+                maskImg.className = "layer-mask";
+                maskImg.src = region.mask_base64;
+                masksContainer.appendChild(maskImg);
+
+                const chip = document.createElement("div");
+                chip.className = "region-chip";
+                chip.onclick = () => toggleRegionMask(region.id, chip);
+                chip.innerHTML = `
+                    <div class="color-dot" style="background-color: ${region.color_hex};"></div>
+                    <span class="region-label">${region.name}</span>
+                    <span class="region-coverage">${region.coverage_pct}%</span>
+                `;
+                regionsGrid.appendChild(chip);
+            });
+
+            setViewMode('composite');
+
+            // Top Findings Alert Box
+            const topCard = document.getElementById("topFindingsCard");
+            const findingsList = document.getElementById("findingsList");
+            findingsList.innerHTML = "";
+
+            if (data.top_findings && data.top_findings.length > 0) {
+                topCard.style.display = "flex";
+                data.top_findings.forEach(f => {
+                    const badge = document.createElement("div");
+                    badge.className = `finding-badge ${f.severity === 'Moderate Risk' ? 'warning' : ''}`;
+                    badge.onclick = () => {
+                        switchStudioTab('gradcam');
+                        fetchGradcam(f.pathology);
+                    };
+                    badge.innerHTML = `
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        ${f.pathology}: ${f.confidence}%
+                    `;
+                    findingsList.appendChild(badge);
+                });
+            } else {
+                topCard.style.display = "none";
+            }
+
+            // Populate Grad-CAM target list chips
+            const gradList = document.getElementById("gradcamTargetList");
+            gradList.innerHTML = "";
+            data.pathologies.forEach(p => {
+                const badge = document.createElement("div");
+                badge.className = `filter-chip ${p.confidence > 25 ? 'active' : ''}`;
+                badge.onclick = () => fetchGradcam(p.pathology);
+                badge.innerHTML = `${p.pathology} (${p.confidence}%)`;
+                gradList.appendChild(badge);
+            });
+
+            // Populate Pathology Bars
+            const listContainer = document.getElementById("pathologyList");
+            listContainer.innerHTML = "";
+
+            data.pathologies.forEach(item => {
+                const el = document.createElement("div");
+                el.className = "pathology-item";
+                el.onclick = () => {
+                    switchStudioTab('gradcam');
+                    fetchGradcam(item.pathology);
+                };
+                el.innerHTML = `
+                    <div class="pathology-header">
+                        <span class="pathology-name">
+                            <i class="fa-solid fa-fire" style="color: var(--brand-blue); font-size: 11px;"></i>
+                            ${item.pathology}
+                        </span>
+                        <span class="confidence-val ${item.badge_class}">${item.confidence}%</span>
+                    </div>
+                    <div class="meter-bar-track">
+                        <div class="meter-bar-fill ${item.badge_class}" style="width: ${item.confidence}%;"></div>
+                    </div>
+                `;
+                listContainer.appendChild(el);
+            });
+        }
+
+        function switchStudioTab(tab) {
+            activeStudioTab = tab;
+            document.querySelectorAll(".studio-tab-btn").forEach(b => b.classList.remove("active"));
+            
+            document.getElementById("tabContentSegregation").style.display = "none";
+            document.getElementById("tabContentGradcam").style.display = "none";
+            document.getElementById("tabContentAutoencoder").style.display = "none";
+            document.getElementById("tabContentProcessing").style.display = "none";
+            document.getElementById("segregationSubTabs").style.display = "none";
+
+            hideAllViewerLayers();
+
+            if (tab === 'segregation') {
+                document.getElementById("studioTabSeg").classList.add("active");
+                document.getElementById("tabContentSegregation").style.display = "flex";
+                document.getElementById("segregationSubTabs").style.display = "flex";
+                document.getElementById("imgComposite").style.opacity = "1";
+            } else if (tab === 'gradcam') {
+                document.getElementById("studioTabGrad").classList.add("active");
+                document.getElementById("tabContentGradcam").style.display = "flex";
+                document.getElementById("imgGradCam").style.opacity = "1";
+            } else if (tab === 'autoencoder') {
+                document.getElementById("studioTabAE").classList.add("active");
+                document.getElementById("tabContentAutoencoder").style.display = "flex";
+                document.getElementById("imgAutoencoder").style.opacity = "1";
+                if (!currentAEData) runAutoencoder();
+            } else if (tab === 'processing') {
+                document.getElementById("studioTabProc").classList.add("active");
+                document.getElementById("tabContentProcessing").style.display = "flex";
+                document.getElementById("imgProcessed").style.opacity = "1";
+                updateImageProcessing();
+            }
+        }
+
+        function hideAllViewerLayers() {
+            document.getElementById("imgOriginal").style.opacity = "0";
+            document.getElementById("imgComposite").style.opacity = "0";
+            document.getElementById("imgGradCam").style.opacity = "0";
+            document.getElementById("imgAutoencoder").style.opacity = "0";
+            document.getElementById("imgProcessed").style.opacity = "0";
+            document.querySelectorAll(".layer-mask").forEach(m => m.classList.remove("visible"));
+        }
+
+        function setViewMode(mode) {
+            hideAllViewerLayers();
+            document.querySelectorAll("#segregationSubTabs .tab-btn").forEach(b => b.classList.remove("active"));
+            document.querySelectorAll(".region-chip").forEach(c => c.classList.remove("active"));
+
+            const imgOrig = document.getElementById("imgOriginal");
+            const imgComp = document.getElementById("imgComposite");
+
+            if (mode === 'composite') {
+                document.getElementById("tabComposite").classList.add("active");
+                if (currentAnalysisData) imgComp.src = currentAnalysisData.composite_segmentation;
+                imgComp.style.opacity = "1";
+            } else if (mode.startsWith('system_')) {
+                const sysKey = mode.replace('system_', '');
+                const tabEl = document.getElementById(`tab${sysKey}`);
+                if (tabEl) tabEl.classList.add("active");
+                
+                if (currentAnalysisData && currentAnalysisData.segregated_systems && currentAnalysisData.segregated_systems[sysKey]) {
+                    imgComp.src = currentAnalysisData.segregated_systems[sysKey];
+                }
+                imgComp.style.opacity = "1";
+            } else {
+                document.getElementById("tabOriginal").classList.add("active");
+                imgOrig.style.opacity = "1";
+            }
+        }
+
+        function toggleSplitView() {
+            isSplitView = !isSplitView;
+            const viewer = document.getElementById("viewerContainer");
+            const btn = document.getElementById("btnSplitView");
+            
+            if (isSplitView) {
+                viewer.classList.add("split-mode");
+                btn.classList.add("active");
+            } else {
+                viewer.classList.remove("split-mode");
+                btn.classList.remove("active");
+            }
+        }
+
+        function toggleRegionMask(regionId, chipEl) {
+            hideAllViewerLayers();
+            document.getElementById("imgOriginal").style.opacity = "1";
+            document.querySelectorAll("#segregationSubTabs .tab-btn").forEach(b => b.classList.remove("active"));
+
+            const maskEl = document.getElementById(`maskLayer_${regionId}`);
+            if (maskEl) {
+                const isVis = maskEl.classList.contains("visible");
+                if (isVis) {
+                    maskEl.classList.remove("visible");
+                    chipEl.classList.remove("active");
+                } else {
+                    maskEl.classList.add("visible");
+                    chipEl.classList.add("active");
+                }
+            }
+        }
+
+        async function fetchGradcam(pathologyName) {
+            const formData = new FormData();
+            formData.append("model_name", document.getElementById("modelSelect").value);
+            formData.append("pathology", pathologyName);
+
+            if (selectedFile) formData.append("file", selectedFile);
+            else if (selectedSample) formData.append("sample_name", selectedSample);
+
+            document.getElementById("gradcamStatus").textContent = `Generating Grad-CAM for ${pathologyName}...`;
+
+            try {
+                const res = await fetch("/api/gradcam", { method: "POST", body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById("imgGradCam").src = data.blended;
+                    document.getElementById("gradcamStatus").textContent = `Grad-CAM: ${data.pathology} (${data.confidence}%)`;
+                    if (activeStudioTab === 'gradcam') {
+                        hideAllViewerLayers();
+                        document.getElementById("imgGradCam").style.opacity = "1";
+                    }
+                }
+            } catch (err) {
+                console.error("Grad-CAM error:", err);
+            }
+        }
+
+        async function runAutoencoder() {
+            const formData = new FormData();
+            if (selectedFile) formData.append("file", selectedFile);
+            else if (selectedSample) formData.append("sample_name", selectedSample);
+
+            try {
+                const res = await fetch("/api/autoencode", { method: "POST", body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    currentAEData = data;
+                    document.getElementById("imgAutoencoder").src = data.anomaly_overlay;
+                    hideAllViewerLayers();
+                    document.getElementById("imgAutoencoder").style.opacity = "1";
+                }
+            } catch (err) {
+                console.error("Autoencoder error:", err);
+            }
+        }
+
+        function setAEMode(mode) {
+            if (!currentAEData) return;
+            const imgAE = document.getElementById("imgAutoencoder");
+            if (mode === 'overlay') imgAE.src = currentAEData.anomaly_overlay;
+            else if (mode === 'reconstruction') imgAE.src = currentAEData.reconstructed_image;
+            else if (mode === 'heatmap') imgAE.src = currentAEData.anomaly_map;
+        }
+
+        async function updateImageProcessing() {
+            const clahe = document.getElementById("chkClahe").checked;
+            const invert = document.getElementById("chkInvert").checked;
+            const contrast = document.getElementById("rngContrast").value;
+            const brightness = document.getElementById("rngBrightness").value;
+
+            document.getElementById("valContrast").textContent = contrast;
+            document.getElementById("valBrightness").textContent = brightness;
+
+            const formData = new FormData();
+            formData.append("clahe", clahe);
+            formData.append("invert", invert);
+            formData.append("contrast", contrast);
+            formData.append("brightness", brightness);
+
+            if (selectedFile) formData.append("file", selectedFile);
+            else if (selectedSample) formData.append("sample_name", selectedSample);
+
+            try {
+                const res = await fetch("/api/process_image", { method: "POST", body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById("imgProcessed").src = data.processed_image;
+                    if (activeStudioTab === 'processing') {
+                        hideAllViewerLayers();
+                        document.getElementById("imgProcessed").style.opacity = "1";
+                    }
+                }
+            } catch (err) {
+                console.error("Image processing error:", err);
+            }
+        }
+
+        function exportReport() {
+            window.print();
+        }
+    </script>
+</body>
+</html>
