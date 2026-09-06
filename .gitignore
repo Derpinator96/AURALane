@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+*.log
+
+# NIH ChestX-ray14 sample images — 5,606 PNGs, ~2.2 GB. Not committed: this is
+# public data we did not create, it exceeds what GitHub (and LFS's free tier)
+# should hold, and README.md says where to get it. Drop the PNGs back into
+# images/ after cloning.
+images/*
+!images/.gitkeep
+
+# Local project context: competition strategy, self-identified soft spots and
+# prepared answers. The GitHub repo is public — this stays on disk only.
+CLAUDE.md
+
+# local scratch and transfer artifacts, not source
+_backup/
+_bundle.tgz
+_update.tgz
+mern.zip
