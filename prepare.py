@@ -19,27 +19,14 @@ import os
 import random
 import sys
 
-import numpy as np
-import skimage.io
-import torch
 import torchxrayvision as xrv
 
+import imaging
 import triage
 
 IMG_DIR = "images"
 MIN_FOR_REFIT = 50          # below this, a fitted reference is noise
 EXTS = (".png", ".jpg", ".jpeg")
-
-
-def load(path):
-    img = skimage.io.imread(path)
-    if img.ndim == 3:
-        img = img.mean(2)
-    img = xrv.datasets.normalize(img, 255)           # -> [-1024, 1024]
-    img = img[None, ...]
-    img = xrv.datasets.XRayCenterCrop()(img)
-    img = xrv.datasets.XRayResizer(224)(img)
-    return torch.from_numpy(img)[None, ...]
 
 
 def main():
@@ -65,18 +52,16 @@ def main():
     print(f"Loading densenet121-res224-all ...")
     model = xrv.models.DenseNet(weights="densenet121-res224-all")
     model.eval()
-    paths = model.pathologies
 
     records, failed = [], []
     for i, fn in enumerate(files, 1):
         try:
-            with torch.no_grad():
-                out = model(load(os.path.join(IMG_DIR, fn))).cpu().numpy()[0]
+            preds = imaging.predict(model, os.path.join(IMG_DIR, fn))
         except Exception as e:
             failed.append((fn, str(e)))
             continue
         records.append({"filename": fn,
-                        "preds": {p: round(float(v), 5) for p, v in zip(paths, out)}})
+                        "preds": {k: round(v, 5) for k, v in preds.items()}})
         print(f"  [{i}/{len(files)}] {fn}")
 
     if not records:

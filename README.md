@@ -163,6 +163,34 @@ borrowed from the shipped reference — so if a judge asks, the answer is on scr
 
 ---
 
+## Image handling — why `imaging.py` exists
+
+Every caller — `prepare.py` and the live-upload path in `server.py` — goes through
+`imaging.predict`. They used to carry their own copy of the same six preprocessing
+lines, and both copies shared two faults:
+
+- **Alpha channels were averaged into the pixels.** `img.mean(2)` folded a constant
+  255 alpha into the greyscale, brightening the image. It did not crash; it returned
+  a *different* score. Six of the 1,000 pool images are RGBA.
+- **Bit depth was hard-coded to 8.** `normalize(img, 255)` raises when the input
+  exceeds 255, so a 16-bit PNG — what most DICOM viewers export — produced HTTP 500
+  and the words "Internal Server Error".
+
+Both are fixed: alpha is dropped before averaging, and `maxval` comes from the dtype.
+Unreadable uploads now return HTTP 400 with the reason instead of a 500.
+
+This matters more for live upload than for the corpus. The corpus is uniform 8-bit
+greyscale; the file a jury hands you is not. Note that `scores.json` was generated
+before this fix, so the six RGBA studies in the pool carry slightly stale acuity
+values — measured drift on one of them was 0.0 to 0.8, same lane. Re-run
+`prepare.py --limit 1000 --no-refit` if you want them exact.
+
+`server.py` imports `imaging` *inside* the scoring endpoint rather than at module
+scope, because `imaging` pulls in torch and the cached worklist has to keep working
+on a machine with no torch installed.
+
+---
+
 ## Re-scoring
 
 `prepare.py` scores images into `scores.json`. It samples `--limit` images (default
@@ -217,6 +245,7 @@ first run: 44 of 100.
 
 ```
 prepare.py        score images/ -> scores.json          (offline, --no-refit)
+imaging.py        one image loader — dtype, alpha, resize   (shared)
 triage.py         calibration, urgency, abstention      (shared)
 queue_builder.py  serve the scored pool; the page samples from it
 server.py         FastAPI: /api/queue, /api/score, /api/warm, /api/health

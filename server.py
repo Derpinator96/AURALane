@@ -68,30 +68,26 @@ def api_health():
 @app.post("/api/score")
 async def api_score(file: UploadFile = File(...)):
     """Live inference on an image the jury supplies."""
-    import numpy as np
-    import skimage.io
-    import torch
-    import torchxrayvision as xrv
+    # imported here, not at module scope: imaging pulls in torch, and the cached
+    # worklist has to keep working on a machine with no torch installed at all.
+    import imaging
 
     t0 = time.time()
     model = get_model()
     load_ms = round((time.time() - t0) * 1000)
 
     raw = await file.read()
-    img = skimage.io.imread(io.BytesIO(raw))
-    if img.ndim == 3:
-        img = img.mean(2)
-    img = xrv.datasets.normalize(img, 255)
-    img = img[None, ...]
-    img = xrv.datasets.XRayCenterCrop()(img)
-    img = xrv.datasets.XRayResizer(224)(img)
-
     t1 = time.time()
-    with torch.no_grad():
-        out = model(torch.from_numpy(img)[None, ...]).cpu().numpy()[0]
+    try:
+        preds = imaging.predict(model, io.BytesIO(raw))
+    except Exception as e:
+        # A readable message beats "Internal Server Error" when someone hands you
+        # a PDF, a DICOM, or a 3-channel screenshot mid-presentation.
+        return JSONResponse(
+            {"error": f"could not read {file.filename!r} as an image: {e}"},
+            status_code=400)
     infer_ms = round((time.time() - t1) * 1000)
 
-    preds = {p: float(v) for p, v in zip(model.pathologies, out)}
     result = triage.score(preds)
     result.update({"filename": file.filename,
                    "model_load_ms": load_ms,
