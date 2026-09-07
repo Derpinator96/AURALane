@@ -1,0 +1,74 @@
+{
+ "Atelectasis": {
+  "mean": 0.33764,
+  "sd": 0.21147
+ },
+ "Consolidation": {
+  "mean": 0.30208,
+  "sd": 0.20472
+ },
+ "Infiltration": {
+  "mean": 0.44607,
+  "sd": 0.16068
+ },
+ "Pneumothorax": {
+  "mean": 0.2892,
+  "sd": 0.20361
+ },
+ "Edema": {
+  "mean": 0.11344,
+  "sd": 0.1683
+ },
+ "Emphysema": {
+  "mean": 0.37849,
+  "sd": 0.17379
+ },
+ "Fibrosis": {
+  "mean": 0.42049,
+  "sd": 0.1767
+ },
+ "Effusion": {
+  "mean": 0.28251,
+  "sd": 0.26938
+ },
+ "Pneumonia": {
+  "mean": 0.11952,
+  "sd": 0.21552
+ },
+ "Pleural_Thickening": {
+  "mean": 0.31649,
+  "sd": 0.20779
+ },
+ "Cardiomegaly": {
+  "mean": 0.18278,
+  "sd": 0.19703
+ },
+ "Nodule": {
+  "mean": 0.42195,
+  "sd": 0.13374
+ },
+ "Mass": {
+  "mean": 0.43203,
+  "sd": 0.18371
+ },
+ "Hernia": {
+  "mean": 0.05113,
+  "sd": 0.08901
+ },
+ "Lung Lesion": {
+  "mean": 0.05739,
+  "sd": 0.10382
+ },
+ "Fracture": {
+  "mean": 0.32595,
+  "sd": 0.18051
+ },
+ "Lung Opacity": {
+  "mean": 0.46231,
+  "sd": 0.29648
+ },
+ "Enlarged Cardiomediastinum": {
+  "mean": 0.26831,
+  "sd": 0.22268
+ }
+}

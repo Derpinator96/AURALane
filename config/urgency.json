@@ -1,0 +1,38 @@
+{
+  "CXR": {
+    "Pneumothorax": 1.00,
+    "Edema": 0.85,
+    "Consolidation": 0.78,
+    "Pneumonia": 0.75,
+    "Effusion": 0.66,
+    "Mass": 0.58,
+    "Lung Opacity": 0.52,
+    "Infiltration": 0.46,
+    "Nodule": 0.44,
+    "Fracture": 0.42,
+    "Atelectasis": 0.30,
+    "Lung Lesion": 0.30,
+    "Enlarged Cardiomediastinum": 0.26,
+    "Cardiomegaly": 0.24,
+    "Pleural_Thickening": 0.20,
+    "Emphysema": 0.18,
+    "Fibrosis": 0.16,
+    "Hernia": 0.12
+  },
+  "CT": {
+    "Intracranial_Hemorrhage": 1.00,
+    "Midline_Shift": 0.95,
+    "Acute_Ischemia": 0.85,
+    "Skull_Fracture": 0.70,
+    "Mass_Lesion": 0.60,
+    "Chronic_Changes": 0.15
+  },
+  "MRI": {
+    "Mass_Effect": 0.95,
+    "Structural_Lesion": 0.85,
+    "Hydrocephalus": 0.80,
+    "Perilesional_Edema": 0.60,
+    "Normal_Parenchyma": 0.10
+  },
+  "_default": 0.15
+}

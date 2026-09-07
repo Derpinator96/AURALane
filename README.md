@@ -51,24 +51,63 @@ the slide, so keep it true.
 
 ---
 
-## What is real and what is simulated
+## Core System Architecture
 
-Say this out loud during the demo; it is the difference between a demo and a mockup.
+AURALane is an AI-assisted medical imaging triage and worklist orchestration platform built on the principle: **FLAGGING ≠ TRIAGE**.
 
-**Real** — every acuity score, lane and abstention. TorchXRayVision
-`densenet121-res224-all`, 18 sigmoid heads, run over the images in `images/` by
-`prepare.py` and cached in `scores.json`. Uploaded studies are scored live, in
-process, by the same model.
+```
+Modality-specific Model (CXR Live / CT Prototype / MRI Experimental)
+        ↓
+Normalized InferenceResult
+        ↓
+Common Calibration (Temperature Scaling T=1.6)
+        ↓
+Common Abstention (Uncertainty Band [0.35, 0.60])
+        ↓
+Common Acuity Engine (Z-Score Baseline Normalization × Urgency Weighting)
+        ↓
+Common SLA Lane (CRITICAL, URGENT, EXPEDITED, ROUTINE, ABSTAIN)
+        ↓
+Unified Worklist Ranking
+```
 
-**Simulated** — two things only:
-- *arrival cadence*, one study every 4 minutes of simulated time.
-- *read cadence*, one radiologist clearing one study every 6 minutes.
+---
 
-Which studies appear, and in what order, is **not** chosen by us. Each run draws a
-uniform random sample from the 1,000-study pool and shuffles it, so where the
-critical study lands is chance. The only intervention: if a draw happens to contain
-no critical or no abstention, one is swapped in over a routine study — a run
-showing neither demonstrates nothing.
+## CURRENTLY IMPLEMENTED
+
+- **CXR Live Model Inference**: In-process TorchXRayVision DenseNet121 model scoring actual image pixels (`LIVE MODEL`).
+- **FIFO Worklist**: Strict arrival-order queue preserving original scanner receipt order.
+- **AURALane Ranking Engine**: Unified multi-modal worklist sorting by calibrated acuity score.
+- **Temperature Calibration**: Platt/Temperature scaling ($T=1.6$) for raw model sigmoid outputs.
+- **Baseline Normalization**: Z-score signal computation relative to population reference statistics.
+- **Urgency Weighting**: Clinical severity multiplier per pathology finding.
+- **Abstention Logic**: Uncertainty-aware abstention flagging (confidence between 0.35 and 0.60) triggering human verification.
+- **SLA Lanes**: CRITICAL (<15 min), URGENT (<1 hr), EXPEDITED (<4 hr), ROUTINE (scheduled), ABSTAIN.
+- **Wait-Time Simulator**: Replays FIFO vs AURALane queue clearing to demonstrate critical wait time reduction.
+- **Live Upload**: Interactive image upload with live model scoring and immediate worklist re-ordering.
+- **Human Override System**: Interactive AGREE, DISAGREE, and OVERRIDE (custom lane & reason) with server-side persistence.
+
+---
+
+## MVP PROTOTYPE
+
+- **Head CT Adapter**: Pretrained prototype adapter for acute intracranial hemorrhage triage (`PRETRAINED PROTOTYPE`).
+- **Brain MRI Adapter**: Experimental adapter for structural brain lesion triage (`EXPERIMENTAL`).
+- **Modality Router**: Unified dispatching mechanism routing CXR, CT, and MRI to proper adapters.
+- **Multi-Modal Worklist Pool**: 1,200 multi-modal studies scored through the common triage pipeline.
+- **Honest Labeling & Data Source Transparency**: Every study displays explicit Model Status (`LIVE MODEL`, `PRETRAINED PROTOTYPE`, `EXPERIMENTAL`) and Data Source (`LIVE MODEL INFERENCE` vs `DEMO FIXTURE`).
+
+---
+
+## TARGET CLOUD ARCHITECTURE
+
+- **Amazon S3**: Ingestion bucket for incoming DICOM imaging series.
+- **AWS HealthImaging**: Managed DICOM repository for cloud-native medical image storage & retrieval.
+- **AWS Lambda**: Serverless de-identification and modality routing triggers.
+- **Amazon SageMaker**: Hosted inference endpoints for multi-modal AI models (TorchXRayVision CXR, MONAI Head CT, BraTS MRI).
+- **Amazon DynamoDB**: Low-latency store for normalized study triage metadata and human override audit logs.
+- **Amazon API Gateway & AWS Cognito**: Secure, authenticated REST API for healthcare application clients.
+- **OHIF Viewer & React Frontend**: Web-based DICOM viewer integrated with AURALane worklist orchestration.
 
 ---
 

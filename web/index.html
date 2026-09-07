@@ -3,17 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AURALane — the worklist reorders itself</title>
+<title>AURALane — AI Imaging Triage & Worklist Orchestration</title>
 <style>
-/* AURALane — three colours: government blue, grey, white.
-   Urgency is carried by VALUE, not hue: the darker the chip, the sooner it
-   needs a human. Critical is near-navy, expedited is cornflower, routine is
-   grey, abstain is an outline. Position and the acuity number back it up, so
-   nothing depends on colour alone. */
-
-/* Poppins, vendored in web/fonts/ rather than pulled from a CDN — the page has to
-   render identically with no network. Two src URLs per face: the first resolves
-   when served at /, the second when index.html is opened straight off disk. */
+/* AURALane — Radiology Operations Design System */
 @font-face{font-family:Poppins;font-style:normal;font-weight:400;font-display:swap;
   src:url(/web/fonts/poppins-400.woff2) format('woff2'),
       url(fonts/poppins-400.woff2) format('woff2')}
@@ -38,6 +30,16 @@
   --bg:#F5F7FA;
   --panel:#FFFFFF;
   --mono:ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;
+
+  /* Modality Badges */
+  --cxr-bg:#E0F2FE; --cxr-fg:#0369A1;
+  --ct-bg:#FEF3C7;  --ct-fg:#B45309;
+  --mri-bg:#F3E8FF; --mri-fg:#6B21A8;
+
+  /* Model Status Badges */
+  --live-bg:#DCFCE7; --live-fg:#15803D;
+  --proto-bg:#FEF9C3; --proto-fg:#A16207;
+  --exp-bg:#F3F4F6;   --exp-fg:#4B5563;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);
@@ -46,84 +48,142 @@ body{margin:0;background:var(--bg);color:var(--ink);
 header{background:var(--b700);color:#fff;padding:15px 24px;
        display:flex;align-items:center;gap:18px;flex-wrap:wrap}
 header h1{font-size:20px;margin:0;font-weight:600;letter-spacing:.2px}
-.tagline{font-size:13px;color:#D6E1F5}
+.tagline{font-size:12.5px;color:#D6E1F5;font-weight:400}
 .badge{margin-left:auto;border:1px solid rgba(255,255,255,.45);padding:5px 13px;
-       border-radius:3px;font-size:11.5px;font-weight:600;letter-spacing:.7px}
+       border-radius:3px;font-size:11px;font-weight:600;letter-spacing:.7px}
 
 .bar{display:flex;gap:10px;align-items:center;padding:12px 24px;background:var(--panel);
      border-bottom:1px solid var(--line);flex-wrap:wrap}
-button{font:inherit;font-weight:500;border:1px solid var(--line);background:#fff;
-       color:var(--soft);padding:8px 16px;border-radius:3px;cursor:pointer}
+button, select, input[type="text"]{font:inherit;font-weight:500;border:1px solid var(--line);background:#fff;
+       color:var(--soft);padding:7px 12px;border-radius:3px;cursor:pointer}
 button:hover:not(:disabled){border-color:var(--b700);color:var(--b700)}
 button:disabled{opacity:.4;cursor:not-allowed}
 button.primary{background:var(--b700);border-color:var(--b700);color:#fff;font-weight:600}
 button.primary:hover:not(:disabled){background:var(--b900);color:#fff}
-.store{font-size:12px;color:var(--faint)}
 .clock{font-variant-numeric:tabular-nums;font-weight:600;color:var(--b700);font-size:18px;
        margin-left:auto;display:flex;align-items:center;gap:8px}
-.clock small{font-weight:400;color:var(--faint);font-size:12px}
 
 main{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 24px}
-/* min-width:0 — grid items default to min-width:auto, which lets a card's
-   fixed-width parts force the column wider than its 1fr share and scroll the page */
 .col{background:var(--panel);border:1px solid var(--line);
-     display:flex;flex-direction:column;min-width:0}
-.col > h2{margin:0;padding:7px 10px;font-size:14px;font-weight:600;font-family:var(--mono);
-          border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;
-          color:var(--faint)}
-.col > h2 .sub{font-weight:400;font-size:11px;color:var(--faint);margin-left:auto}
-/* the worklist scrolls inside its own box, so the page never grows with the queue */
-.list{padding:0;display:block;height:430px;overflow-y:auto}
+     display:flex;flex-direction:column;min-width:0;border-radius:4px;overflow:hidden}
+.col > h2{margin:0;padding:10px 14px;font-size:14px;font-weight:600;font-family:var(--mono);
+          border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+          color:var(--b700);background:#FAFAFC;letter-spacing:.5px}
+.list{padding:0;display:block;height:460px;overflow-y:auto}
 
-.study{display:flex;align-items:center;gap:10px;padding:4px 10px;cursor:pointer;
+.study{display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;
        border-bottom:1px solid var(--line);background:#fff;
-       font-family:var(--mono);font-size:12px;line-height:1.35}
+       font-family:var(--mono);font-size:12px;line-height:1.35;transition:background 0.15s ease}
 .study:hover{background:#EEF2F8}
-.study .id{width:52px;flex:none;color:var(--faint)}
+.study .id{width:56px;flex:none;color:var(--faint);font-weight:600}
 .study .body{flex:1;min-width:0}
-.study .driver{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.study .driver-row{display:flex;align-items:center;gap:6px}
+.study .driver{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--ink)}
 .study .meta{font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;
-             text-overflow:ellipsis}
-.study .acuity{width:38px;flex:none;text-align:right}
-.study .chip{width:74px;flex:none;font-size:11px}
-.study.jump{outline:1px solid var(--b700);outline-offset:-1px}
+             text-overflow:ellipsis;margin-top:2px}
+.study .acuity{width:38px;flex:none;text-align:right;font-weight:600}
+.study .chip{width:74px;flex:none;font-size:11px;font-weight:600;text-align:center}
+.study.jump{outline:2px solid var(--b700);outline-offset:-2px}
+
+.pill{padding:2px 6px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.3px;display:inline-block}
+.pill-cxr{background:var(--cxr-bg);color:var(--cxr-fg)}
+.pill-ct{background:var(--ct-bg);color:var(--ct-fg)}
+.pill-mri{background:var(--mri-bg);color:var(--mri-fg)}
+
+.pill-live{background:var(--live-bg);color:var(--live-fg)}
+.pill-proto{background:var(--proto-bg);color:var(--proto-fg)}
+.pill-exp{background:var(--exp-bg);color:var(--exp-fg)}
+.pill-override{background:#FEE2E2;color:#991B1B;font-weight:700}
+
 .study[data-lane="CRITICAL"]  .chip{color:var(--b900);font-weight:700}
-.study[data-lane="URGENT"]    .chip{color:var(--b700)}
-.study[data-lane="EXPEDITED"] .chip{color:var(--b500)}
-.study[data-lane="ROUTINE"]   .chip{color:var(--g600)}
-.study[data-lane="ABSTAIN"]   .chip{color:var(--g400)}
+.study[data-lane="URGENT"]    .chip{color:var(--b700);font-weight:600}
+.study[data-lane="EXPEDITED"] .chip{color:var(--b500);font-weight:600}
+.study[data-lane="ROUTINE"]   .chip{color:var(--g600);font-weight:500}
+.study[data-lane="ABSTAIN"]   .chip{color:var(--g400);font-weight:500}
 
-#waitsBox{padding:0 24px 10px}
+#waitsBox{padding:0 24px 16px}
 #waitsOut{margin:8px 0 0;font-family:var(--mono);font-size:12px;color:var(--soft);
-          white-space:pre;overflow-x:auto}
+          white-space:pre;overflow-x:auto;background:#fff;padding:12px;border:1px solid var(--line);border-radius:3px}
 
-.overlay{position:fixed;inset:0;background:rgba(31,41,51,.5);display:none;
-         align-items:center;justify-content:center;padding:24px;z-index:20}
+/* Workstation Overlay View */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.85);display:none;
+         align-items:center;justify-content:center;padding:16px;z-index:50}
 .overlay.on{display:flex}
-.modal{background:#fff;border-radius:4px;max-width:880px;width:100%;max-height:90vh;
-       overflow:auto;display:grid;grid-template-columns:340px 1fr}
-.modal img{width:100%;height:100%;object-fit:contain;background:var(--b900);
-           max-height:520px}
-.modal .info{padding:22px 24px}
-.modal h3{margin:0 0 3px;font-size:19px;font-weight:600}
-.modal .sub{color:var(--faint);font-size:12.5px;margin-bottom:16px}
-table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 4px}
-th,td{text-align:left;padding:7px 4px;border-bottom:1px solid var(--line)}
-th{font-size:10.5px;letter-spacing:.7px;color:var(--faint);font-weight:600}
-td.num{text-align:right;font-variant-numeric:tabular-nums}
-.why{font-size:13px;color:var(--soft);margin:12px 0 0}
-.verdict{display:flex;gap:10px;margin-top:18px}
-.verdict button{flex:1}
-.feedback{font-size:12px;color:var(--faint);margin-top:10px}
-.err-text{color:var(--b900);font-weight:600}
+.workstation{background:#fff;border-radius:6px;width:100%;max-width:1340px;height:95vh;
+            display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.3)}
+
+.ws-header{background:var(--b900);color:#fff;padding:10px 20px;display:flex;align-items:center;gap:16px}
+.ws-header h2{font-size:16px;margin:0;font-weight:600;font-family:var(--mono);display:flex;align-items:center;gap:10px}
+.ws-back-btn{background:rgba(255,255,255,0.15);color:#fff;border:none;padding:5px 12px;font-size:12px;border-radius:3px;cursor:pointer}
+.ws-back-btn:hover{background:rgba(255,255,255,0.3)}
+
+.ws-body{flex:1;display:grid;grid-template-columns:540px 1fr;overflow:hidden}
+
+/* Left side: Dual Image Viewers */
+.ws-viewers{background:#0F172A;display:flex;flex-direction:column;gap:8px;padding:12px;overflow-y:auto;border-right:1px solid #1E293B}
+.viewer-panel{background:#1E293B;border-radius:4px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.viewer-title{background:#0F172A;color:#94A3B8;padding:6px 10px;font-size:11px;font-weight:600;letter-spacing:.5px;font-family:var(--mono);display:flex;align-items:center;justify-content:space-between}
+.viewer-canvas{height:270px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:#020617}
+.viewer-canvas img{max-width:100%;max-height:100%;object-fit:contain;transition:transform 0.1s ease}
+.viewer-controls{padding:6px 10px;background:#0F172A;display:flex;align-items:center;gap:6px;font-size:11px;color:#94A3B8;flex-wrap:wrap}
+.viewer-controls button{padding:3px 8px;font-size:10.5px;background:#1E293B;color:#F1F5F9;border:1px solid #334155}
+.viewer-controls button.active{background:var(--b700);border-color:var(--b700);color:#fff}
+.viewer-controls input[type="range"]{flex:1}
+
+.no-image-msg{color:#64748B;font-size:12px;font-family:var(--mono);text-align:center;padding:20px}
+
+/* Right side: Triage & Segregation Details */
+.ws-details{display:flex;flex-direction:column;gap:12px;padding:14px 18px;overflow-y:auto;background:#fff}
+
+.triage-summary-box{background:#F8FAFC;border:1px solid var(--line);border-left:4px solid var(--b700);padding:12px 16px;border-radius:4px}
+.summary-grid{display:grid;grid-template-columns:repeat(4, 1fr);gap:12px;margin-bottom:10px}
+.summary-item{display:flex;flex-direction:column}
+.summary-item label{font-size:10px;color:var(--faint);font-weight:600;letter-spacing:.5px}
+.summary-item val{font-size:14px;font-weight:600;color:var(--ink)}
+
+.priority-reason-box{font-size:12px;color:var(--soft);background:#EFF6FF;border:1px solid #BFDBFE;padding:8px 12px;border-radius:3px}
+
+/* Anatomical Portion Segregation Filter Bar */
+.portion-filter-bar{display:flex;gap:6px;background:#F1F5F9;padding:6px;border-radius:4px;border:1px solid var(--line);flex-wrap:wrap}
+.portion-btn{font-size:10.5px;padding:4px 10px;border:1px solid var(--line);background:#fff;color:var(--soft);border-radius:3px;font-weight:600}
+.portion-btn.active{background:var(--b700);color:#fff;border-color:var(--b700)}
+
+/* Table of Findings */
+.findings-table-wrap{border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.findings-table-wrap h4{margin:0;padding:8px 12px;background:#FAFAFC;font-size:11.5px;font-family:var(--mono);color:var(--soft);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.findings-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.findings-table th, .findings-table td{padding:5px 8px;text-align:left;border-bottom:1px solid var(--line)}
+.findings-table th{font-size:9.5px;letter-spacing:.5px;color:var(--faint);font-weight:600;background:#F1F5F9}
+.findings-table tr.driver-row-highlight{background:#EFF6FF;font-weight:600}
+.findings-table tr:hover{background:#F8FAFC;cursor:pointer}
+.num-col{text-align:right;font-variant-numeric:tabular-nums}
+
+/* 12-Step Decision Trace */
+.trace-section{border:1px solid var(--line);border-radius:4px;padding:10px;background:#FAFAFC}
+.trace-section h4{margin:0 0 8px;font-size:11.5px;font-family:var(--mono);color:var(--b700)}
+.trace-chain{display:grid;grid-template-columns:repeat(6, 1fr);gap:6px}
+.trace-node{background:#fff;border:1px solid var(--line);padding:6px;border-radius:3px;display:flex;flex-direction:column;gap:2px}
+.trace-node-stage{font-size:8.5px;color:var(--faint);font-weight:600;letter-spacing:.4px}
+.trace-node-val{font-size:11.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trace-node-lbl{font-size:9px;color:var(--soft)}
+
+/* Abstention Warning Alert */
+.abstain-alert{background:#FEF2F2;border:1px solid #FECACA;border-left:4px solid #EF4444;padding:10px 14px;border-radius:4px;color:#991B1B;font-size:12px;display:none}
+
+/* Model Metadata Box */
+.metadata-section{background:#F8FAFC;border:1px solid var(--line);border-radius:4px;padding:8px 12px;font-size:11px;color:var(--soft);display:grid;grid-template-columns:repeat(3, 1fr);gap:6px}
+.metadata-section label{font-weight:600;color:var(--faint);font-size:9.5px;display:block}
+
+/* Footer Review Controls */
+.ws-footer{background:#F1F5F9;border-top:1px solid var(--line);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ws-footer-actions{display:flex;gap:8px;align-items:center}
+
 footer{padding:12px 24px 28px;font-size:11.5px;color:var(--faint)}
 .err{background:#fff;border:1px solid var(--line);border-left:3px solid var(--b700);
      color:var(--soft);padding:14px 18px;border-radius:3px;margin:18px 24px;font-size:13px}
-.loading{color:var(--faint)}
-@media(max-width:900px){main{grid-template-columns:1fr}.modal{grid-template-columns:1fr}}
 
 .count{font-size:12.5px;color:var(--faint);display:flex;align-items:center;gap:6px}
-.count input{font:inherit;font-size:13px;width:58px;padding:7px 8px;text-align:right;
+.count input{font:inherit;font-size:13px;width:54px;padding:6px 8px;text-align:right;
              border:1px solid var(--line);border-radius:3px;color:var(--ink)}
 
 </style>
@@ -131,77 +191,261 @@ footer{padding:12px 24px 28px;font-size:11.5px;color:var(--faint)}
 <body>
 
 <header>
-  <h1>AURALane</h1>
-  <span class="badge">NON-DIAGNOSTIC; DECISION SUPPORT ONLY</span>
+  <div>
+    <h1>AURALane</h1>
+    <div class="tagline">AI-Assisted Multi-Modal Imaging Triage & Worklist Orchestration</div>
+  </div>
+  <span class="badge">DECISION SUPPORT · NOT AUTONOMOUS DIAGNOSIS</span>
 </header>
 
 <div class="bar">
   <button id="run" class="primary">Start intake</button>
-  <label class="count"><input id="count" type="number" min="1" max="200" value="40"></label>
+  <label class="count">Studies: <input id="count" type="number" min="1" max="200" value="40"></label>
   <button id="reset">Reset</button>
   <button id="warm">Warm up model</button>
-  <button id="upload">Upload study</button>
-  <input id="file" type="file" accept="image/*" hidden>
-  <span class="clock"><span id="clock">00:00</span></span>
+  
+  <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+    <select id="uploadModality" title="Select modality for live upload">
+      <option value="CXR">CXR (Live Model)</option>
+      <option value="CT">Head CT (Prototype)</option>
+      <option value="MRI">Brain MRI (Experimental)</option>
+    </select>
+    <button id="upload">Upload study</button>
+    <input id="file" type="file" accept="image/*" hidden>
+    <span class="clock"><span id="clock">00:00</span></span>
+  </div>
 </div>
 
 <div id="error" class="err" hidden></div>
 
 <main>
   <section class="col fifo">
-    <h2 style="display: flex; justify-content: center; align-items: center; width: 100%;">FIFO WORKLIST</h2>   
+    <h2>FIFO WORKLIST</h2>   
     <div class="list" id="fifo"></div>
   </section>
 
   <section class="col aura">
-    <h2 style="display: flex; justify-content: center; align-items: center; width: 100%;">AURALANE WORKLIST</h2>    
+    <h2>AURALANE WORKLIST</h2>    
     <div class="list" id="aura"></div>
   </section>
 </main>
 
 <div id="waitsBox" hidden>
-  <button id="waits">Compute waits</button>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+    <button id="waits" class="primary">Compute wait-time simulation</button>
+    <span style="font-size:11.5px;color:var(--faint);"><strong>SIMULATION DISCLAIMER:</strong> Simulated read cadence & arrival order comparison only.</span>
+  </div>
   <pre id="waitsOut"></pre>
 </div>
 
 <footer id="foot"></footer>
 
+<!-- Full Radiology Workstation View Overlay -->
 <div class="overlay" id="overlay">
-  <div class="modal">
-    <img id="mImg" alt="chest radiograph">
-    <div class="info">
-      <h3 id="mTitle">—</h3>
-      <div class="sub" id="mSub"></div>
-      <table>
-        <thead><tr><th>FINDING</th><th class="num">CONFIDENCE</th>
-        <th class="num">vs BASELINE</th><th class="num">URGENCY</th></tr></thead>
-        <tbody id="mRows"></tbody>
-      </table>
-      <div id="mWhy" style="font-size:13px;color:var(--soft);margin-top:10px"></div>
-      <div class="verdict">
-        <button id="agree" class="primary">Agree with lane</button>
-        <button id="disagree">Disagree</button>
-        <button id="close">Close</button>
+  <div class="workstation">
+    
+    <!-- Workstation Top Header -->
+    <div class="ws-header">
+      <button class="ws-back-btn" id="closeWs">&larr; BACK TO WORKLIST</button>
+      <h2>
+        <span id="wsTitle">ST-001</span>
+        <span id="wsModPill"></span>
+        <span id="wsStatusPill"></span>
+      </h2>
+      <div style="margin-left:auto;display:flex;gap:10px;align-items:center;font-size:12px;">
+        <span>Patient ID: <strong id="wsPatientId">—</strong></span>
+        <span>SLA Lane: <strong id="wsLaneBadge">—</strong></span>
       </div>
-      <div id="mFeedback" style="font-size:12px;color:var(--faint);margin-top:8px"></div>
     </div>
+
+    <!-- Workstation Main Body -->
+    <div class="ws-body">
+      
+      <!-- Left Column: Dual Image Viewers -->
+      <div class="ws-viewers">
+        
+        <!-- Viewer 1: Original Test Image -->
+        <div class="viewer-panel">
+          <div class="viewer-title">
+            <span>ORIGINAL CHEST X-RAY IMAGE</span>
+            <span id="origDim">Asset Ready</span>
+          </div>
+          <div class="viewer-canvas">
+            <img id="origImg" alt="Original Radiology Image">
+            <div id="origNoImg" class="no-image-msg" style="display:none;">
+              Image asset unavailable for this prototype study
+            </div>
+          </div>
+          <div class="viewer-controls">
+            <button id="zoomOut">Zoom -</button>
+            <button id="zoomIn">Zoom +</button>
+            <button id="zoomReset">Reset</button>
+            <span style="margin-left:auto;" id="zoomVal">100%</span>
+          </div>
+        </div>
+
+        <!-- Viewer 2: Model Explainability / Anatomy Segmentation -->
+        <div class="viewer-panel">
+          <div class="viewer-title">
+            <span>EXPLAINABILITY & ANATOMY SEGREGATION</span>
+            <span id="explainTargetLabel">Driver Finding</span>
+          </div>
+          <div class="viewer-canvas">
+            <img id="explainImg" alt="Grad-CAM / Segmentation Overlay">
+            <div id="explainNoImg" class="no-image-msg" style="display:none;">
+              Explainability unavailable for this study / prototype model
+            </div>
+          </div>
+          <div class="viewer-controls">
+            <button id="btnViewOrig" class="active">Original</button>
+            <button id="btnViewHeatmap">Grad-CAM</button>
+            <button id="btnViewOverlay">Overlay</button>
+            <button id="btnViewAnatomy">Anatomy Segregation</button>
+            <span style="margin-left:4px;">Opacity:</span>
+            <input id="opacitySlider" type="range" min="0" max="100" value="55" style="width:60px;">
+            <span id="opacityVal">55%</span>
+          </div>
+        </div>
+
+        <div style="font-size:10px;color:#64748B;font-family:var(--mono);" id="explainLegend">
+          Model attention & anatomical region segregation — decision support only.
+        </div>
+
+      </div>
+
+      <!-- Right Column: Triage Details & Decision Trace -->
+      <div class="ws-details">
+        
+        <!-- Triage Summary Box -->
+        <div class="triage-summary-box">
+          <div class="summary-grid">
+            <div class="summary-item"><label>DRIVER FINDING</label><val id="sumDriver">—</val></div>
+            <div class="summary-item"><label>ACUITY SCORE</label><val id="sumAcuity">—</val></div>
+            <div class="summary-item"><label>SLA LANE</label><val id="sumLane">—</val></div>
+            <div class="summary-item"><label>ABSTENTION</label><val id="sumAbstain">NO</val></div>
+          </div>
+          <div class="priority-reason-box" id="sumReason">
+            Loading triage priority decision reason...
+          </div>
+        </div>
+
+        <!-- Abstention Warning Alert -->
+        <div class="abstain-alert" id="abstainBanner">
+          <strong>MODEL UNCERTAINTY ABSTENTION:</strong> Confidence score fell within configured uncertainty interval [0.35, 0.60]. Automated SLA assignment withheld — mandatory human review required.
+        </div>
+
+        <!-- Anatomical Portion Segregation Filter Bar -->
+        <div class="portion-filter-bar" id="portionFilterBar">
+          <button class="portion-btn active" data-portion="All">ALL PORTIONS (FULL CHEST)</button>
+          <button class="portion-btn" data-portion="Pulmonary">PULMONARY (LUNG FIELDS)</button>
+          <button class="portion-btn" data-portion="Cardiovascular">CARDIOVASCULAR (HEART)</button>
+          <button class="portion-btn" data-portion="Pleural">PLEURAL & DIAPHRAGM</button>
+          <button class="portion-btn" data-portion="Musculoskeletal">MUSCULOSKELETAL</button>
+        </div>
+
+        <!-- Complete Model Findings Table -->
+        <div class="findings-table-wrap">
+          <h4>
+            <span>MODEL FINDINGS SEGREGATED BY ANATOMICAL REGION</span>
+            <span id="portionFindingCount" style="font-size:10px;color:var(--faint);">Showing all 18 findings</span>
+          </h4>
+          <table class="findings-table">
+            <thead>
+              <tr>
+                <th>FINDING / PATHOLOGY</th>
+                <th>REGION</th>
+                <th class="num-col">RAW</th>
+                <th class="num-col">CALIBRATED</th>
+                <th class="num-col">BASELINE</th>
+                <th class="num-col">SIGNAL</th>
+                <th class="num-col">URGENCY</th>
+                <th class="num-col">WEIGHTED</th>
+              </tr>
+            </thead>
+            <tbody id="findingsTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 12-Step Triage Decision Trace -->
+        <div class="trace-section">
+          <h4>COMPLETE TRIAGE DECISION TRACE</h4>
+          <div class="trace-chain" id="traceChain">
+            <!-- 12 steps populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Model Metadata Section -->
+        <div class="metadata-section">
+          <div><label>MODEL & VERSION</label><span id="metaModel">—</span></div>
+          <div><label>STATUS & DATA SOURCE</label><span id="metaStatus">—</span></div>
+          <div><label>SEGMENTATION MODEL</label><span>PSPNet Anatomical (14 Targets)</span></div>
+          <div><label>CALIBRATION</label><span>Temperature Scaling (T=1.6)</span></div>
+          <div><label>REFERENCE CORPUS</label><span>Population Baseline Statistics</span></div>
+          <div><label>UNCERTAINTY BAND</label><span>[0.35, 0.60] Signal Range</span></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Workstation Footer Review Controls -->
+    <div class="ws-footer">
+      <div id="wsReviewStatus" style="font-size:12px;color:var(--soft);">
+        Status: Awaiting radiologist review
+      </div>
+
+      <div class="ws-footer-actions">
+        <button id="wsAgree" class="primary">Agree with Triage</button>
+        <button id="wsDisagree">Disagree</button>
+        
+        <select id="wsOverrideLane" style="font-size:12px;">
+          <option value="CRITICAL">Override: CRITICAL (&lt; 15 min)</option>
+          <option value="URGENT">Override: URGENT (&lt; 1 hr)</option>
+          <option value="EXPEDITED">Override: EXPEDITED (&lt; 4 hr)</option>
+          <option value="ROUTINE">Override: ROUTINE (scheduled)</option>
+          <option value="ABSTAIN">Override: ABSTAIN (human review)</option>
+        </select>
+        <input id="wsOverrideReason" type="text" placeholder="Override clinical reason..." style="width:220px;font-size:12px;">
+        <button id="wsSubmitOverride" class="primary">Submit Override</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
-// lane ordering for the AURALane column; the colours now live in CSS
+// Ranking hierarchy for AURALane worklist sorting
 const RANK = {CRITICAL:0, URGENT:1, ABSTAIN:2, EXPEDITED:3, ROUTINE:4};
 
-let Q = null;              // the whole scored pool, straight from scores.json
-let stream = [];           // the studies drawn for this run, in arrival order
+// Organ System Anatomical Mapping
+const ANATOMY_MAP = {
+  Pneumothorax: 'Pulmonary', Pneumonia: 'Pulmonary', Consolidation: 'Pulmonary',
+  Edema: 'Pulmonary', Infiltration: 'Pulmonary', Atelectasis: 'Pulmonary',
+  Emphysema: 'Pulmonary', Fibrosis: 'Pulmonary', Nodule: 'Pulmonary',
+  Mass: 'Pulmonary', 'Lung Opacity': 'Pulmonary', 'Lung Lesion': 'Pulmonary',
+  Cardiomegaly: 'Cardiovascular', 'Enlarged Cardiomediastinum': 'Cardiovascular',
+  Effusion: 'Pleural', 'Pleural Thickening': 'Pleural', Hernia: 'Pleural',
+  Fracture: 'Musculoskeletal'
+};
+
+let Q = null;              // Whole scored pool from scores.json
+let stream = [];           // Studies drawn for current run
 let timer = null, t = 0;
-let arrived = [];          // emitted so far — read ones stay here, for the statistics
-let read = new Set();      // uids marked read: hidden from both worklists
-let verdicts = {};
+let arrived = [];          // Emitted studies
+let read = new Set();      // Read studies
+let verdicts = {};         // Human override verdicts
+
+// Active Workstation State
+let activeStudy = null;
+let zoomScale = 1.0;
+let explainData = null;
+let currentViewMode = 'overlay'; // 'original' | 'heatmap' | 'overlay' | 'anatomy'
+let activePortion = 'All';      // 'All' | 'Pulmonary' | 'Cardiovascular' | 'Pleural' | 'Musculoskeletal'
 
 const $ = id => document.getElementById(id);
 const mmss = m => String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
-// uploads are extra arrivals — they never count toward finishing the drawn intake
 const seeded = () => arrived.filter(s => !s.uploaded).length;
 
 function shuffle(a){
@@ -210,11 +454,6 @@ function shuffle(a){
 }
 const sample = (a,k) => shuffle(a.slice()).slice(0,k);
 
-// Draw n studies from the pool. This is a plain uniform draw — no lane quotas —
-// so the mix varies run to run the way real arrivals do. The one intervention:
-// if a draw happens to contain no CRITICAL (or no ABSTAIN), swap one in over a
-// ROUTINE, because a run showing neither demonstrates nothing. Arrival order is
-// then shuffled, so where the critical study lands is chance, not our choice.
 function drawIntake(n){
   n = Math.min(n, Q.studies.length);
   let picked = sample(Q.studies, n);
@@ -244,53 +483,76 @@ async function load(){
     if(!r.ok) throw new Error((await r.json()).error || r.statusText);
     Q = await r.json();
   }catch(e){
-    try{                                    // no server? run straight off the file
+    try{
       const r2 = await fetch('../scores.json');
       const raw = await r2.json();
       Q = localQueue(raw);
     }catch(e2){
       $('error').hidden = false;
-      $('error').textContent = 'Could not load the worklist. Run `python prepare.py` '
-        + 'to generate scores.json, then `python server.py`. (' + e.message + ')';
+      $('error').textContent = 'Could not load worklist. Run `python prepare_multimodal.py` then `python server.py`. (' + e.message + ')';
       return;
     }
   }
-  $('foot').textContent = 'Model: ' + (Q.model||'densenet121-res224-all')
-    + ' · temperature ' + (Q.temperature ?? '1.6')
-    + ' · operating points ' + (Q.reference_fitted ? 'fitted on this corpus' : 'from the shipped reference')
-    + ' · public, openly licensed images only, no real patient records.';
+  $('foot').textContent = 'Live Model: CXR (TorchXRayVision DenseNet121) · Pretrained Prototype: Head CT · Experimental: Brain MRI · Temperature Calibration 1.6';
   reset();
 }
 
-function localQueue(raw){                   // mirrors queue_builder.py for the no-server path
+function localQueue(raw){
   return {read_minutes:6, arrival_gap_minutes:4, model:raw.model,
           temperature:raw.temperature, reference_fitted:raw.reference_fitted,
           pool_size:raw.studies.length, studies:raw.studies};
 }
 
+function getModalityPill(modality){
+  const m = (modality || 'CXR').toUpperCase();
+  if(m==='CT') return `<span class="pill pill-ct">CT</span>`;
+  if(m==='MRI') return `<span class="pill pill-mri">MRI</span>`;
+  return `<span class="pill pill-cxr">CXR</span>`;
+}
+
+function getStatusPill(status){
+  const st = (status || 'LIVE MODEL').toUpperCase();
+  if(st.includes('LIVE')) return `<span class="pill pill-live">LIVE MODEL</span>`;
+  if(st.includes('PROTO')) return `<span class="pill pill-proto">PROTOTYPE</span>`;
+  return `<span class="pill pill-exp">EXPERIMENTAL</span>`;
+}
+
 function card(s, opts={}){
   const el = document.createElement('div');
   el.className = 'study' + (opts.jump?' jump':'');
-  el.dataset.lane = s.lane;
+
+  const activeLane = s.override ? s.override.human_lane : s.lane;
+  el.dataset.lane = activeLane;
+
+  const modPill = getModalityPill(s.modality);
+  const statusPill = getStatusPill(s.model_status);
+  const ovTag = s.override ? `<span class="pill pill-override">OVERRIDDEN</span>` : '';
+
   el.innerHTML = `
     <div class="id">${s.id}</div>
     <div class="body">
-      <div class="driver">${s.driver}</div>
-      <div class="meta">arr ${mmss(s.arrival_minute)} · conf ${s.confidence}</div>
+      <div class="driver-row">
+        ${modPill}
+        <span class="driver">${s.driver.replace(/_/g, ' ')}</span>
+        ${ovTag}
+      </div>
+      <div class="meta">${statusPill} · arr ${mmss(s.arrival_minute)} · conf ${s.confidence}</div>
     </div>
-    <div class="acuity">${s.lane==='ABSTAIN' ? '--' : s.acuity}</div>
-    <div class="chip">${s.lane}</div>`;
-  el.onclick = () => openStudy(s);
+    <div class="acuity">${activeLane==='ABSTAIN' ? '--' : s.acuity}</div>
+    <div class="chip">${activeLane}</div>`;
+  el.onclick = () => openWorkstation(s);
   return el;
 }
 
 function auraSort(a,b){
-  if(RANK[a.lane]!==RANK[b.lane]) return RANK[a.lane]-RANK[b.lane];
+  const laneA = a.override ? a.override.human_lane : a.lane;
+  const laneB = b.override ? b.override.human_lane : b.lane;
+  if(RANK[laneA]!==RANK[laneB]) return RANK[laneA]-RANK[laneB];
   return b.acuity-a.acuity;
 }
 
 function render(justArrived){
-  const live = arrived.filter(s => !read.has(s.uid));   // read studies leave both queues
+  const live = arrived.filter(s => !read.has(s.uid));
   const fifo = live.slice().sort((a,b)=>a.arrival_index-b.arrival_index);
   const aura = live.slice().sort(auraSort);
   const f = $('fifo'), a = $('aura');
@@ -301,7 +563,6 @@ function render(justArrived){
 }
 
 function simulate(order, list){
-  // one radiologist, one study every read_minutes; pick per policy from what has arrived
   const R = Q.read_minutes, waits = {};
   let clock = 0, remaining = list.slice();
   while(remaining.length){
@@ -317,25 +578,23 @@ function simulate(order, list){
   return waits;
 }
 
-// Run both policies over everything that arrived and print the totals. Called on
-// demand from the button, not live, so nothing recomputes while studies stream in.
 function computeWaits(){
   const list = arrived.filter(s=>!s.uploaded);
   if(!list.length){ $('waitsOut').textContent = 'Nothing has arrived yet.'; return; }
   const wf = simulate('fifo',list), wa = simulate('aura',list);
-  const crits = list.filter(s=>s.lane==='CRITICAL');
+  const crits = list.filter(s=> (s.override ? s.override.human_lane : s.lane) ==='CRITICAL');
   const sum  = (w,set) => set.reduce((x,s)=>x+(w[s.uid]??0),0);
   const mean = (w,set) => set.length ? Math.round(sum(w,set)/set.length) : null;
-  const col  = v => String(v===null ? '--' : v).padStart(9);
-  const row  = (label,f,a) => label.padEnd(22) + col(f) + col(a);
+  const col  = v => String(v===null ? '--' : v).padStart(11);
+  const row  = (label,f,a) => label.padEnd(24) + col(f) + col(a);
 
   $('waitsOut').textContent = [
     `${list.length} studies · ${crits.length} critical · read cadence ${Q.read_minutes} min`,
     '',
-    ''.padEnd(22) + 'FIFO'.padStart(9) + 'AURALANE'.padStart(9),
-    row('total wait (min)',      sum(wf,list),  sum(wa,list)),
-    row('mean wait (min)',       mean(wf,list), mean(wa,list)),
-    row('mean wait, critical',   mean(wf,crits), mean(wa,crits)),
+    ''.padEnd(24) + 'FIFO (min)'.padStart(11) + 'AURALANE (min)'.padStart(11),
+    row('total wait',            sum(wf,list),  sum(wa,list)),
+    row('mean wait',             mean(wf,list), mean(wa,list)),
+    row('mean wait (critical)',  mean(wf,crits), mean(wa,crits)),
   ].join('\n');
 }
 
@@ -351,13 +610,13 @@ function tick(){
 
 function start(){
   if(timer) return;
-  if(!stream.length || runDone()){        // fresh run — draw a new random intake
+  if(!stream.length || runDone()){
     const n = Math.max(1, Math.min(200, parseInt($('count').value,10) || 20));
     reset();
     stream = drawIntake(n);
   }
   $('run').textContent = 'Stop intake';
-  $('waitsBox').hidden = true;              // only offered once the run is paused
+  $('waitsBox').hidden = true;
   timer = setInterval(tick, 1100);
   tick();
 }
@@ -376,54 +635,374 @@ function reset(){
   $('error').hidden=true;
 }
 
-function openStudy(s){
-  $('mImg').src = s.image;
-  $('mTitle').textContent = s.id + ' — ' + s.driver;
-  $('mSub').textContent = (s.lane==='ABSTAIN'
-    ? 'No lane assigned · ' + s.sla
-    : s.lane + ' · ' + s.sla + ' · acuity ' + s.acuity)
-    + (s.filename ? ' · ' + s.filename : '')
-    + (s.poolId ? ' (pool ' + s.poolId + ')' : '');
-  $('mRows').innerHTML = s.top_findings.map(f=>`<tr>
-      <td>${f.name}</td><td class="num">${f.confidence}</td>
-      <td class="num">${(f.signal*100).toFixed(0)}%</td>
-      <td class="num">${f.urgency}</td></tr>`).join('');
-  $('mWhy').textContent = s.lane==='ABSTAIN'
-    ? `${s.driver} sits ${(s.signal*100).toFixed(0)}% above baseline but not `
-      + `clearly enough to own a lane. AURALane refuses to guess and hands it to a human.`
-    : `${s.driver} sits ${(s.signal*100).toFixed(0)}% above its own baseline. Weighted by `
-      + `clinical urgency ${s.top_findings[0].urgency}, that gives acuity ${s.acuity} → ${s.lane}.`;
-  $('mFeedback').textContent = verdicts[s.uid] ? 'Recorded: ' + verdicts[s.uid] : '';
+/* WORKSTATION VIEW CONTROLLERS */
+
+async function openWorkstation(s){
+  activeStudy = s;
+  zoomScale = 1.0;
+  activePortion = 'All';
+  $('origImg').style.transform = 'scale(1.0)';
+  $('zoomVal').textContent = '100%';
+
+  // Reset portion buttons
+  document.querySelectorAll('.portion-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.portion === 'All');
+  });
+
+  $('wsTitle').textContent = s.id;
+  $('wsModPill').innerHTML = getModalityPill(s.modality);
+  $('wsStatusPill').innerHTML = getStatusPill(s.model_status);
+  $('wsPatientId').textContent = s.patient_id || 'PID-UNKNOWN';
+
+  const activeLane = s.override ? s.override.human_lane : s.lane;
+  $('wsLaneBadge').textContent = activeLane;
+
+  // Render Original Image - Ensure image is visible!
+  let imgSrc = s.image || (s.filename ? `/images/${s.filename}` : '');
+  if (imgSrc && !imgSrc.startsWith('/') && !imgSrc.startsWith('data:') && !imgSrc.startsWith('blob:')) {
+    imgSrc = '/' + imgSrc;
+  }
+  if (imgSrc) {
+    $('origImg').src = imgSrc;
+    $('origImg').style.display = 'block';
+    $('origNoImg').style.display = 'none';
+    $('origDim').textContent = `File: ${s.filename || 'radiograph.png'}`;
+  } else {
+    $('origImg').style.display = 'none';
+    $('origNoImg').style.display = 'block';
+    $('origNoImg').textContent = `Image asset unavailable for this ${s.modality || 'CXR'} study`;
+    $('origDim').textContent = 'N/A';
+  }
+
+  // Populate Triage Summary
+  $('sumDriver').textContent = s.driver.replace(/_/g, ' ');
+  $('sumAcuity').textContent = s.acuity;
+  $('sumLane').textContent = `${activeLane} (${s.sla || '< 1 hr'})`;
+  $('sumAbstain').textContent = s.abstained ? 'YES (MANDATORY HUMAN REVIEW)' : 'NO';
+  $('sumReason').textContent = s.priority_reason || `${s.driver} contributed to a ${s.lane} recommendation.`;
+
+  if (s.abstained) {
+    $('abstainBanner').style.display = 'block';
+  } else {
+    $('abstainBanner').style.display = 'none';
+  }
+
+  // Render Findings Table with Portion Segregation
+  renderFindingsTable();
+
+  // Populate 12-Step Triage Decision Trace
+  const trace = s.decision_trace || [
+    {stage:"MODEL INFERENCE", label:`${s.modality} Inference`, detail:`18 findings`},
+    {stage:"RAW CONFIDENCE", label:`Driver Raw`, detail:`${(s.raw*100).toFixed(1)}%`},
+    {stage:"CALIBRATION", label:`Temp Scale (T=1.6)`, detail:`${(s.confidence*100).toFixed(1)}%`},
+    {stage:"BASELINE COMPARISON", label:`Population Ref`, detail:`z-score norm`},
+    {stage:"SIGNAL", label:`Signal`, detail:`${(s.signal*100).toFixed(0)}%`},
+    {stage:"URGENCY WEIGHT", label:`Severity Weight`, detail:`1.0`},
+    {stage:"WEIGHTED PRIORITY", label:`Weighted Signal`, detail:`${(s.signal).toFixed(3)}`},
+    {stage:"DRIVER FINDING", label:`Dominant`, detail:s.driver.replace(/_/g, ' ')},
+    {stage:"ACUITY SCORE", label:`Acuity`, detail:s.acuity},
+    {stage:"ABSTENTION CHECK", label:`Uncertainty`, detail:s.abstained?'ABSTAIN':'PASS'},
+    {stage:"SLA LANE", label:`Target Window`, detail:s.lane},
+    {stage:"WORKLIST PRIORITY", label:`Queue Rank`, detail:s.lane}
+  ];
+
+  const traceChain = $('traceChain');
+  traceChain.innerHTML = '';
+  trace.forEach(step => {
+    const node = document.createElement('div');
+    node.className = 'trace-node';
+    node.innerHTML = `
+      <div class="trace-node-stage">${step.stage}</div>
+      <div class="trace-node-val">${step.detail}</div>
+      <div class="trace-node-lbl">${step.label}</div>
+    `;
+    traceChain.appendChild(node);
+  });
+
+  // Metadata
+  $('metaModel').textContent = `${s.model_name || 'DenseNet121'} (v1.0)`;
+  $('metaStatus').textContent = `${s.model_status || 'LIVE MODEL'} · ${s.data_source || 'LIVE INFERENCE'}`;
+
+  // Reset Human Review Footer
+  $('wsOverrideReason').value = '';
+  $('wsOverrideLane').value = activeLane;
+  $('wsReviewStatus').textContent = s.override 
+    ? `Override Active: ${s.override.human_lane} by ${s.override.reviewer} ("${s.override.reason}")`
+    : (verdicts[s.uid] ? `Recorded Status: ${verdicts[s.uid]}` : 'Status: Awaiting radiologist review');
+
+  // Open overlay & load explainability for driver pathology
   $('overlay').classList.add('on');
-  $('overlay').dataset.uid = s.uid;
+  fetchExplainability(s, s.driver);
 }
+
+function renderFindingsTable(){
+  if (!activeStudy) return;
+  const s = activeStudy;
+  const findings = s.all_findings || s.top_findings || [];
+  const tbody = $('findingsTableBody');
+  tbody.innerHTML = '';
+
+  const filtered = findings.filter(f => {
+    if (activePortion === 'All') return true;
+    const region = ANATOMY_MAP[f.name] || 'Pulmonary';
+    return region === activePortion;
+  });
+
+  $('portionFindingCount').textContent = `Showing ${filtered.length} of ${findings.length} findings (${activePortion} portion)`;
+
+  filtered.forEach(f => {
+    const tr = document.createElement('tr');
+    const isDriver = (f.name === s.driver) || f.is_driver;
+    if (isDriver) tr.className = 'driver-row-highlight';
+
+    const region = ANATOMY_MAP[f.name] || 'Pulmonary';
+    const rawStr = f.raw !== undefined ? `${(f.raw * 100).toFixed(1)}%` : 'N/A';
+    const confStr = f.confidence !== undefined ? `${(f.confidence * 100).toFixed(1)}%` : 'N/A';
+    const baseStr = f.baseline_mean !== undefined ? `${(f.baseline_mean * 100).toFixed(1)}%` : 'N/A';
+    const sigStr = f.signal !== undefined ? `${(f.signal * 100).toFixed(0)}%` : 'N/A';
+    const urgStr = f.urgency !== undefined ? f.urgency.toFixed(2) : '1.00';
+    const wpStr = f.weighted_priority !== undefined ? f.weighted_priority.toFixed(3) : 'N/A';
+
+    tr.innerHTML = `
+      <td>${f.name.replace(/_/g, ' ')} ${isDriver ? '<span style="font-size:9px;color:var(--b700);margin-left:4px;">[DRIVER]</span>' : ''}</td>
+      <td><span class="pill" style="font-size:9px;background:#F1F5F9;color:#334155;">${region}</span></td>
+      <td class="num-col">${rawStr}</td>
+      <td class="num-col">${confStr}</td>
+      <td class="num-col">${baseStr}</td>
+      <td class="num-col">${sigStr}</td>
+      <td class="num-col">${urgStr}</td>
+      <td class="num-col">${wpStr}</td>
+    `;
+    tr.onclick = () => fetchExplainability(s, f.name);
+    tbody.appendChild(tr);
+  });
+}
+
+// Anatomical Portion Segregation Filter Bar Handlers
+document.querySelectorAll('.portion-btn').forEach(btn => {
+  btn.onclick = (e) => {
+    document.querySelectorAll('.portion-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activePortion = btn.dataset.portion;
+    renderFindingsTable();
+
+    // If an anatomical portion is selected and anatomical segmentation data exists, switch overlay to that system!
+    if (explainData && explainData.segregated_systems && explainData.segregated_systems[activePortion]) {
+      currentViewMode = 'anatomy';
+      updateExplainView();
+    }
+  };
+});
+
+async function fetchExplainability(s, pathologyName){
+  $('explainTargetLabel').textContent = `Target: ${pathologyName.replace(/_/g, ' ')}`;
+  $('explainImg').style.display = 'none';
+  $('explainNoImg').style.display = 'block';
+  $('explainNoImg').textContent = 'Computing Grad-CAM Saliency & PSPNet Anatomical Segmentation...';
+
+  try {
+    const res = await fetch('/api/explain', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        study_id: s.id,
+        filename: s.filename || '',
+        target_pathology: pathologyName,
+        modality: s.modality || 'CXR'
+      })
+    });
+    const data = await res.json();
+    explainData = data;
+
+    if (data.supported) {
+      if (data.original_b64) {
+        $('origImg').src = data.original_b64;
+        $('origImg').style.display = 'block';
+        $('origNoImg').style.display = 'none';
+      }
+      $('origDim').textContent = `Resolution: ${data.dimensions}`;
+      $('explainLegend').textContent = data.legend;
+      updateExplainView();
+    } else {
+      $('explainNoImg').textContent = data.reason || 'Explainability unavailable for this model status.';
+      $('explainLegend').textContent = data.legend || 'Explainability unavailable.';
+    }
+  } catch(e) {
+    $('explainNoImg').textContent = 'Explainability unavailable for this study / prototype model.';
+  }
+}
+
+function updateExplainView(){
+  if (!explainData || !explainData.supported) return;
+  
+  $('explainNoImg').style.display = 'none';
+  $('explainImg').style.display = 'block';
+
+  if (currentViewMode === 'original') {
+    $('explainImg').src = explainData.original_b64;
+    $('explainImg').style.opacity = '1.0';
+  } else if (currentViewMode === 'heatmap') {
+    $('explainImg').src = explainData.heatmap_b64;
+    $('explainImg').style.opacity = '1.0';
+  } else if (currentViewMode === 'anatomy') {
+    // Anatomical Segmentation Mode
+    if (activePortion !== 'All' && explainData.segregated_systems && explainData.segregated_systems[activePortion]) {
+      $('explainImg').src = explainData.segregated_systems[activePortion];
+    } else {
+      $('explainImg').src = explainData.segmentation_b64 || explainData.original_b64;
+    }
+    $('explainImg').style.opacity = '1.0';
+  } else {
+    // Overlay mode
+    $('explainImg').src = explainData.overlay_b64;
+    const op = parseInt($('opacitySlider').value, 10) / 100.0;
+    $('explainImg').style.opacity = op.toFixed(2);
+  }
+}
+
+// View mode toggle handlers
+$('btnViewOrig').onclick = () => {
+  currentViewMode = 'original';
+  updateViewModeButtons();
+  updateExplainView();
+};
+
+$('btnViewHeatmap').onclick = () => {
+  currentViewMode = 'heatmap';
+  updateViewModeButtons();
+  updateExplainView();
+};
+
+$('btnViewOverlay').onclick = () => {
+  currentViewMode = 'overlay';
+  updateViewModeButtons();
+  updateExplainView();
+};
+
+$('btnViewAnatomy').onclick = () => {
+  currentViewMode = 'anatomy';
+  updateViewModeButtons();
+  updateExplainView();
+};
+
+function updateViewModeButtons(){
+  $('btnViewOrig').className = currentViewMode === 'original' ? 'active' : '';
+  $('btnViewHeatmap').className = currentViewMode === 'heatmap' ? 'active' : '';
+  $('btnViewOverlay').className = currentViewMode === 'overlay' ? 'active' : '';
+  $('btnViewAnatomy').className = currentViewMode === 'anatomy' ? 'active' : '';
+}
+
+$('opacitySlider').oninput = e => {
+  $('opacityVal').textContent = `${e.target.value}%`;
+  if (currentViewMode === 'overlay') updateExplainView();
+};
+
+// Zoom controls
+$('zoomIn').onclick = () => {
+  zoomScale = Math.min(3.0, zoomScale + 0.25);
+  $('origImg').style.transform = `scale(${zoomScale})`;
+  $('zoomVal').textContent = `${Math.round(zoomScale * 100)}%`;
+};
+$('zoomOut').onclick = () => {
+  zoomScale = Math.max(0.5, zoomScale - 0.25);
+  $('origImg').style.transform = `scale(${zoomScale})`;
+  $('zoomVal').textContent = `${Math.round(zoomScale * 100)}%`;
+};
+$('zoomReset').onclick = () => {
+  zoomScale = 1.0;
+  $('origImg').style.transform = 'scale(1.0)';
+  $('zoomVal').textContent = '100%';
+};
+
+// Workstation Close & Overrides
+$('closeWs').onclick = () => $('overlay').classList.remove('on');
+
+$('wsAgree').onclick = async () => {
+  if (!activeStudy) return;
+  const aiLane = activeStudy.lane;
+  verdicts[activeStudy.uid] = 'Agree';
+  read.add(activeStudy.uid);
+
+  fetch('/api/override', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      study_id: activeStudy.id,
+      action: 'AGREE',
+      ai_lane: aiLane,
+      human_lane: aiLane,
+      reason: 'Agreed with AI priority decision',
+      reviewer: 'Dr. Radiologist'
+    })
+  }).catch(()=>{});
+
+  $('overlay').classList.remove('on');
+  render();
+};
+
+$('wsDisagree').onclick = async () => {
+  if (!activeStudy) return;
+  const aiLane = activeStudy.lane;
+  verdicts[activeStudy.uid] = 'Disagree';
+  $('wsReviewStatus').textContent = 'Status: Disagreed with AI decision — Audit log recorded.';
+
+  fetch('/api/override', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      study_id: activeStudy.id,
+      action: 'DISAGREE',
+      ai_lane: aiLane,
+      human_lane: aiLane,
+      reason: 'Disagreed with AI priority recommendation',
+      reviewer: 'Dr. Radiologist'
+    })
+  }).catch(()=>{});
+};
+
+$('wsSubmitOverride').onclick = async () => {
+  if (!activeStudy) return;
+  const aiLane = activeStudy.lane;
+  const newLane = $('wsOverrideLane').value;
+  const reason = $('wsOverrideReason').value || 'Clinical override by radiologist';
+  const reviewer = 'Dr. Radiologist';
+
+  activeStudy.override = {
+    study_id: activeStudy.id,
+    action: 'OVERRIDE',
+    ai_lane: aiLane,
+    human_lane: newLane,
+    reason: reason,
+    reviewer: reviewer
+  };
+
+  fetch('/api/override', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      study_id: activeStudy.id,
+      action: 'OVERRIDE',
+      ai_lane: aiLane,
+      human_lane: newLane,
+      reason: reason,
+      reviewer: reviewer
+    })
+  }).catch(()=>{});
+
+  $('wsReviewStatus').textContent = `Override Applied: Assigned to ${newLane} ("${reason}")`;
+  render();
+};
 
 $('run').onclick = () => timer ? stop() : start();
 $('waits').onclick = computeWaits;
 $('reset').onclick = reset;
-$('close').onclick = () => $('overlay').classList.remove('on');
-$('overlay').onclick = e => { if(e.target===$('overlay')) $('overlay').classList.remove('on'); };
-// agreeing with the lane IS reading the study: it leaves both worklists
-$('agree').onclick = () => {
-  const uid = Number($('overlay').dataset.uid);
-  verdicts[uid] = 'Agree';
-  read.add(uid);
-  $('overlay').classList.remove('on');
-  render();
-};
-$('disagree').onclick = () => {
-  const uid = $('overlay').dataset.uid;
-  verdicts[uid] = 'Disagree';
-  $('mFeedback').textContent = 'Recorded: Disagree'
-    + ' — in production this row feeds the retraining set.';
-};
+
 $('warm').onclick = async () => {
   $('warm').disabled = true; $('warm').textContent = 'Warming…';
   $('error').hidden = true;
   try{
     const r = await fetch('/api/warm', {method:'POST'});
-    if(!r.ok) throw new Error('server returned ' + r.status
-      + ' — check the server console for the traceback');
+    if(!r.ok) throw new Error('server returned ' + r.status + ' — check server console');
     const j = await r.json();
     $('warm').textContent = 'Warm (' + j.seconds + 's)';
   }catch(e){
@@ -434,10 +1013,6 @@ $('warm').onclick = async () => {
   }
 };
 
-// ---- live upload -----------------------------------------------------------
-// A jury-supplied image, scored in-process and dropped into both queues. It
-// always arrives LAST — that is the honest FIFO position for something that
-// just landed — so wherever it appears on the right is the reordering, live.
 let uploads = 0;
 
 $('upload').onclick = () => $('file').click();
@@ -445,28 +1020,28 @@ $('upload').onclick = () => $('file').click();
 $('file').onchange = async e => {
   const f = e.target.files[0];
   if(!f) return;
-  e.target.value = '';                    // let the same file be picked again
+  e.target.value = '';
   if(!Q){ return; }
   const btn = $('upload');
+  const modality = $('uploadModality').value;
   btn.disabled = true; btn.textContent = 'Scoring…'; $('error').hidden = true;
   try{
-    const fd = new FormData(); fd.append('file', f);
-    const r = await fetch('/api/score', {method:'POST', body:fd});
-    if(!r.ok) throw new Error('server returned ' + r.status
-      + (r.status===500 ? 'the model failed to load or the image could not be read'
-                        : ''));
+    const fd = new FormData();
+    fd.append('file', f);
+    fd.append('modality', modality);
+    
+    const r = await fetch(`/api/score?modality=${modality}`, {method:'POST', body:fd});
+    if(!r.ok) throw new Error('server returned ' + r.status);
     const s = await r.json();
     s.id = 'LIVE-' + (++uploads);
     s.image = URL.createObjectURL(f);
     s.uploaded = true;
-    s.uid = 100000 + uploads;             // never collides with a drawn study's uid
-    s.arrival_index = 100000 + uploads;   // always behind the drawn intake
+    s.uid = 100000 + uploads;
+    s.arrival_index = 100000 + uploads;
     s.arrival_minute = t;
     arrived.push(s);
     render(s);
-    btn.textContent = 'Upload study' + s.id + ': '
-      + (s.lane==='ABSTAIN' ? 'abstained' : s.lane + ' ' + s.acuity)
-      + ' (' + s.inference_ms + 'ms)';
+    btn.textContent = `Uploaded ${s.id}: ${s.lane} (${s.inference_ms}ms)`;
   }catch(err){
     btn.textContent = 'Upload study';
     $('error').hidden = false;

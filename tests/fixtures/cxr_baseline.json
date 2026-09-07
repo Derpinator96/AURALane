@@ -1,0 +1,1702 @@
+[
+ {
+  "acuity": 77.2,
+  "lane": "URGENT",
+  "sla": "< 1 hr",
+  "sla_minutes": 60,
+  "abstained": false,
+  "driver": "Edema",
+  "confidence": 0.502,
+  "signal": 0.908,
+  "raw": 0.503,
+  "top_findings": [
+   {
+    "name": "Edema",
+    "confidence": 0.502,
+    "signal": 0.908,
+    "urgency": 0.85
+   },
+   {
+    "name": "Pneumonia",
+    "confidence": 0.658,
+    "signal": 1.0,
+    "urgency": 0.75
+   },
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.524,
+    "signal": 0.363,
+    "urgency": 1.0
+   }
+  ],
+  "id": "ST-001",
+  "filename": "00000013_005.png",
+  "image": "images/00000013_005.png"
+ },
+ {
+  "acuity": 46.9,
+  "lane": "ABSTAIN",
+  "sla": "a human picks the lane",
+  "sla_minutes": null,
+  "abstained": true,
+  "driver": "Edema",
+  "confidence": 0.426,
+  "signal": 0.551,
+  "raw": 0.383,
+  "top_findings": [
+   {
+    "name": "Edema",
+    "confidence": 0.426,
+    "signal": 0.551,
+    "urgency": 0.85
+   },
+   {
+    "name": "Effusion",
+    "confidence": 0.663,
+    "signal": 0.613,
+    "urgency": 0.66
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.552,
+    "signal": 0.434,
+    "urgency": 0.78
+   }
+  ],
+  "id": "ST-002",
+  "filename": "00000032_001.png",
+  "image": "images/00000032_001.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Atelectasis",
+  "confidence": 0.32,
+  "signal": 0.0,
+  "raw": 0.23,
+  "top_findings": [
+   {
+    "name": "Atelectasis",
+    "confidence": 0.32,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.222,
+    "signal": 0.0,
+    "urgency": 0.78
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.209,
+    "signal": 0.0,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-003",
+  "filename": "00000083_000.png",
+  "image": "images/00000083_000.png"
+ },
+ {
+  "acuity": 48.0,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Pneumonia",
+  "confidence": 0.502,
+  "signal": 0.639,
+  "raw": 0.503,
+  "top_findings": [
+   {
+    "name": "Pneumonia",
+    "confidence": 0.502,
+    "signal": 0.639,
+    "urgency": 0.75
+   },
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.503,
+    "signal": 0.279,
+    "urgency": 1.0
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.513,
+    "signal": 0.286,
+    "urgency": 0.78
+   }
+  ],
+  "id": "ST-004",
+  "filename": "00000116_019.png",
+  "image": "images/00000116_019.png"
+ },
+ {
+  "acuity": 36.8,
+  "lane": "ABSTAIN",
+  "sla": "a human picks the lane",
+  "sla_minutes": null,
+  "abstained": true,
+  "driver": "Effusion",
+  "confidence": 0.642,
+  "signal": 0.558,
+  "raw": 0.718,
+  "top_findings": [
+   {
+    "name": "Effusion",
+    "confidence": 0.642,
+    "signal": 0.558,
+    "urgency": 0.66
+   },
+   {
+    "name": "Lung Lesion",
+    "confidence": 0.395,
+    "signal": 1.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.504,
+    "signal": 0.285,
+    "urgency": 1.0
+   }
+  ],
+  "id": "ST-005",
+  "filename": "00000132_002.png",
+  "image": "images/00000132_002.png"
+ },
+ {
+  "acuity": 44.7,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Effusion",
+  "confidence": 0.69,
+  "signal": 0.677,
+  "raw": 0.782,
+  "top_findings": [
+   {
+    "name": "Effusion",
+    "confidence": 0.69,
+    "signal": 0.677,
+    "urgency": 0.66
+   },
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.502,
+    "signal": 0.277,
+    "urgency": 1.0
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.501,
+    "signal": 0.237,
+    "urgency": 0.78
+   }
+  ],
+  "id": "ST-006",
+  "filename": "00000231_005.png",
+  "image": "images/00000231_005.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Atelectasis",
+  "confidence": 0.138,
+  "signal": 0.0,
+  "raw": 0.051,
+  "top_findings": [
+   {
+    "name": "Atelectasis",
+    "confidence": 0.138,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.139,
+    "signal": 0.0,
+    "urgency": 0.78
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.502,
+    "signal": 0.0,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-007",
+  "filename": "00000239_003.png",
+  "image": "images/00000239_003.png"
+ },
+ {
+  "acuity": 45.5,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Mass",
+  "confidence": 0.714,
+  "signal": 0.785,
+  "raw": 0.812,
+  "top_findings": [
+   {
+    "name": "Mass",
+    "confidence": 0.714,
+    "signal": 0.785,
+    "urgency": 0.58
+   },
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.512,
+    "signal": 0.315,
+    "urgency": 1.0
+   },
+   {
+    "name": "Effusion",
+    "confidence": 0.598,
+    "signal": 0.438,
+    "urgency": 0.66
+   }
+  ],
+  "id": "ST-008",
+  "filename": "00000246_016.png",
+  "image": "images/00000246_016.png"
+ },
+ {
+  "acuity": 26.9,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Pneumothorax",
+  "confidence": 0.5,
+  "signal": 0.269,
+  "raw": 0.5,
+  "top_findings": [
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.5,
+    "signal": 0.269,
+    "urgency": 1.0
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.507,
+    "signal": 0.262,
+    "urgency": 0.78
+   },
+   {
+    "name": "Hernia",
+    "confidence": 0.502,
+    "signal": 1.0,
+    "urgency": 0.12
+   }
+  ],
+  "id": "ST-009",
+  "filename": "00000251_000.png",
+  "image": "images/00000251_000.png"
+ },
+ {
+  "acuity": 0.7,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Infiltration",
+  "confidence": 0.52,
+  "signal": 0.016,
+  "raw": 0.531,
+  "top_findings": [
+   {
+    "name": "Infiltration",
+    "confidence": 0.52,
+    "signal": 0.016,
+    "urgency": 0.46
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.128,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.208,
+    "signal": 0.0,
+    "urgency": 0.78
+   }
+  ],
+  "id": "ST-010",
+  "filename": "00000272_003.png",
+  "image": "images/00000272_003.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Atelectasis",
+  "confidence": 0.084,
+  "signal": 0.0,
+  "raw": 0.022,
+  "top_findings": [
+   {
+    "name": "Atelectasis",
+    "confidence": 0.084,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.154,
+    "signal": 0.0,
+    "urgency": 0.78
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.141,
+    "signal": 0.0,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-011",
+  "filename": "00000318_004.png",
+  "image": "images/00000318_004.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Atelectasis",
+  "confidence": 0.17,
+  "signal": 0.0,
+  "raw": 0.073,
+  "top_findings": [
+   {
+    "name": "Atelectasis",
+    "confidence": 0.17,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.156,
+    "signal": 0.0,
+    "urgency": 0.78
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.229,
+    "signal": 0.0,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-012",
+  "filename": "00000417_001.png",
+  "image": "images/00000417_001.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Atelectasis",
+  "confidence": 0.093,
+  "signal": 0.0,
+  "raw": 0.026,
+  "top_findings": [
+   {
+    "name": "Atelectasis",
+    "confidence": 0.093,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.112,
+    "signal": 0.0,
+    "urgency": 0.78
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.429,
+    "signal": 0.0,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-013",
+  "filename": "00000439_000.png",
+  "image": "images/00000439_000.png"
+ },
+ {
+  "acuity": 51.8,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Pneumonia",
+  "confidence": 0.516,
+  "signal": 0.691,
+  "raw": 0.525,
+  "top_findings": [
+   {
+    "name": "Pneumonia",
+    "confidence": 0.516,
+    "signal": 0.691,
+    "urgency": 0.75
+   },
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.504,
+    "signal": 0.282,
+    "urgency": 1.0
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.507,
+    "signal": 0.262,
+    "urgency": 0.78
+   }
+  ],
+  "id": "ST-014",
+  "filename": "00000444_001.png",
+  "image": "images/00000444_001.png"
+ },
+ {
+  "acuity": 11.8,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Fracture",
+  "confidence": 0.511,
+  "signal": 0.28,
+  "raw": 0.517,
+  "top_findings": [
+   {
+    "name": "Fracture",
+    "confidence": 0.511,
+    "signal": 0.28,
+    "urgency": 0.42
+   },
+   {
+    "name": "Enlarged Cardiomediastinum",
+    "confidence": 0.519,
+    "signal": 0.338,
+    "urgency": 0.26
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.505,
+    "signal": 0.153,
+    "urgency": 0.3
+   }
+  ],
+  "id": "ST-015",
+  "filename": "00000459_004.png",
+  "image": "images/00000459_004.png"
+ },
+ {
+  "acuity": 76.9,
+  "lane": "URGENT",
+  "sla": "< 1 hr",
+  "sla_minutes": 60,
+  "abstained": false,
+  "driver": "Edema",
+  "confidence": 0.501,
+  "signal": 0.905,
+  "raw": 0.502,
+  "top_findings": [
+   {
+    "name": "Edema",
+    "confidence": 0.501,
+    "signal": 0.905,
+    "urgency": 0.85
+   },
+   {
+    "name": "Pneumonia",
+    "confidence": 0.518,
+    "signal": 0.7,
+    "urgency": 0.75
+   },
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.505,
+    "signal": 0.286,
+    "urgency": 1.0
+   }
+  ],
+  "id": "ST-016",
+  "filename": "00000468_007.png",
+  "image": "images/00000468_007.png"
+ },
+ {
+  "acuity": 2.1,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Nodule",
+  "confidence": 0.501,
+  "signal": 0.048,
+  "raw": 0.502,
+  "top_findings": [
+   {
+    "name": "Nodule",
+    "confidence": 0.501,
+    "signal": 0.048,
+    "urgency": 0.44
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.207,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.356,
+    "signal": 0.0,
+    "urgency": 0.78
+   }
+  ],
+  "id": "ST-017",
+  "filename": "00000545_000.png",
+  "image": "images/00000545_000.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Atelectasis",
+  "confidence": 0.189,
+  "signal": 0.0,
+  "raw": 0.089,
+  "top_findings": [
+   {
+    "name": "Atelectasis",
+    "confidence": 0.189,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.145,
+    "signal": 0.0,
+    "urgency": 0.78
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.227,
+    "signal": 0.0,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-018",
+  "filename": "00000612_000.png",
+  "image": "images/00000612_000.png"
+ },
+ {
+  "acuity": 30.0,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Lung Lesion",
+  "confidence": 0.502,
+  "signal": 1.0,
+  "raw": 0.504,
+  "top_findings": [
+   {
+    "name": "Lung Lesion",
+    "confidence": 0.502,
+    "signal": 1.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Mass",
+    "confidence": 0.632,
+    "signal": 0.491,
+    "urgency": 0.58
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.509,
+    "signal": 0.268,
+    "urgency": 0.78
+   }
+  ],
+  "id": "ST-019",
+  "filename": "00000618_007.png",
+  "image": "images/00000618_007.png"
+ },
+ {
+  "acuity": 4.2,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Pleural_Thickening",
+  "confidence": 0.505,
+  "signal": 0.212,
+  "raw": 0.509,
+  "top_findings": [
+   {
+    "name": "Pleural_Thickening",
+    "confidence": 0.505,
+    "signal": 0.212,
+    "urgency": 0.2
+   },
+   {
+    "name": "Emphysema",
+    "confidence": 0.501,
+    "signal": 0.105,
+    "urgency": 0.18
+   },
+   {
+    "name": "Fibrosis",
+    "confidence": 0.506,
+    "signal": 0.003,
+    "urgency": 0.16
+   }
+  ],
+  "id": "ST-020",
+  "filename": "00000623_009.png",
+  "image": "images/00000623_009.png"
+ },
+ {
+  "acuity": 29.9,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Pneumothorax",
+  "confidence": 0.508,
+  "signal": 0.299,
+  "raw": 0.513,
+  "top_findings": [
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.508,
+    "signal": 0.299,
+    "urgency": 1.0
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.515,
+    "signal": 0.291,
+    "urgency": 0.78
+   },
+   {
+    "name": "Effusion",
+    "confidence": 0.563,
+    "signal": 0.338,
+    "urgency": 0.66
+   }
+  ],
+  "id": "ST-021",
+  "filename": "00000627_010.png",
+  "image": "images/00000627_010.png"
+ },
+ {
+  "acuity": 28.7,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Pneumothorax",
+  "confidence": 0.505,
+  "signal": 0.287,
+  "raw": 0.508,
+  "top_findings": [
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.505,
+    "signal": 0.287,
+    "urgency": 1.0
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.502,
+    "signal": 0.24,
+    "urgency": 0.78
+   },
+   {
+    "name": "Fracture",
+    "confidence": 0.519,
+    "signal": 0.318,
+    "urgency": 0.42
+   }
+  ],
+  "id": "ST-022",
+  "filename": "00000643_001.png",
+  "image": "images/00000643_001.png"
+ },
+ {
+  "acuity": 2.1,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Nodule",
+  "confidence": 0.501,
+  "signal": 0.048,
+  "raw": 0.502,
+  "top_findings": [
+   {
+    "name": "Nodule",
+    "confidence": 0.501,
+    "signal": 0.048,
+    "urgency": 0.44
+   },
+   {
+    "name": "Emphysema",
+    "confidence": 0.5,
+    "signal": 0.101,
+    "urgency": 0.18
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.268,
+    "signal": 0.0,
+    "urgency": 0.3
+   }
+  ],
+  "id": "ST-023",
+  "filename": "00000727_004.png",
+  "image": "images/00000727_004.png"
+ },
+ {
+  "acuity": 27.2,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Pneumothorax",
+  "confidence": 0.501,
+  "signal": 0.272,
+  "raw": 0.502,
+  "top_findings": [
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.501,
+    "signal": 0.272,
+    "urgency": 1.0
+   },
+   {
+    "name": "Fracture",
+    "confidence": 0.504,
+    "signal": 0.248,
+    "urgency": 0.42
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.536,
+    "signal": 0.271,
+    "urgency": 0.3
+   }
+  ],
+  "id": "ST-024",
+  "filename": "00000733_003.png",
+  "image": "images/00000733_003.png"
+ },
+ {
+  "acuity": 28.6,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Pneumothorax",
+  "confidence": 0.505,
+  "signal": 0.286,
+  "raw": 0.507,
+  "top_findings": [
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.505,
+    "signal": 0.286,
+    "urgency": 1.0
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.518,
+    "signal": 0.302,
+    "urgency": 0.78
+   },
+   {
+    "name": "Effusion",
+    "confidence": 0.555,
+    "signal": 0.316,
+    "urgency": 0.66
+   }
+  ],
+  "id": "ST-025",
+  "filename": "00000766_002.png",
+  "image": "images/00000766_002.png"
+ },
+ {
+  "acuity": 2.3,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Infiltration",
+  "confidence": 0.526,
+  "signal": 0.049,
+  "raw": 0.542,
+  "top_findings": [
+   {
+    "name": "Infiltration",
+    "confidence": 0.526,
+    "signal": 0.049,
+    "urgency": 0.46
+   },
+   {
+    "name": "Emphysema",
+    "confidence": 0.5,
+    "signal": 0.1,
+    "urgency": 0.18
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.178,
+    "signal": 0.0,
+    "urgency": 0.3
+   }
+  ],
+  "id": "ST-026",
+  "filename": "00000974_002.png",
+  "image": "images/00000974_002.png"
+ },
+ {
+  "acuity": 27.2,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Pneumothorax",
+  "confidence": 0.501,
+  "signal": 0.272,
+  "raw": 0.502,
+  "top_findings": [
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.501,
+    "signal": 0.272,
+    "urgency": 1.0
+   },
+   {
+    "name": "Nodule",
+    "confidence": 0.547,
+    "signal": 0.321,
+    "urgency": 0.44
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.552,
+    "signal": 0.174,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-027",
+  "filename": "00000981_002.png",
+  "image": "images/00000981_002.png"
+ },
+ {
+  "acuity": 15.5,
+  "lane": "ABSTAIN",
+  "sla": "a human picks the lane",
+  "sla_minutes": null,
+  "abstained": true,
+  "driver": "Nodule",
+  "confidence": 0.552,
+  "signal": 0.351,
+  "raw": 0.583,
+  "top_findings": [
+   {
+    "name": "Nodule",
+    "confidence": 0.552,
+    "signal": 0.351,
+    "urgency": 0.44
+   },
+   {
+    "name": "Mass",
+    "confidence": 0.537,
+    "signal": 0.094,
+    "urgency": 0.58
+   },
+   {
+    "name": "Fibrosis",
+    "confidence": 0.524,
+    "signal": 0.086,
+    "urgency": 0.16
+   }
+  ],
+  "id": "ST-028",
+  "filename": "00000997_000.png",
+  "image": "images/00000997_000.png"
+ },
+ {
+  "acuity": 41.3,
+  "lane": "ABSTAIN",
+  "sla": "a human picks the lane",
+  "sla_minutes": null,
+  "abstained": true,
+  "driver": "Pneumonia",
+  "confidence": 0.478,
+  "signal": 0.55,
+  "raw": 0.464,
+  "top_findings": [
+   {
+    "name": "Pneumonia",
+    "confidence": 0.478,
+    "signal": 0.55,
+    "urgency": 0.75
+   },
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.503,
+    "signal": 0.279,
+    "urgency": 1.0
+   },
+   {
+    "name": "Pleural_Thickening",
+    "confidence": 0.526,
+    "signal": 0.293,
+    "urgency": 0.2
+   }
+  ],
+  "id": "ST-029",
+  "filename": "00001006_002.png",
+  "image": "images/00001006_002.png"
+ },
+ {
+  "acuity": 2.1,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Nodule",
+  "confidence": 0.501,
+  "signal": 0.047,
+  "raw": 0.501,
+  "top_findings": [
+   {
+    "name": "Nodule",
+    "confidence": 0.501,
+    "signal": 0.047,
+    "urgency": 0.44
+   },
+   {
+    "name": "Emphysema",
+    "confidence": 0.501,
+    "signal": 0.103,
+    "urgency": 0.18
+   },
+   {
+    "name": "Fibrosis",
+    "confidence": 0.506,
+    "signal": 0.002,
+    "urgency": 0.16
+   }
+  ],
+  "id": "ST-030",
+  "filename": "00001006_026.png",
+  "image": "images/00001006_026.png"
+ },
+ {
+  "acuity": 16.6,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Cardiomegaly",
+  "confidence": 0.533,
+  "signal": 0.69,
+  "raw": 0.553,
+  "top_findings": [
+   {
+    "name": "Cardiomegaly",
+    "confidence": 0.533,
+    "signal": 0.69,
+    "urgency": 0.24
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.507,
+    "signal": 0.159,
+    "urgency": 0.3
+   },
+   {
+    "name": "Emphysema",
+    "confidence": 0.502,
+    "signal": 0.109,
+    "urgency": 0.18
+   }
+  ],
+  "id": "ST-031",
+  "filename": "00001047_002.png",
+  "image": "images/00001047_002.png"
+ },
+ {
+  "acuity": 13.5,
+  "lane": "ABSTAIN",
+  "sla": "a human picks the lane",
+  "sla_minutes": null,
+  "abstained": true,
+  "driver": "Cardiomegaly",
+  "confidence": 0.502,
+  "signal": 0.562,
+  "raw": 0.503,
+  "top_findings": [
+   {
+    "name": "Cardiomegaly",
+    "confidence": 0.502,
+    "signal": 0.562,
+    "urgency": 0.24
+   },
+   {
+    "name": "Emphysema",
+    "confidence": 0.5,
+    "signal": 0.1,
+    "urgency": 0.18
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.309,
+    "signal": 0.0,
+    "urgency": 0.3
+   }
+  ],
+  "id": "ST-032",
+  "filename": "00001075_046.png",
+  "image": "images/00001075_046.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Atelectasis",
+  "confidence": 0.251,
+  "signal": 0.0,
+  "raw": 0.148,
+  "top_findings": [
+   {
+    "name": "Atelectasis",
+    "confidence": 0.251,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.17,
+    "signal": 0.0,
+    "urgency": 0.78
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.511,
+    "signal": 0.0,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-033",
+  "filename": "00001096_001.png",
+  "image": "images/00001096_001.png"
+ },
+ {
+  "acuity": 2.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Nodule",
+  "confidence": 0.501,
+  "signal": 0.046,
+  "raw": 0.501,
+  "top_findings": [
+   {
+    "name": "Nodule",
+    "confidence": 0.501,
+    "signal": 0.046,
+    "urgency": 0.44
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.224,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.162,
+    "signal": 0.0,
+    "urgency": 0.78
+   }
+  ],
+  "id": "ST-034",
+  "filename": "00001100_002.png",
+  "image": "images/00001100_002.png"
+ },
+ {
+  "acuity": 28.1,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Pneumothorax",
+  "confidence": 0.503,
+  "signal": 0.281,
+  "raw": 0.505,
+  "top_findings": [
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.503,
+    "signal": 0.281,
+    "urgency": 1.0
+   },
+   {
+    "name": "Nodule",
+    "confidence": 0.509,
+    "signal": 0.096,
+    "urgency": 0.44
+   },
+   {
+    "name": "Emphysema",
+    "confidence": 0.501,
+    "signal": 0.105,
+    "urgency": 0.18
+   }
+  ],
+  "id": "ST-035",
+  "filename": "00001101_022.png",
+  "image": "images/00001101_022.png"
+ },
+ {
+  "acuity": 26.9,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Pneumothorax",
+  "confidence": 0.5,
+  "signal": 0.269,
+  "raw": 0.5,
+  "top_findings": [
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.5,
+    "signal": 0.269,
+    "urgency": 1.0
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.502,
+    "signal": 0.242,
+    "urgency": 0.78
+   },
+   {
+    "name": "Lung Opacity",
+    "confidence": 0.684,
+    "signal": 0.276,
+    "urgency": 0.52
+   }
+  ],
+  "id": "ST-036",
+  "filename": "00001104_011.png",
+  "image": "images/00001104_011.png"
+ },
+ {
+  "acuity": 1.2,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Infiltration",
+  "confidence": 0.522,
+  "signal": 0.027,
+  "raw": 0.535,
+  "top_findings": [
+   {
+    "name": "Infiltration",
+    "confidence": 0.522,
+    "signal": 0.027,
+    "urgency": 0.46
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.04,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.085,
+    "signal": 0.0,
+    "urgency": 0.78
+   }
+  ],
+  "id": "ST-037",
+  "filename": "00001149_000.png",
+  "image": "images/00001149_000.png"
+ },
+ {
+  "acuity": 34.6,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Pneumothorax",
+  "confidence": 0.52,
+  "signal": 0.346,
+  "raw": 0.532,
+  "top_findings": [
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.52,
+    "signal": 0.346,
+    "urgency": 1.0
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.526,
+    "signal": 0.336,
+    "urgency": 0.78
+   },
+   {
+    "name": "Lung Opacity",
+    "confidence": 0.735,
+    "signal": 0.381,
+    "urgency": 0.52
+   }
+  ],
+  "id": "ST-038",
+  "filename": "00001170_054.png",
+  "image": "images/00001170_054.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Atelectasis",
+  "confidence": 0.029,
+  "signal": 0.0,
+  "raw": 0.004,
+  "top_findings": [
+   {
+    "name": "Atelectasis",
+    "confidence": 0.029,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.108,
+    "signal": 0.0,
+    "urgency": 0.78
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.432,
+    "signal": 0.0,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-039",
+  "filename": "00001253_003.png",
+  "image": "images/00001253_003.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Atelectasis",
+  "confidence": 0.095,
+  "signal": 0.0,
+  "raw": 0.027,
+  "top_findings": [
+   {
+    "name": "Atelectasis",
+    "confidence": 0.095,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.172,
+    "signal": 0.0,
+    "urgency": 0.78
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.38,
+    "signal": 0.0,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-040",
+  "filename": "00001280_004.png",
+  "image": "images/00001280_004.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Atelectasis",
+  "confidence": 0.047,
+  "signal": 0.0,
+  "raw": 0.008,
+  "top_findings": [
+   {
+    "name": "Atelectasis",
+    "confidence": 0.047,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.104,
+    "signal": 0.0,
+    "urgency": 0.78
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.295,
+    "signal": 0.0,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-041",
+  "filename": "00001335_001.png",
+  "image": "images/00001335_001.png"
+ },
+ {
+  "acuity": 85.0,
+  "lane": "CRITICAL",
+  "sla": "< 15 min",
+  "sla_minutes": 15,
+  "abstained": false,
+  "driver": "Edema",
+  "confidence": 0.534,
+  "signal": 1.0,
+  "raw": 0.555,
+  "top_findings": [
+   {
+    "name": "Edema",
+    "confidence": 0.534,
+    "signal": 1.0,
+    "urgency": 0.85
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.604,
+    "signal": 0.629,
+    "urgency": 0.78
+   },
+   {
+    "name": "Effusion",
+    "confidence": 0.647,
+    "signal": 0.571,
+    "urgency": 0.66
+   }
+  ],
+  "id": "ST-042",
+  "filename": "00001373_052.png",
+  "image": "images/00001373_052.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Fibrosis",
+  "confidence": 0.506,
+  "signal": 0.0,
+  "raw": 0.509,
+  "top_findings": [
+   {
+    "name": "Fibrosis",
+    "confidence": 0.506,
+    "signal": 0.0,
+    "urgency": 0.16
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.161,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.142,
+    "signal": 0.0,
+    "urgency": 0.78
+   }
+  ],
+  "id": "ST-043",
+  "filename": "00001402_000.png",
+  "image": "images/00001402_000.png"
+ },
+ {
+  "acuity": 1.8,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Emphysema",
+  "confidence": 0.5,
+  "signal": 0.101,
+  "raw": 0.5,
+  "top_findings": [
+   {
+    "name": "Emphysema",
+    "confidence": 0.5,
+    "signal": 0.101,
+    "urgency": 0.18
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.244,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.153,
+    "signal": 0.0,
+    "urgency": 0.78
+   }
+  ],
+  "id": "ST-044",
+  "filename": "00001426_000.png",
+  "image": "images/00001426_000.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Atelectasis",
+  "confidence": 0.185,
+  "signal": 0.0,
+  "raw": 0.086,
+  "top_findings": [
+   {
+    "name": "Atelectasis",
+    "confidence": 0.185,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.343,
+    "signal": 0.0,
+    "urgency": 0.78
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.421,
+    "signal": 0.0,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-045",
+  "filename": "00001445_003.png",
+  "image": "images/00001445_003.png"
+ },
+ {
+  "acuity": 2.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Nodule",
+  "confidence": 0.501,
+  "signal": 0.045,
+  "raw": 0.501,
+  "top_findings": [
+   {
+    "name": "Nodule",
+    "confidence": 0.501,
+    "signal": 0.045,
+    "urgency": 0.44
+   },
+   {
+    "name": "Emphysema",
+    "confidence": 0.5,
+    "signal": 0.102,
+    "urgency": 0.18
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.232,
+    "signal": 0.0,
+    "urgency": 0.3
+   }
+  ],
+  "id": "ST-046",
+  "filename": "00001450_000.png",
+  "image": "images/00001450_000.png"
+ },
+ {
+  "acuity": 15.1,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Cardiomegaly",
+  "confidence": 0.518,
+  "signal": 0.629,
+  "raw": 0.529,
+  "top_findings": [
+   {
+    "name": "Cardiomegaly",
+    "confidence": 0.518,
+    "signal": 0.629,
+    "urgency": 0.24
+   },
+   {
+    "name": "Fracture",
+    "confidence": 0.504,
+    "signal": 0.248,
+    "urgency": 0.42
+   },
+   {
+    "name": "Atelectasis",
+    "confidence": 0.534,
+    "signal": 0.264,
+    "urgency": 0.3
+   }
+  ],
+  "id": "ST-047",
+  "filename": "00001501_008.png",
+  "image": "images/00001501_008.png"
+ },
+ {
+  "acuity": 0.0,
+  "lane": "ROUTINE",
+  "sla": "scheduled",
+  "sla_minutes": 1440,
+  "abstained": false,
+  "driver": "Atelectasis",
+  "confidence": 0.15,
+  "signal": 0.0,
+  "raw": 0.059,
+  "top_findings": [
+   {
+    "name": "Atelectasis",
+    "confidence": 0.15,
+    "signal": 0.0,
+    "urgency": 0.3
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.11,
+    "signal": 0.0,
+    "urgency": 0.78
+   },
+   {
+    "name": "Infiltration",
+    "confidence": 0.295,
+    "signal": 0.0,
+    "urgency": 0.46
+   }
+  ],
+  "id": "ST-048",
+  "filename": "00001543_000.png",
+  "image": "images/00001543_000.png"
+ },
+ {
+  "acuity": 46.4,
+  "lane": "EXPEDITED",
+  "sla": "< 4 hr",
+  "sla_minutes": 240,
+  "abstained": false,
+  "driver": "Effusion",
+  "confidence": 0.701,
+  "signal": 0.703,
+  "raw": 0.796,
+  "top_findings": [
+   {
+    "name": "Effusion",
+    "confidence": 0.701,
+    "signal": 0.703,
+    "urgency": 0.66
+   },
+   {
+    "name": "Pneumothorax",
+    "confidence": 0.503,
+    "signal": 0.281,
+    "urgency": 1.0
+   },
+   {
+    "name": "Consolidation",
+    "confidence": 0.501,
+    "signal": 0.236,
+    "urgency": 0.78
+   }
+  ],
+  "id": "ST-049",
+  "filename": "00001558_005.png",
+  "image": "images/00001558_005.png"
+ },
+ {
+  "acuity": 85.0,
+  "lane": "CRITICAL",
+  "sla": "< 15 min",
+  "sla_minutes": 15,
+  "abstained": false,
+  "driver": "Edema",
+  "confidence": 0.524,
+  "signal": 1.0,
+  "raw": 0.538,
+  "top_findings": [
+   {
+    "name": "Edema",
+    "confidence": 0.524,
+    "signal": 1.0,
+    "urgency": 0.85
+   },
+   {
+    "name": "Pneumonia",
+    "confidence": 0.527,
+    "signal": 0.732,
+    "urgency": 0.75
+   },
+   {
+    "name": "Effusion",
+    "confidence": 0.612,
+    "signal": 0.477,
+    "urgency": 0.66
+   }
+  ],
+  "id": "ST-050",
+  "filename": "00001558_018.png",
+  "image": "images/00001558_018.png"
+ }
+]

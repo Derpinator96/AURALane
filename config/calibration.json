@@ -1,0 +1,23 @@
+{
+  "CXR": {
+    "temperature": 1.6,
+    "z_floor": 0.5,
+    "z_ceil": 2.5,
+    "abstain_lo": 0.35,
+    "abstain_hi": 0.60
+  },
+  "CT": {
+    "temperature": 1.4,
+    "z_floor": 0.5,
+    "z_ceil": 2.5,
+    "abstain_lo": 0.30,
+    "abstain_hi": 0.55
+  },
+  "MRI": {
+    "temperature": 1.5,
+    "z_floor": 0.5,
+    "z_ceil": 2.5,
+    "abstain_lo": 0.30,
+    "abstain_hi": 0.55
+  }
+}
