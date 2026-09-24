@@ -2,7 +2,7 @@ __pycache__/
 *.pyc
 *.log
 
-# NIH ChestX-ray14 sample images — 5,606 PNGs, ~2.2 GB. Not committed: this is
+# NIH ChestX-ray14 sample images: 5,606 PNGs, ~2.2 GB. Not committed: this is
 # public data we did not create, it exceeds what GitHub (and LFS's free tier)
 # should hold, and README.md says where to get it. Drop the PNGs back into
 # images/ after cloning.
@@ -10,7 +10,7 @@ images/*
 !images/.gitkeep
 
 # Local project context: competition strategy, self-identified soft spots and
-# prepared answers. The GitHub repo is public — this stays on disk only.
+# prepared answers. The GitHub repo is public, so this stays on disk only.
 CLAUDE.md
 
 # local scratch and transfer artifacts, not source
@@ -19,9 +19,20 @@ _bundle.tgz
 _update.tgz
 mern.zip
 
-# Duplicate download of sim/ — same files, zipped. Redundant with source.
+# Duplicate download of sim/: same files, zipped. Redundant with source.
 Claude outputs/
 
 # Synthetic DICOM studies generated locally by sim/generator/make_dicom.py.
 # Regeneratable, not source; keep the repo to what was authored.
 sim/data/
+
+# Python virtualenv for the PoC
+.venv/
+
+# BraTS source volumes: large, and not ours to redistribute
+data/brain/raw/
+
+_external/
+data/chest/studies/
+data/brain/dicom/
+data/blob/
