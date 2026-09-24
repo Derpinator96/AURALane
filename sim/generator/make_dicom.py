@@ -87,19 +87,22 @@ def burn_in(arr, maxval, lines):
     DICOM tag to declare it, and is frequently absent or wrong -- which is why
     the masking step must never trust it.
     """
-    mode = "L" if maxval == 255 else "I;16"
-    img = Image.fromarray(arr.astype(np.uint8 if maxval == 255 else np.uint16),
-                          mode=mode).convert("L")
-    draw = ImageDraw.Draw(img)
-    size = max(16, img.height // 42)
+    # Text goes into a separate 8-bit mask, composited at the image's own bit
+    # depth. The image data is never converted: PIL's "I;16" -> "L" conversion
+    # clamps rather than scales, so every value above 255 saturated and the old
+    # "* 257" turned any 16-bit frame uniformly white. Non-text pixels are
+    # untouched at any bit depth.
+    height, width = arr.shape
+    mask = Image.new("L", (width, height), 0)
+    draw = ImageDraw.Draw(mask)
+    size = max(16, height // 42)
     font = _font(size)
     y = int(size * 0.6)
     for line in lines:
         draw.text((int(size * 0.6), y), line, fill=255, font=font)
         y += int(size * 1.25)
-    out = np.asarray(img)
-    if maxval == 65535:
-        out = (out.astype(np.uint16) * 257)
+    out = arr.astype(np.uint8 if maxval == 255 else np.uint16)     # a copy
+    out[np.asarray(mask) > 0] = maxval
     return out
 
 
@@ -137,6 +140,7 @@ def build_instance(pixels, maxval, ident, when, source_name):
     ds.Modality = "CR"
     ds.SeriesDescription = "PA"
     ds.BodyPartExamined = "CHEST"
+    ds.ViewPosition = "PA"      # Type 2, CR Series module. Matches StudyDescription.
 
     # --- Equipment -------------------------------------------------------
     ds.InstitutionName = INSTITUTION
@@ -162,6 +166,7 @@ def build_instance(pixels, maxval, ident, when, source_name):
     ds.PixelRepresentation = 0
     ds.RescaleIntercept = 0
     ds.RescaleSlope = 1
+    ds.RescaleType = "US"       # Required once RescaleIntercept is present.
     ds.WindowCenter = maxval // 2
     ds.WindowWidth = maxval
     ds.PixelData = pixels.astype(np.uint8 if bits == 8 else np.uint16).tobytes()
