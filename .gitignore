@@ -18,3 +18,10 @@ _backup/
 _bundle.tgz
 _update.tgz
 mern.zip
+
+# Duplicate download of sim/ — same files, zipped. Redundant with source.
+Claude outputs/
+
+# Synthetic DICOM studies generated locally by sim/generator/make_dicom.py.
+# Regeneratable, not source; keep the repo to what was authored.
+sim/data/
