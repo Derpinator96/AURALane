@@ -30,6 +30,7 @@ python-multipart>=0.0.9
 httpx
 requests
 boto3
+PyJWT>=2.8          # DevAuth, local development tokens only
 
 # analysis and tests
 pandas
