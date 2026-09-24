@@ -1,0 +1,4 @@
+# Checking tools. Not needed to run the demo or the pipeline.
+#   pip install -r requirements-dev.txt
+dicom-validator>=0.9.0    # validate_iods: DICOM IOD conformance against the published standard
+pytest>=9.1.1

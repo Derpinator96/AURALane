@@ -1,9 +1,37 @@
-# On Windows install CPU torch first, or pip pulls a ~2.5GB CUDA build:
-#   pip install torch --index-url https://download.pytorch.org/whl/cpu
-torch>=2.0
-torchxrayvision>=1.5
-scikit-image>=0.20
+# Install CPU-only torch FIRST, or pip pulls a ~2.5 GB CUDA build:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements.txt
+# The demo alone (cached worklist, no live scoring) needs only fastapi, uvicorn
+# and python-multipart.
+
+# DICOM and imaging
+pydicom>=3.0
+pynetdicom
+nibabel
 numpy>=1.24
+pillow
+scikit-image>=0.20
+pytesseract
+pylibjpeg
+pylibjpeg-libjpeg
+pylibjpeg-openjpeg
+python-gdcm
+
+# model
+torch>=2.0
+torchvision
+torchxrayvision>=1.5
+grad-cam
+
+# service
 fastapi>=0.110
-uvicorn>=0.27
+uvicorn[standard]>=0.27
 python-multipart>=0.0.9
+httpx
+requests
+boto3
+
+# analysis and tests
+pandas
+matplotlib
+pytest

@@ -194,6 +194,31 @@ DEID_METHODS = [
 
 # -- pixel masking ----------------------------------------------------------
 
+# Second detection pass. Tesseract's layout analysis fails when burned-in text
+# overlaps existing bright markers (a circled laterality "R", lead wires) and
+# returns zero regions for the entire image. Isolating near-maximum pixels and
+# inverting gives it clean black-on-white glyphs with the anatomy removed.
+#
+# Tuned to text burned at or near maximum intensity, which is what our generator
+# produces and what most modality overlays produce. Real burned-in text can be
+# anti-aliased below this. That is why OCR masking is high-recall rather than
+# complete, and why modality-by-modality rollout with human review sampling is
+# the deployment posture.
+BRIGHT_TEXT_THRESHOLD = 250
+
+# The default pass keeps a 45 floor: it sees full anatomy and a low-confidence
+# hit there is usually texture.
+# The bright pass has already filtered to near-maximum pixels, so anything
+# Tesseract reads there is a bright glyph. Measured across 40 studies: a floor
+# of 30 or lower leaves 0 of 6 identifiers readable. SIMID-000033 read at
+# confidence 36 because the circled laterality "R" overlaps the line. That was
+# with anti-aliased glyphs; make_dicom.burn_in now draws hard edges and the same
+# line reads at 89, so test_deid.py guards this floor with a controlled OCR
+# result as well as the corpus.
+# -1 is the sentinel for non-word rows, so the floor is 0 rather than absent.
+BRIGHT_PASS_MIN_CONFIDENCE = 0
+
+
 def find_text_regions(pixels, min_confidence=45):
     """Locate burned-in text. Returns boxes as (x, y, w, h).
 
@@ -211,25 +236,33 @@ def find_text_regions(pixels, min_confidence=45):
         top = float(arr.max()) or 1.0
         arr = (arr.astype(np.float32) / top * 255).astype(np.uint8)
 
-    try:
-        data = pytesseract.image_to_data(
-            Image.fromarray(arr), output_type=pytesseract.Output.DICT)
-    except Exception as e:                       # tesseract binary missing etc.
-        log.warning("OCR failed (%s) -- burned-in text NOT masked", e)
-        return []
+    # Must threshold `arr` here, AFTER the normalisation above, never the raw
+    # pixels: against raw 16-bit data, >= 250 would select almost the whole
+    # frame. test_deid.py feeds a 16-bit image to hold this in place.
+    bright = np.where(arr >= BRIGHT_TEXT_THRESHOLD, 0, 255).astype(np.uint8)
 
+    # Union of both passes. A region found twice is padded twice when masked,
+    # which is harmless, so no merge step.
     boxes = []
-    for i, text in enumerate(data["text"]):
-        if not text.strip():
-            continue
+    for image, floor in ((arr, min_confidence), (bright, BRIGHT_PASS_MIN_CONFIDENCE)):
         try:
-            conf = float(data["conf"][i])
-        except (TypeError, ValueError):
-            continue
-        if conf < min_confidence:
-            continue
-        boxes.append((data["left"][i], data["top"][i],
-                      data["width"][i], data["height"][i]))
+            data = pytesseract.image_to_data(
+                Image.fromarray(image), output_type=pytesseract.Output.DICT)
+        except Exception as e:                   # tesseract binary missing etc.
+            log.warning("OCR failed (%s) -- burned-in text NOT masked", e)
+            return []
+
+        for i, text in enumerate(data["text"]):
+            if not text.strip():
+                continue
+            try:
+                conf = float(data["conf"][i])
+            except (TypeError, ValueError):
+                continue
+            if conf < floor:
+                continue
+            boxes.append((data["left"][i], data["top"][i],
+                          data["width"][i], data["height"][i]))
     return boxes
 
 

@@ -163,6 +163,113 @@ def test_private_and_overlay_tags_are_removed():
     assert 0x60003000 not in ds, "overlay data survived"
 
 
+
+def _ocr_both_passes(pixels):
+    """Everything OCR can read, using both passes deid.find_text_regions runs."""
+    import pytesseract
+    from PIL import Image
+    arr = pixels
+    if arr.dtype != np.uint8:
+        arr = (arr.astype(np.float32) / max(float(arr.max()), 1) * 255).astype(np.uint8)
+    bright = np.where(arr >= deid.BRIGHT_TEXT_THRESHOLD, 0, 255).astype(np.uint8)
+    return " ".join(pytesseract.image_to_string(Image.fromarray(a)).upper()
+                    for a in (arr, bright))
+
+
+def test_burned_in_survives_overlapping_marker():
+    """Regression, pinned to the study that exposed it.
+
+    SIMID-000033 wraps NIH image 00000181_017.png. Its burned-in identifiers
+    overlap a circled laterality "R" already in the source image, and lead wires.
+    Tesseract's layout analysis returned zero regions for the entire image, so a
+    legible name passed through de-identification. BRIGHT_TEXT_THRESHOLD's second
+    pass exists for this image. If a re-tune loses it, this fails by name rather
+    than the suite quietly dropping back to 5 of 6.
+
+    Pinned by PatientID and source PNG, never by UID: make_dicom.py mints random
+    UIDs, so a UID pin would silently stop matching after the next rebuild.
+    """
+    by_id = {m["patient_id"]: m for m in _load_manifest()}
+    m = by_id.get("SIMID-000033")
+    assert m is not None, ("corpus has no SIMID-000033; rebuild it with "
+                           "data/chest/make_chest_corpus.py (count 40, seed 7)")
+    assert m["source_png"] == "00000181_017.png", (
+        f"SIMID-000033 now wraps {m['source_png']}; the pin no longer tests this case")
+    assert m["burned_in"], "SIMID-000033 is no longer burned in; the pin tests nothing"
+
+    ds = pydicom.dcmread(os.path.join(STUDIES, m["path"]))
+    report = deid.deidentify(ds, _fresh_map())
+    assert report["text_regions_masked"] > 0, "no text regions detected"
+
+    text = _ocr_both_passes(ds.pixel_array)
+    for token in ("SIMID", "PATIENT", "DOB", "0033"):
+        assert token not in text, f"{token!r} still readable after masking: {text[:120]!r}"
+
+
+def test_16bit_second_pass_thresholds_normalised_pixels(monkeypatch):
+    """The bright pass must threshold after the uint8 normalisation.
+
+    Raw 16-bit anatomy sits far above 250, so thresholding raw pixels would
+    select almost the whole frame. This frame is a 16-bit gradient (2000 to
+    32000, all above 250 raw) with text burned in at 65535 by the generator
+    itself. Correct normalisation selects only the glyphs.
+    """
+    import pytesseract
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "..", "generator"))
+    import make_dicom
+
+    h = w = 1024
+    y, x = np.mgrid[0:h, 0:w]
+    frame = (2000 + 30000 * (x + y) / (h + w)).astype(np.uint16)
+    frame = make_dicom.burn_in(frame, 65535,
+                               ["SIM PATIENT 9999", "SIMID-009999", "DOB 19700101"])
+
+    seen = []
+    real = pytesseract.image_to_data
+    def spy(image, *a, **k):
+        seen.append(np.asarray(image))
+        return real(image, *a, **k)
+    monkeypatch.setattr(pytesseract, "image_to_data", spy)
+
+    masked, n = deid.mask_pixels(frame)
+
+    assert len(seen) == 2, "expected exactly two OCR passes"
+    selected = float((seen[1] == 0).mean())      # black = selected as bright text
+    assert 0 < selected < 0.05, (
+        f"bright pass selected {selected:.1%} of the frame; raw 16-bit thresholding?")
+    changed = float((masked != frame).mean())
+    assert n > 0, "burned-in text on a 16-bit frame was not detected"
+    assert changed < 0.05, f"masking changed {changed:.1%} of the frame, not bounded"
+
+
+
+def test_bright_pass_floor_keeps_low_confidence_words(monkeypatch):
+    """Guards BRIGHT_PASS_MIN_CONFIDENCE without depending on the corpus.
+
+    SIMID-000033's PatientID read at confidence 36 when the generator
+    anti-aliased its glyphs. The generator now draws hard edges and that line
+    reads at 89, so the corpus alone no longer exercises the floor. This feeds
+    find_text_regions a controlled OCR result: a real word at confidence 36, and
+    a -1 sentinel row whose text is non-empty.
+    """
+    import pytesseract
+    calls = []
+
+    def fake_image_to_data(image, *a, **k):
+        calls.append(np.asarray(image))
+        return {"level": [4, 5, 5], "text": ["", "SIMID-000033", "NOISE"],
+                "conf": [-1, 36, -1], "left": [0, 10, 50], "top": [0, 20, 60],
+                "width": [0, 30, 30], "height": [0, 10, 10]}
+
+    monkeypatch.setattr(pytesseract, "image_to_data", fake_image_to_data)
+    boxes = deid.find_text_regions(np.zeros((64, 64), dtype=np.uint8))
+
+    assert len(calls) == 2, "expected the default pass and the bright pass"
+    # Default pass, floor 45: drops the confidence-36 word. Bright pass, floor 0:
+    # keeps it. Both drop the -1 sentinel even though its text is non-empty.
+    assert boxes == [(10, 20, 30, 10)], boxes
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):
