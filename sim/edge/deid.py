@@ -219,6 +219,16 @@ BRIGHT_TEXT_THRESHOLD = 250
 BRIGHT_PASS_MIN_CONFIDENCE = 0
 
 
+class OCRUnavailable(RuntimeError):
+    """Tesseract (the binary or the pytesseract package) is not usable.
+
+    Raised rather than logged. Returning no regions here would let every study
+    through with burned-in identifiers intact, which is the one failure this
+    module exists to prevent. A study that cannot be masked is not
+    de-identified.
+    """
+
+
 def find_text_regions(pixels, min_confidence=45):
     """Locate burned-in text. Returns boxes as (x, y, w, h).
 
@@ -227,9 +237,8 @@ def find_text_regions(pixels, min_confidence=45):
     """
     try:
         import pytesseract
-    except ImportError:
-        log.warning("pytesseract unavailable -- burned-in text NOT masked")
-        return []
+    except ImportError as e:
+        raise OCRUnavailable(f"pytesseract package not installed: {e}") from e
 
     arr = pixels
     if arr.dtype != np.uint8:
@@ -248,9 +257,9 @@ def find_text_regions(pixels, min_confidence=45):
         try:
             data = pytesseract.image_to_data(
                 Image.fromarray(image), output_type=pytesseract.Output.DICT)
-        except Exception as e:                   # tesseract binary missing etc.
-            log.warning("OCR failed (%s) -- burned-in text NOT masked", e)
-            return []
+        except pytesseract.TesseractNotFoundError as e:
+            raise OCRUnavailable(f"tesseract binary not found: {e}") from e
+        # Any other OCR error propagates. deidentify refuses to forward on it.
 
         for i, text in enumerate(data["text"]):
             if not text.strip():
@@ -333,11 +342,18 @@ def _walk(ds, identity, removed, remapped):
             continue
 
 
-def deidentify(ds, identity, mask_burned_in=True):
+def deidentify(ds, identity, mask_burned_in=True, allow_unmasked: bool = False):
     """De-identify one instance in place. Returns a report dict.
 
     Order matters: capture the originals for the identity map BEFORE the
     attributes are destroyed.
+
+    Raises OCRUnavailable if burned-in text cannot be searched for. The caller
+    must treat the study as not de-identified and stop.
+
+    allow_unmasked=True lets a study continue without pixel masking when OCR is
+    unavailable. Only for a caller that has established the modality carries no
+    burned-in text. It is logged at ERROR level every time it takes effect.
     """
     original = {
         "patient_id": str(getattr(ds, "PatientID", "") or ""),
@@ -365,6 +381,11 @@ def deidentify(ds, identity, mask_burned_in=True):
             cleaned, masked = mask_pixels(arr)
             if masked:
                 ds.PixelData = cleaned.astype(arr.dtype).tobytes()
+        except OCRUnavailable as e:
+            if not allow_unmasked:
+                raise
+            log.error("OCR UNAVAILABLE, PIXELS NOT MASKED (allow_unmasked=True) "
+                      "for study %s: %s", original["study_uid"], e)
         except Exception as e:
             # Never let a pixel problem cause identified data to pass through.
             raise RuntimeError(f"pixel masking failed, refusing to forward: {e}")
