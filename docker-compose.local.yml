@@ -1,0 +1,34 @@
+# Local stand-ins for the two AWS stores. Local development only.
+#
+#   docker compose -f docker-compose.local.yml up -d
+#   python scripts/orthanc_roundtrip.py
+#
+# orthanc  = HealthImaging's DICOMweb surface (STOW-RS in, QIDO-RS and WADO-RS out)
+# dynamodb = DynamoDB
+#
+# DynamoDB Local is published on host port 8001, not 8000, because 8000 is the
+# round-2 demo's port and that demo is the fallback: it has to start while this
+# stack is up. Inside the container DynamoDB still listens on 8000.
+
+services:
+  orthanc:
+    image: orthancteam/orthanc:latest
+    ports:
+      - "8042:8042"   # HTTP, REST and DICOMweb
+      - "4242:4242"   # DICOM
+    environment:
+      # Variable names from the orthancteam/orthanc documentation
+      # (orthanc.uclouvain.be/book/users/docker-orthancteam.html), not assumed.
+      # scripts/orthanc_roundtrip.py checks /dicom-web/ actually answers, because
+      # this name has changed between image versions before.
+      DICOM_WEB_PLUGIN_ENABLED: "true"
+      # Authentication off, reachable from the host: acceptable for a local stack
+      # holding synthetic data only. Never ship this configuration.
+      ORTHANC__AUTHENTICATION_ENABLED: "false"
+      ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
+
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    ports:
+      - "8001:8000"
+    command: -jar DynamoDBLocal.jar -sharedDb -inMemory
