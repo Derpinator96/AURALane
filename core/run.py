@@ -55,7 +55,8 @@ def cmd_ingest(args) -> int:
     target = Path(args.path)
     files = sorted(target.rglob("*.dcm")) if target.is_dir() else [target]
     v = ingest(files, blob=p["blob"], datastore=p["datastore"], table=p["table"],
-               inference=p["inference"], registry=Registry(), identity=_identity())
+               inference=p["inference"], registry=Registry(), identity=_identity(),
+               ocr_workers=args.ocr_workers)
     study = v.ref.study_uid if v.ref else None
     rows = p["table"].query("audit", study=study) if study else []
     print(DISCLAIMER)
@@ -156,6 +157,8 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     i = sub.add_parser("ingest", help="de-identify, store, score and queue one study")
     i.add_argument("path", help="a study directory or one .dcm file")
+    i.add_argument("--ocr-workers", type=int, default=None,
+                   help="threads for de-identification OCR (default: CPU count)")
     s = sub.add_parser("serve", help="the worklist API")
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--port", type=int, default=8080)
