@@ -14,8 +14,9 @@ Two seeded users, both synthetic:
     admin@dev.auralane.local         group admin
 
 login() accepts either seeded user (by key or email) with the development
-password: AURALANE_DEV_PASSWORD if set, else "auralane-dev". It is written
-here in a public repository on purpose: it guards nothing but a laptop.
+password, resolved the same way as the key: the password argument, else
+AURALANE_DEV_PASSWORD, else password_file (created with a random value on first
+use), else random per instance. No password is written in this repository.
 """
 from __future__ import annotations
 
@@ -30,7 +31,6 @@ from core.ports import AuthPort
 from core.types import Principal
 
 ISSUER = "auralane-devauth"
-DEV_PASSWORD = "auralane-dev"
 AUDIENCE = "auralane-local"
 
 SEEDED = {
@@ -40,22 +40,30 @@ SEEDED = {
 }
 
 
+def _resolve(value, env, file):
+    """value, else the environment variable, else the file (created with a
+    random value, mode 0600, on first use), else random for this instance."""
+    value = value or os.environ.get(env)
+    if not value and file:
+        path = Path(file)
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(secrets.token_hex(32))
+            path.chmod(0o600)
+        value = path.read_text().strip()
+    return value or secrets.token_hex(32)
+
+
 class DevAuth(AuthPort):
-    def __init__(self, secret: str | None = None, key_file: str | os.PathLike | None = None):
-        self._key = secret or os.environ.get("AURALANE_DEV_JWT_SECRET")
-        if not self._key and key_file:
-            path = Path(key_file)
-            if not path.exists():
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(secrets.token_hex(32))
-                path.chmod(0o600)
-            self._key = path.read_text().strip()
-        self._key = self._key or secrets.token_hex(32)
+    def __init__(self, secret: str | None = None, key_file: str | os.PathLike | None = None,
+                 password: str | None = None,
+                 password_file: str | os.PathLike | None = None):
+        self._key = _resolve(secret, "AURALANE_DEV_JWT_SECRET", key_file)
+        self._password = _resolve(password, "AURALANE_DEV_PASSWORD", password_file)
 
     def login(self, username: str, password: str) -> str:
         user = next((k for k, p in SEEDED.items() if username in (k, p.email)), None)
-        expected = os.environ.get("AURALANE_DEV_PASSWORD", DEV_PASSWORD)
-        if user is None or not secrets.compare_digest(password.encode(), expected.encode()):
+        if user is None or not secrets.compare_digest(password.encode(), self._password.encode()):
             raise PermissionError("unknown user or wrong password")
         return self.issue(user)
 

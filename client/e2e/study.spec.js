@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test.beforeEach(async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel("User").fill("radiologist");
-  await page.getByLabel("Password").fill("auralane-dev");
+  await page.getByLabel("Password").fill(process.env.AURALANE_DEV_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByTestId("study-row").first()).toBeVisible();
 });

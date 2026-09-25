@@ -4,7 +4,7 @@ async function signIn(page, user) {
   await page.goto("/login");
   await expect(page.getByRole("note", { name: "Non-diagnostic notice" })).toBeVisible();
   await page.getByLabel("User").fill(user);
-  await page.getByLabel("Password").fill("auralane-dev");
+  await page.getByLabel("Password").fill(process.env.AURALANE_DEV_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 

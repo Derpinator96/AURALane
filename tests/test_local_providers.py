@@ -2,6 +2,7 @@
 
     docker compose -f docker-compose.local.yml up -d
 """
+import secrets
 import uuid
 
 import jwt
@@ -34,6 +35,20 @@ def test_devauth_issues_and_verifies_seeded_users():
         DevAuth().verify(a.issue("admin"))            # different key
     with pytest.raises(jwt.ExpiredSignatureError):
         a.verify(a.issue("admin", ttl=-10))
+
+
+def test_devauth_password_has_no_default(tmp_path, monkeypatch):
+    monkeypatch.delenv("AURALANE_DEV_PASSWORD", raising=False)
+    with pytest.raises(PermissionError):
+        DevAuth().login("radiologist", "")
+    f = tmp_path / "dev" / "devauth.password"
+    a = DevAuth(password_file=f)
+    assert f.stat().st_mode & 0o777 == 0o600
+    assert a.verify(a.login("radiologist", f.read_text())).groups == ("radiologist",)
+    assert DevAuth(password_file=f)._password == a._password          # stable across processes
+    env = secrets.token_hex(8)
+    monkeypatch.setenv("AURALANE_DEV_PASSWORD", env)
+    assert DevAuth(password_file=f).login("admin@dev.auralane.local", env)
 
 
 @pytest.fixture

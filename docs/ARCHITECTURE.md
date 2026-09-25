@@ -108,7 +108,12 @@ The local runtime also needs:
 ```
 docker compose -f docker-compose.local.yml up -d    # Orthanc 8042, DynamoDB Local 8001
 AURALANE_DEV_JWT_SECRET=...                        # optional; else data/dev/devauth.key
+AURALANE_DEV_PASSWORD=...                          # optional; else data/dev/devauth.password
 ```
+
+Sign in as `radiologist` or `admin` with the development password. No password
+is written in this repository: without the variable, `serve` creates a random
+one in `data/dev/devauth.password` (gitignored, mode 0600) and prints that path.
 
 PLANNED, NOT YET READ BY ANY CODE. The AWS providers will need at least the
 following. The names are a plan for Prompt 3, not a contract:

@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { defineConfig } from "@playwright/test";
 
 // End to end against real processes: the API in fixture mode on 8100 and the
@@ -6,6 +7,10 @@ import { defineConfig } from "@playwright/test";
 // /opt/pw-browsers build), so no browser download is attempted.
 const chromium = process.env.PLAYWRIGHT_CHROMIUM ||
   "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+
+// A fresh sign-in password per run, handed to the API and to the specs through
+// the environment. No password is written in the repository.
+process.env.AURALANE_DEV_PASSWORD ||= randomBytes(8).toString("hex");
 
 export default defineConfig({
   testDir: "e2e",

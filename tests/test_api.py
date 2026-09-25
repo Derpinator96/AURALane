@@ -7,6 +7,8 @@ URL and never image bytes.
 import json
 from pathlib import Path
 
+import secrets
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -25,18 +27,20 @@ STUDY_ROUTES = [("get", "/api/worklist"), ("get", f"/api/studies/{CHEST['study']
                 ("get", f"/api/studies/{CHEST['study']}/series/{CHEST['series'][0]['series_uid']}"),
                 ("post", f"/api/studies/{CHEST['study']}/verdict")]
 
+PASSWORD = secrets.token_hex(8)    # no password is written in the repository
+
 
 @pytest.fixture
 def client(tmp_path):
     table = FixtureTable()
     app = create_app({"runtime": "fixture", "blob": FileBlob(BLOB, url_base="/api/blob"),
                       "table": table,
-                      "datastore": FixtureDatastore(table), "auth": DevAuth(),
+                      "datastore": FixtureDatastore(table), "auth": DevAuth(password=PASSWORD),
                       "llm": TemplateLLM()})
     c = TestClient(app)
 
     def login(user):
-        r = c.post("/api/auth/login", json={"username": user, "password": "auralane-dev"})
+        r = c.post("/api/auth/login", json={"username": user, "password": PASSWORD})
         assert r.status_code == 200, r.text
         return {"Authorization": f"Bearer {r.json()['token']}"}
 

@@ -23,6 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_DB = ROOT / "data" / "identity" / "identity.db"
 DEV_KEY = ROOT / "data" / "dev" / "devauth.key"
+DEV_PASSWORD_FILE = ROOT / "data" / "dev" / "devauth.password"   # unless AURALANE_DEV_PASSWORD
 BLOB_URL = "/api/blob"        # served by core.api from a FileBlob's signed URLs
 DISCLAIMER = "NON-DIAGNOSTIC; DECISION SUPPORT ONLY"
 
@@ -36,14 +37,14 @@ def providers() -> dict:
         return {"runtime": runtime, "blob": blob,
                 "datastore": p.OrthancDatastore(public_web="/dicom-web"),
                 "table": p.DynamoLocalTable(), "inference": p.InProcessInference(blob=blob),
-                "auth": p.DevAuth(key_file=DEV_KEY), "llm": p.TemplateLLM()}
+                "auth": p.DevAuth(key_file=DEV_KEY, password_file=DEV_PASSWORD_FILE), "llm": p.TemplateLLM()}
     if runtime == "fixture":
         from core.providers import fixture as f
         from core.providers import local as p
         table = f.FixtureTable()
         return {"runtime": runtime, "blob": p.FileBlob(f.BLOB, url_base=BLOB_URL),
                 "datastore": f.FixtureDatastore(table), "table": table, "inference": None,
-                "auth": p.DevAuth(key_file=DEV_KEY), "llm": p.TemplateLLM()}
+                "auth": p.DevAuth(key_file=DEV_KEY, password_file=DEV_PASSWORD_FILE), "llm": p.TemplateLLM()}
     if runtime == "aws":
         from core.providers import aws as p
         return {"runtime": runtime, "blob": p.S3Blob(), "datastore": p.HealthImagingDatastore(),
@@ -89,7 +90,10 @@ def cmd_ingest(args) -> int:
 def cmd_serve(args) -> int:
     import uvicorn
     from core.api import create_app
-    uvicorn.run(create_app(providers()), host=args.host, port=args.port)
+    prov = providers()
+    if prov["runtime"] != "aws" and not os.environ.get("AURALANE_DEV_PASSWORD"):
+        print(f"dev sign-in password: {DEV_PASSWORD_FILE.relative_to(ROOT)}")
+    uvicorn.run(create_app(prov), host=args.host, port=args.port)
     return 0
 
 
