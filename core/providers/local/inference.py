@@ -63,7 +63,9 @@ class InProcessInference(InferencePort):
         if self._chest is None:
             import torchxrayvision as xrv
             self._chest = xrv.models.DenseNet(weights="densenet121-res224-all")
-        return imaging.predict(self._chest, _png_bytes(pixels))
+        # A file-like, as server.py passes: skimage.io.imread (0.26) rejects raw
+        # bytes despite imaging.read_grayscale's docstring.
+        return imaging.predict(self._chest, io.BytesIO(_png_bytes(pixels)))
 
     def _segmentation(self, model_cfg, *, nifti: dict[str, Path], **_) -> dict[str, Any]:
         """nifti: {"T1c", "T1", "T2", "FLAIR"} -> paths. Returns metrics.json.

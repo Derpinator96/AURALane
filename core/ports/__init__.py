@@ -67,6 +67,10 @@ class TablePort(ABC):
         """Equality match on the table's partition key, e.g. study="1.2.3"."""
 
     @abstractmethod
+    def scan(self, table: str) -> list[dict[str, Any]]:
+        """Every row. For the worklist, which is small; never used on audit."""
+
+    @abstractmethod
     def append_audit(self, event: AuditEvent) -> None: ...
 
 

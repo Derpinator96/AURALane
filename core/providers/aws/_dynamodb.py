@@ -90,6 +90,17 @@ class DynamoDBTable(TablePort):
                 return [_from_ddb(i) for i in items]
             kwargs["ExclusiveStartKey"] = r["LastEvaluatedKey"]
 
+    def scan(self, table: str) -> list[dict[str, Any]]:
+        if table == "audit":
+            raise PermissionError("audit is read per study with query, never scanned")
+        t, items, kwargs = self._table(table), [], {}
+        while True:
+            r = t.scan(**kwargs)
+            items += r["Items"]
+            if "LastEvaluatedKey" not in r:
+                return [_from_ddb(i) for i in items]
+            kwargs["ExclusiveStartKey"] = r["LastEvaluatedKey"]
+
     def append_audit(self, event: AuditEvent) -> None:
         item = event.to_dict()
         item["study"] = event.study or NO_STUDY
