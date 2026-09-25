@@ -96,10 +96,15 @@ def render(columns: list[tuple[str, dict | None]], info: dict[str, str] | None) 
     lines.append("| **total** | " + " | ".join(totals) + " |")
     lines.append("| outcome | " + " | ".join(
         "not measured" if c is None else c["status"] for _, c in columns) + " |")
+    lines.append("| Grad-CAM inside infer | " + " | ".join(
+        "not measured" if c is None else c.get("gradcam", "not recorded")
+        for _, c in columns) + " |")
     lines += ["", "Run 1 includes loading the model into memory. Later runs re-ingest the "
               "same study, so the datastore already holds its instances. `prepare_inputs` "
               "is pipeline work before the model (for brain, identifying the four "
-              "channels and rebuilding them as NIfTI); `infer` is the model call alone. "
+              "channels and rebuilding them as NIfTI); `infer` is the model call, and "
+              "for chest it includes the Grad-CAM backward pass and overlay writes when "
+              "the Grad-CAM row says yes (the platform default since Prompt 4). "
               "One machine and one study per modality: a measurement, not a benchmark.", ""]
     return "\n".join(lines)
 
@@ -142,8 +147,12 @@ def main(argv=None) -> int:
                        inference=p["inference"], registry=registry, identity=ident,
                        ocr_workers=args.ocr_workers)
             status = v.status if v.status == "FAILED" else f"{v.status}, {v.lane}"
+            evidence = v.findings.evidence if v.findings else {}
+            gradcam = ("yes" if "gradcam_png" in evidence else
+                       "no" if modality == "chest" and v.status == "SCORED" else "n/a")
             columns.append((headings(args.runs)[len(columns)],
-                            {"status": status, "events": run_events(p["table"], v)}))
+                            {"status": status, "gradcam": gradcam,
+                             "events": run_events(p["table"], v)}))
             print(f"{modality} run {i}: {status}" + (f" ({v.error})" if v.error else ""))
 
     info = {"Date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
