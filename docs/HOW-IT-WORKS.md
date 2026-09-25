@@ -22,7 +22,11 @@ are deleted.
 
 Some images carry the patient's name drawn into the pixels. Every image is run
 through OCR twice (once as is, once on only the brightest pixels) and any text
-found is blacked out.
+found is blacked out. Images are processed in parallel, but none is skipped.
+
+For MR, a series name that is exactly a known sequence name (T1, T1C, T2,
+FLAIR and a few spellings of them) survives as a fixed token, because the brain
+model needs to know which scan is which. Any other series name is blanked.
 
 If OCR is not installed, de-identification stops with `OCRUnavailable`. The
 study is marked FAILED and nothing is stored. It never continues with the
@@ -38,10 +42,11 @@ inside the hospital; the cloud only ever sees pseudonyms. Locally it is
 
 ## The pipeline (`core/pipeline.py`)
 
-One function, `ingest`, takes a study's files through eight steps:
-de-identify, keep a transient copy, import into the datastore, run the model,
-turn the output into findings, triage, write the worklist row, delete the
-transient copy. Every step writes an audit event with how long it took in
+One function, `ingest`, takes a study's files through nine steps:
+de-identify, keep a transient copy, import into the datastore, prepare the
+model's inputs, run the model, turn the output into findings, triage, write the
+worklist row, delete the transient copy. Preparing inputs and running the model
+are timed separately, so pipeline overhead is never reported as model time. Every step writes an audit event with how long it took in
 milliseconds. If any step fails, the study still gets a worklist row, with
 status FAILED and the error, so it cannot silently vanish.
 
@@ -116,15 +121,23 @@ text.
 4. Bedrock is blocked at the account level, so drafting runs on the template
    implementation. We would keep it that way for clinical text regardless.
 
-Two more found while building the pipeline:
+Two more found while building the pipeline, both now addressed:
 
-5. De-identification replaces the series names, so the pipeline cannot check
-   by name that the four brain series are in the model's channel order
-   (T1c, T1, T2, FLAIR). It checks the series numbers are 1 to 4 and trusts
-   that the source numbered them in that order, as `nifti_to_dicom.py` does.
-   A source that numbers them differently would feed the model scrambled
-   channels, which still produces a plausible-looking outline.
-6. De-identification of a full brain study is slow. Measured on the build
-   container: 144 s for 620 slices, because every slice gets two OCR passes.
-   The 10 s estimate for that step is wrong for MR. The chest study took
-   0.8 s. These are single runs on one machine, not benchmarks.
+5. Brain channel order. De-identification used to blank every series name,
+   which left only the series number to say which scan was T1c, T1, T2 or
+   FLAIR, and scanners number series by acquisition order. Now, for MR only,
+   a series name that is exactly a known sequence name (for example `T1 CE`,
+   `T2-FLAIR`) is kept as a fixed token; anything else, including any name
+   with extra words in it, is still blanked. The brain adapter must find all
+   four tokens or it refuses the study and names what it could not identify.
+   It never falls back to series numbers. The cost: real scanner names such as
+   `Ax T1 MPRAGE +C` are refused until the hospital maintains a mapping table
+   for its own protocols.
+6. De-identification speed. A 620-slice brain study took 144 s serially on the
+   build container, because every slice gets two OCR passes. OCR now runs on a
+   thread pool, one slice per thread, every slice still checked. Tesseract has
+   to be limited to one internal thread per process (`OMP_THREAD_LIMIT=1`) for
+   this to help: without the limit, four workers were 57 times slower than
+   one. Measured per-step times per modality go in `docs/LATENCY.md` once
+   `scripts/measure_latency.py` has been run on the local machine; until then
+   there is no measured total to quote.

@@ -37,6 +37,21 @@ Commands run from the repo root in PowerShell unless noted.
 17. `docker compose -f docker-compose.local.yml up -d`
     Orthanc on 8042, DynamoDB Local on 8001. Port 8000 stays free for the demo.
 
+    Both services restart by themselves (`restart: unless-stopped`) and keep
+    their data until the containers are removed.
+
+**Reset Orthanc after any change to de-identification.** Orthanc does not
+overwrite an instance it already holds, and the identity map gives a
+re-ingested study the same pseudonymous UIDs, so a study stored under old
+de-identification rules keeps its old metadata. This has already bitten once:
+brain studies stored before sequence names were kept still read
+`TRIAGE SERIES`, and the pipeline then refuses them as unidentifiable. Before
+measuring or re-testing, clear the stack (neither service has a volume, so
+removing the containers deletes everything in both stores):
+
+    docker compose -f docker-compose.local.yml down
+    docker compose -f docker-compose.local.yml up -d
+
 ## Check
 
 18. `python scripts\doctor.py` must print `all green`.

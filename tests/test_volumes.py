@@ -20,10 +20,13 @@ RAW = ROOT / "data" / "brain" / "raw"
 SUFFIX = {"T1C": "t1ce", "T1": "t1", "T2": "t2", "FLAIR": "flair"}
 
 
+@pytest.mark.local_data
 def test_round_trip_matches_source_nifti():
     manifest = DICOM / "manifest.json"
     if not manifest.exists():
-        pytest.fail("build the brain corpus: python data/brain/nifti_to_dicom.py --slices 1")
+        pytest.skip("needs data/brain/dicom and data/brain/raw (not in git; build with "
+                    "python data/brain/nifti_to_dicom.py --slices 1). NOT VERIFIED: that "
+                    "DICOM to NIfTI reproduces the source BraTS volumes exactly")
     entries = json.loads(manifest.read_text())
     study = entries[0]["study_uid"]
     case = entries[0].get("case") or entries[0].get("source_case")

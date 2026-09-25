@@ -6,3 +6,7 @@ norecursedirs = [
     "_external", "shaurya-webapp", ".venv",
     "*.egg", ".*", "_darcs", "build", "CVS", "dist", "node_modules", "venv", "{arch}",
 ]
+markers = [
+    "privacy: de-identification checks; skipped ones are counted in the run summary",
+    "local_data: needs data that is not in git (images/, data/ corpora, fixtures)",
+]

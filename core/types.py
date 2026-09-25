@@ -79,6 +79,7 @@ class Verdict:
     triage: dict[str, Any] = field(default_factory=dict)
     findings: Optional[Findings] = None
     error: Optional[str] = None
+    run_id: Optional[str] = None         # matches detail.run_id on this run's audit events
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

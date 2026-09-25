@@ -3,11 +3,16 @@
     1 deidentify    sim/edge/deid.py, pseudonyms recorded in the identity map
     2 blob_put      the cleaned study, transient copy
     3 import        datastore.import_study
-    4 infer         registry entry by modality, inference.score
-    5 adapt         adapter.adapt -> Findings
-    6 triage        triage.rank -> lane, or abstention
-    7 persist       worklist row
-    8 blob_delete   the transient copy, always, even after a failure
+    4 prepare_inputs  registry entry by modality; the model's inputs (for brain,
+                      channels identified and rebuilt as NIfTI)
+    5 infer         inference.score, the model alone
+    6 adapt         adapter.adapt -> Findings
+    7 triage        triage.rank -> lane, or abstention
+    8 persist       worklist row
+    9 blob_delete   the transient copy, always, even after a failure
+
+prepare_inputs and infer are separate steps so the audit, and the latency
+table built from it, never counts pipeline overhead as model time.
 
 Every step appends an audit event with its measured duration in milliseconds.
 If a step raises, the audit records the failure, the worklist gets a row with
@@ -23,11 +28,13 @@ from __future__ import annotations
 import datetime
 import importlib.util
 import io
+import os
 import tempfile
 import time
 import traceback
 import uuid
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterable
@@ -83,7 +90,50 @@ class _Run:
             detail={"run_id": self.id, **detail}))
 
 
-def _model_inputs(entry: dict, cleaned: list, meta: StudyMeta, workdir: Path) -> dict[str, Any]:
+def _workers(n: int | None) -> int:
+    return max(1, n or os.cpu_count() or 1)
+
+
+def deidentify_all(paths: Iterable[Path], identity, workers: int | None = None):
+    """De-identify every instance, OCR included, on a thread pool.
+
+    Every instance is de-identified and every image gets both OCR passes;
+    parallelism changes only wall time, never which pixels are searched. No
+    slice is sampled or skipped: a name on the one slice nobody OCRs is the
+    failure this step exists to prevent.
+
+    Threads, not processes: pytesseract.image_to_data runs the tesseract binary
+    as a subprocess, so the wait happens outside the GIL, and arrays are not
+    pickled. identity.IdentityMap takes a lock and opens its own connection per
+    call, so sharing it across threads keeps UID mapping consistent.
+
+    workers defaults to os.cpu_count(). Returns (datasets, reports) in the
+    order of paths. The first exception from any instance is raised.
+    """
+    paths = list(paths)
+    workers = _workers(workers)
+
+    # Each tesseract process starts an OpenMP thread team sized to the machine.
+    # Several at once oversubscribe the CPUs and spin against each other.
+    # Measured on the 4-core build container, 16 synthetic 320 px images:
+    #   OMP_THREAD_LIMIT unset: 1 worker 5.2 s, 2 workers 91.6 s, 4 workers 299.2 s
+    #   OMP_THREAD_LIMIT=1:     1 worker 5.1 s, 2 workers  2.5 s, 4 workers   1.3 s
+    # pytesseract passes os.environ to the subprocess, so the limit is set here.
+    # An explicit OMP_THREAD_LIMIT from the operator is left alone.
+    if workers > 1:
+        os.environ.setdefault("OMP_THREAD_LIMIT", "1")
+
+    def one(p):
+        ds = pydicom.dcmread(p)
+        return ds, deid.deidentify(ds, identity)
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        done = list(pool.map(one, paths))
+    return [ds for ds, _ in done], [r for _, r in done]
+
+
+def _model_inputs(entry: dict, adapter, cleaned: list, meta: StudyMeta,
+                  workdir: Path) -> dict[str, Any]:
     fmt = entry["input"]["format"]
     if fmt == "dicom":
         if len(cleaned) != 1:
@@ -97,18 +147,11 @@ def _model_inputs(entry: dict, cleaned: list, meta: StudyMeta, workdir: Path) ->
         by_series = defaultdict(list)
         for ds in cleaned:
             by_series[str(ds.SeriesInstanceUID)].append(ds)
-        # SeriesNumber n is model channel n-1 (nifti_to_dicom.py writes them so).
-        # The sequence names cannot be cross-checked here: de-identification
-        # replaces SeriesDescription (PS3.15 Clean Descriptors), so after step 1
-        # every series reads "TRIAGE SERIES". A source that numbers its series in
-        # a different order is not caught, and a scrambled order still yields a
-        # plausible-looking mask. Known limitation, stated in docs/HOW-IT-WORKS.md.
-        numbers = [s.number for s in meta.series]
-        if numbers != list(range(1, len(channels) + 1)):
-            raise ValueError(f"series numbers {numbers}; expected 1..{len(channels)} "
-                             f"in channel order {channels}")
+        # The adapter identifies each channel from the sequence token deid.py
+        # keeps (T1C, T1, T2, FLAIR) and raises if it cannot. SeriesNumber is
+        # never used for this: it follows acquisition order.
         paths = {}
-        for channel, series in zip(channels, meta.series):
+        for channel, series in adapter.resolve_channels(meta.series, entry).items():
             path = workdir / f"{channel}.nii.gz"
             series_to_nifti(by_series[series.series_uid]).to_filename(path)
             paths[channel] = path
@@ -118,7 +161,7 @@ def _model_inputs(entry: dict, cleaned: list, meta: StudyMeta, workdir: Path) ->
 
 def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
            table: TablePort, inference: InferencePort, registry: Registry,
-           identity) -> Verdict:
+           identity, ocr_workers: int | None = None) -> Verdict:
     run = _Run(table)
     paths = sorted(Path(p) for p in paths)
     keys: list[str] = []
@@ -132,11 +175,9 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
             with run.step("deidentify", instances=len(paths)) as d:
                 if not paths:
                     raise ValueError("no DICOM files to ingest")
-                cleaned, masked = [], 0
-                for p in paths:
-                    ds = pydicom.dcmread(p)
-                    masked += deid.deidentify(ds, identity)["text_regions_masked"]
-                    cleaned.append(ds)
+                cleaned, reports = deidentify_all(paths, identity, ocr_workers)
+                masked = sum(r["text_regions_masked"] for r in reports)
+                d["ocr_workers"] = _workers(ocr_workers)
                 uids = {str(ds.StudyInstanceUID) for ds in cleaned}
                 if len(uids) != 1:
                     raise ValueError(f"files span {len(uids)} studies; ingest one at a time")
@@ -162,10 +203,12 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
                 d.update(datastore_id=ref.datastore_id, modality=meta.modality,
                          series=len(meta.series))
 
-            with run.step("infer") as d:
+            with run.step("prepare_inputs") as d:
                 entry = registry.for_modality(meta.modality)
-                d.update(model_id=entry["id"], runtime=entry["runtime"])
-                inputs = _model_inputs(entry, cleaned, meta, work)
+                d.update(model_id=entry["id"], format=entry["input"]["format"])
+                inputs = _model_inputs(entry, registry.adapter(entry), cleaned, meta, work)
+
+            with run.step("infer", model_id=entry["id"], runtime=entry["runtime"]):
                 raw = inference.score(ref, entry, **inputs)
 
             with run.step("adapt", model_id=entry["id"]) as d:
@@ -184,14 +227,14 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
                          "reason": findings.meta.get("abstain_reason", "no findings")}
                 d.update(lane=t["lane"], acuity=t.get("acuity"), driver=t.get("driver"))
             verdict = Verdict(ref=ref, model_id=entry["id"], status="SCORED",
-                              lane=t["lane"], triage=t, findings=findings)
+                              lane=t["lane"], triage=t, findings=findings, run_id=run.id)
 
             with run.step("persist", table="worklist"):
                 table.put_item("worklist", _row(run, verdict, meta))
     except Exception as e:
         verdict = Verdict(ref=ref, model_id=entry["id"] if entry else None, status="FAILED",
                           lane="FAILED", findings=findings,
-                          error=f"{type(e).__name__}: {e}")
+                          error=f"{type(e).__name__}: {e}", run_id=run.id)
         _persist_failure(run, verdict, meta, traceback.format_exc(limit=3))
     finally:
         _delete_transient(run, blob, keys)

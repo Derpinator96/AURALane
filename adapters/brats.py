@@ -149,6 +149,79 @@ def render_overlay(structural, prediction, orientation, slice_range) -> tuple[by
     return buf.getvalue(), z
 
 
+def resolve_channels(series, entry: dict) -> dict[str, Any]:
+    """{model channel: series} from the de-identified sequence token. Never guesses.
+
+    series: SeriesMeta-like objects with .description and .number, after
+    de-identification. deid.py keeps an MR SeriesDescription only when the whole
+    description is a known sequence name, rewritten to the canonical token
+    (T1C, T1, T2, FLAIR); everything else reads as the dummy.
+
+    Every model channel must be matched by exactly one series. Otherwise this
+    raises, naming what was unresolved. There is no fallback to SeriesNumber:
+    scanners number series by acquisition order, and scrambled channels give a
+    confident, wrong segmentation with no error. Refusing is a visible failure;
+    guessing is an invisible one.
+    """
+    channels = entry["input"]["channels"]
+    wanted = {c.upper(): c for c in channels}
+    found: dict[str, list] = {c: [] for c in channels}
+    unmatched = []
+    for s in series:
+        channel = wanted.get(str(s.description).upper())
+        (found[channel] if channel else unmatched).append(s)
+
+    missing = [c for c in channels if not found[c]]
+    doubled = {c: [x.number for x in found[c]] for c in channels if len(found[c]) > 1}
+    if missing or doubled:
+        parts = []
+        if missing:
+            parts.append(f"no series identified as {', '.join(missing)}")
+        if doubled:
+            parts.append("more than one series for " + ", ".join(
+                f"{c} (series {n})" for c, n in doubled.items()))
+        if unmatched:
+            parts.append("unrecognised series: " + ", ".join(
+                f"{x.number} {x.description!r}" for x in unmatched))
+        raise ValueError(f"cannot identify the {entry['id']} input channels: "
+                         + "; ".join(parts) + ". Refusing to guess the order.")
+    return {c: found[c][0] for c in channels}
+
+
+def findings_from_metrics(m: dict, entry: dict, brain_cm3: float,
+                          lr_width: int) -> tuple[dict[str, float], dict[str, Any]]:
+    """The findings arithmetic alone, on one metrics.json.
+
+    brain_cm3: brain volume. lr_width: voxels along the left-right axis, the one
+    the orientation codes name. Returns (findings, derived values for meta).
+    """
+    wt, tc, et = m["wt_volume_cm3"], m["tc_volume_cm3"], m["et_volume_cm3"]
+    a = entry["anchors"]
+    burden = _anchor(wt / brain_cm3, *a["tumor_burden"])
+
+    # Off-midline eccentricity along the left-right axis, found from the
+    # orientation codes, never assumed to be index 0. Assumes the volume is
+    # centred on the head's midline, which holds for BraTS (registered to the
+    # SRI24 atlas) and not for an arbitrary acquisition.
+    lr = _axis(m["orientation"], "LR")
+    ecc = min(1.0, abs(m["centroid_voxel"][lr] - lr_width / 2) / (lr_width / 2))
+
+    # Combination rule is our choice and clinically unvalidated: volume carries
+    # the signal, eccentricity scales it from half (central lesion) to full
+    # (lesion at the edge of the volume). A small lateral lesion stays small.
+    mass_effect = burden * (0.5 + 0.5 * ecc)
+
+    findings = {
+        "mass_effect": mass_effect,
+        "enhancing_tumor": _anchor(et, *a["enhancing_tumor"]),
+        "tumor_burden": burden,
+        "edema_volume": _anchor(wt - tc, *a["edema_volume"]),
+    }
+    derived = {"brain_volume_cm3": round(brain_cm3, 1), "wt_fraction": wt / brain_cm3,
+               "edema_cm3": round(wt - tc, 2), "eccentricity": ecc, "lr_axis": lr}
+    return findings, derived
+
+
 def adapt(model_output: dict[str, Any], context: dict[str, Any]) -> Findings:
     """model_output: metrics.json as a dict.
 
@@ -181,30 +254,9 @@ def adapt(model_output: dict[str, Any], context: dict[str, Any]) -> Findings:
         context["prediction"] = nib.load(m["_prediction_path"])
 
     brain = context.get("brain_volume_cm3") or brain_volume_cm3(study, context["structural"])
-    a = entry["anchors"]
-    burden = _anchor(wt / brain, *a["tumor_burden"])
-
-    # Off-midline eccentricity along the left-right axis, found from the
-    # orientation codes, never assumed to be index 0. Assumes the volume is
-    # centred on the head's midline, which holds for BraTS (registered to the
-    # SRI24 atlas) and not for an arbitrary acquisition.
     lr = _axis(m["orientation"], "LR")
-    width = context["structural"].shape[lr]
-    ecc = min(1.0, abs(m["centroid_voxel"][lr] - width / 2) / (width / 2))
-
-    # Combination rule is our choice and clinically unvalidated: volume carries
-    # the signal, eccentricity scales it from half (central lesion) to full
-    # (lesion at the edge of the volume). A small lateral lesion stays small.
-    mass_effect = burden * (0.5 + 0.5 * ecc)
-
-    findings = {
-        "mass_effect": mass_effect,
-        "enhancing_tumor": _anchor(et, *a["enhancing_tumor"]),
-        "tumor_burden": burden,
-        "edema_volume": _anchor(wt - tc, *a["edema_volume"]),
-    }
-    meta.update({"brain_volume_cm3": round(brain, 1), "wt_fraction": wt / brain,
-                 "edema_cm3": round(wt - tc, 2), "eccentricity": ecc, "lr_axis": lr})
+    findings, derived = findings_from_metrics(m, entry, brain, context["structural"].shape[lr])
+    meta.update(derived)
 
     png, z = render_overlay(context["structural"], context["prediction"],
                             m["orientation"], m["slice_range"])

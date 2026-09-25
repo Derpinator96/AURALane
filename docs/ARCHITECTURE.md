@@ -21,9 +21,11 @@ does not read a study.
                       [React app: login, worklist, viewer, audit]
 ```
 
-`core/pipeline.py` implements the middle three boxes as eight audited steps:
-`deidentify`, `blob_put`, `import`, `infer`, `adapt`, `triage`, `persist`,
-`blob_delete`. De-identification is first and nothing is stored before it
+`core/pipeline.py` implements the middle three boxes as nine audited steps:
+`deidentify`, `blob_put`, `import`, `prepare_inputs`, `infer`, `adapt`,
+`triage`, `persist`, `blob_delete`. `prepare_inputs` (building the model's
+inputs) and `infer` (the model call) are separate so model time is measured on
+its own. De-identification is first and nothing is stored before it
 succeeds.
 
 ## Ports

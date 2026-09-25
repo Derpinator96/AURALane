@@ -8,6 +8,7 @@ saturated and the whole frame came back a uniform 65535 with the text lost in
 it. It now draws into a separate mask and composites at native bit depth.
 """
 import os
+import shutil
 import sys
 
 import numpy as np
@@ -36,6 +37,9 @@ def _ocr(arr, maxval):
 
 
 @pytest.mark.parametrize("maxval", [255, 65535])
+@pytest.mark.skipif(shutil.which("tesseract") is None, reason=(
+    "needs Tesseract. NOT VERIFIED: that burned-in text is legible to OCR, i.e. that "
+    "the privacy corpus actually contains readable identifiers to mask"))
 def test_burn_in_adds_text_and_leaves_the_rest_untouched(maxval):
     frame = _frame(maxval)
     out = make_dicom.burn_in(frame, maxval, LINES)

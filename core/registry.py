@@ -71,6 +71,10 @@ class Registry:
                     and callable(getattr(mod, "finding_names", None))):
                 raise RegistryError(f"{entry['id']}: {entry['adapter']} lacks adapt "
                                     f"or finding_names")
+            if entry["input"].get("format") == "nifti" and not callable(
+                    getattr(mod, "resolve_channels", None)):
+                raise RegistryError(f"{entry['id']}: multi-series input needs "
+                                    f"{entry['adapter']}.resolve_channels")
             missing = [f for f in mod.finding_names(entry) if f not in entry["urgency"]]
             if missing:
                 raise RegistryError(f"{entry['id']}: no urgency weight for {missing}")
