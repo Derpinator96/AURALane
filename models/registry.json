@@ -1,0 +1,84 @@
+{
+  "models": [
+    {
+      "id": "cxr-densenet-v1",
+      "modality": "CR",
+      "input": {
+        "format": "dicom",
+        "dims": 2,
+        "series": 1
+      },
+      "runtime": "lambda",
+      "output_type": "multilabel",
+      "adapter": "adapters.multilabel",
+      "reference": "reference.json",
+      "z_anchor": [
+        0.5,
+        2.5
+      ],
+      "urgency": {
+        "Pneumothorax": 1.0,
+        "Edema": 0.85,
+        "Consolidation": 0.78,
+        "Pneumonia": 0.75,
+        "Effusion": 0.66,
+        "Mass": 0.58,
+        "Lung Opacity": 0.52,
+        "Infiltration": 0.46,
+        "Nodule": 0.44,
+        "Fracture": 0.42,
+        "Atelectasis": 0.3,
+        "Lung Lesion": 0.3,
+        "Enlarged Cardiomediastinum": 0.26,
+        "Cardiomegaly": 0.24,
+        "Pleural_Thickening": 0.2,
+        "Emphysema": 0.18,
+        "Fibrosis": 0.16,
+        "Hernia": 0.12
+      }
+    },
+    {
+      "id": "brain-brats-monai-v0.5.4",
+      "modality": "MR",
+      "input": {
+        "format": "nifti",
+        "dims": 3,
+        "channels": [
+          "T1c",
+          "T1",
+          "T2",
+          "FLAIR"
+        ]
+      },
+      "runtime": "sagemaker-async",
+      "output_type": "segmentation-probability",
+      "output_channels": [
+        "TC",
+        "WT",
+        "ET"
+      ],
+      "adapter": "adapters.brats",
+      "anchors": {
+        "enhancing_tumor": [
+          0.5,
+          40
+        ],
+        "edema_volume": [
+          5,
+          100
+        ],
+        "tumor_burden": [
+          0.005,
+          0.1
+        ]
+      },
+      "min_tumor_ml": 1.0,
+      "urgency": {
+        "mass_effect": 1.0,
+        "enhancing_tumor": 0.95,
+        "tumor_burden": 0.6,
+        "edema_volume": 0.55
+      }
+    }
+  ]
+}

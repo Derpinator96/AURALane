@@ -1,4 +1,8 @@
-"""AURALane triage logic — the part the demo is actually about.
+# FROZEN COPY of triage.py at 71a9ebd, before urgency moved to the registry.
+# The regression test compares the new path against this. Do not edit.
+# Only change from the original: em dashes in comments and docstrings
+# replaced; the code is identical (checked by AST with docstrings removed).
+"""AURALane triage logic, the part the demo is actually about.
 
 Four steps, in this order:
 
@@ -28,27 +32,33 @@ import os
 # reproducible, and stated as such on screen.
 TEMPERATURE = 1.6
 
-# How fast a finding needs a human, not how sure the model is. Per model, in
-# models/registry.json; the chest entry's "urgency" is the dict that lived here.
-_REGISTRY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              "models", "registry.json")
-DEFAULT_MODEL = "cxr-densenet-v1"
-_urgency = {}
-
-
-def load_urgency(model_id=DEFAULT_MODEL, path=None):
-    """{finding: urgency weight} from the model's registry entry."""
-    if model_id not in _urgency:
-        with open(path or _REGISTRY_PATH) as f:
-            entries = {e["id"]: e for e in json.load(f)["models"]}
-        _urgency[model_id] = entries[model_id]["urgency"]
-    return _urgency[model_id]
-
+# How fast a finding needs a human, not how sure the model is.
+# Chest X-ray only; this is the first lane in the roadmap.
+URGENCY = {
+    "Pneumothorax": 1.00,          # can be minutes
+    "Edema": 0.85,
+    "Consolidation": 0.78,
+    "Pneumonia": 0.75,
+    "Effusion": 0.66,
+    "Mass": 0.58,
+    "Lung Opacity": 0.52,
+    "Infiltration": 0.46,
+    "Nodule": 0.44,
+    "Fracture": 0.42,
+    "Atelectasis": 0.30,
+    "Lung Lesion": 0.30,
+    "Enlarged Cardiomediastinum": 0.26,
+    "Cardiomegaly": 0.24,
+    "Pleural_Thickening": 0.20,
+    "Emphysema": 0.18,
+    "Fibrosis": 0.16,
+    "Hernia": 0.12,
+}
 
 # acuity floor, label shown, SLA in minutes
 # Thresholds are an operating point, not a law of nature. They were set from the
 # acuity percentiles of a 100-study NIH ChestX-ray14 sample so the critical lane
-# holds roughly the top 7% — about what one reader can actually absorb. Re-tune
+# holds roughly the top 7%, about what one reader can actually absorb. Re-tune
 # them against your own corpus; that is a capacity decision, not a modelling one.
 LANES = [("CRITICAL", 78, "< 15 min", 15),
          ("URGENT", 52, "< 1 hr", 60),
@@ -95,34 +105,19 @@ def _phi(z):
 def _signal(p, ref):
     """How far above this finding's own baseline the output sits.
 
-    0.0 means 'typical for this finding across the reference set' — which is
+    0.0 means 'typical for this finding across the reference set', which is
     the whole point, because typical is not a reason to jump the queue.
     """
     z = (p - ref["mean"]) / max(ref["sd"], 1e-6)
     return max(0.0, min(1.0, (z - Z_FLOOR) / (Z_CEIL - Z_FLOOR)))
 
 
-def signals(preds, reference=None):
-    """{finding: raw sigmoid} -> {finding: signal in [0, 1]}, in preds order."""
-    ref = reference or load_reference()
-    return {k: _signal(v, ref[k]) for k, v in preds.items() if k in ref}
-
-
-def score(preds, reference=None, urgency=None):
+def score(preds, reference=None):
     """preds: {pathology: raw sigmoid output} -> triage decision."""
+    ref = reference or load_reference()
     cal = {k: calibrate(v) for k, v in preds.items()}
-    return rank(signals(preds, reference), urgency, confidence=cal, raw=preds)
-
-
-def rank(sig, urgency=None, confidence=None, raw=None):
-    """{finding: signal} -> triage decision. What every model's findings go through.
-
-    urgency defaults to the chest model's registry entry. confidence and raw are
-    per-finding display values; a model without them (brain segmentation) gets
-    None in those fields, never a made-up number.
-    """
-    urgency = urgency if urgency is not None else load_urgency()
-    weighted = {k: sig[k] * urgency.get(k, 0.15) for k in sig}
+    sig = {k: _signal(v, ref[k]) for k, v in preds.items() if k in ref}
+    weighted = {k: sig[k] * URGENCY.get(k, 0.15) for k in sig}
 
     driver = max(weighted, key=weighted.get)
     acuity = round(weighted[driver] * 100, 1)
@@ -144,14 +139,14 @@ def rank(sig, urgency=None, confidence=None, raw=None):
         "sla_minutes": minutes,
         "abstained": abstained,
         "driver": driver,
-        "confidence": round(confidence[driver], 3) if confidence else None,
+        "confidence": round(cal[driver], 3),
         "signal": round(s, 3),
-        "raw": round(float(raw[driver]), 3) if raw else None,
+        "raw": round(float(preds[driver]), 3),
         "top_findings": [
             {"name": k,
-             "confidence": round(confidence[k], 3) if confidence else None,
+             "confidence": round(cal[k], 3),
              "signal": round(sig[k], 3),
-             "urgency": urgency.get(k, 0.15)}
+             "urgency": URGENCY.get(k, 0.15)}
             for k in top
         ],
     }

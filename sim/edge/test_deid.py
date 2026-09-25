@@ -270,6 +270,80 @@ def test_bright_pass_floor_keeps_low_confidence_words(monkeypatch):
     # keeps it. Both drop the -1 sentinel even though its text is non-empty.
     assert boxes == [(10, 20, 30, 10)], boxes
 
+
+def _synthetic_instance(burned=True):
+    """One CR instance built by the generator, no corpus needed."""
+    import datetime
+    import random
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "..", "generator"))
+    import make_dicom
+    when = datetime.datetime(2026, 1, 2, 3, 4, 5)
+    ident = make_dicom.make_identity(41, random.Random(0), when, burned)
+    pixels = np.full((256, 256), 60, dtype=np.uint8)
+    if burned:
+        pixels = make_dicom.burn_in(pixels, 255, ["SIM PATIENT 0042", "SIMID-000042"])
+    return make_dicom.build_instance(pixels, 255, ident, when, "synthetic"), ident
+
+
+def _tesseract_missing(*a, **k):
+    import pytesseract
+    raise pytesseract.TesseractNotFoundError()
+
+
+def test_deidentify_fails_closed_when_ocr_unavailable(monkeypatch):
+    """No Tesseract binary: deidentify raises, and nothing is half cleaned.
+
+    The old behaviour logged a warning, returned no regions, and let the study
+    through with its burned-in name intact.
+    """
+    import pytesseract
+    monkeypatch.setattr(pytesseract, "image_to_data", _tesseract_missing)
+    ds, ident = _synthetic_instance()
+    pixels_before = ds.PixelData
+
+    try:
+        deid.deidentify(ds, _fresh_map())
+    except deid.OCRUnavailable:
+        pass
+    else:
+        raise AssertionError("deidentify returned instead of raising OCRUnavailable")
+
+    # Raised before the header walk: nothing claims to be de-identified.
+    assert "PatientIdentityRemoved" not in ds
+    assert str(ds.PatientID) == ident["patient_id"]
+    assert ds.PixelData == pixels_before
+
+
+def test_deidentify_fails_closed_when_pytesseract_missing(monkeypatch):
+    """The package missing entirely is the same failure, not a warning."""
+    monkeypatch.setitem(sys.modules, "pytesseract", None)   # import raises ImportError
+    ds, _ = _synthetic_instance()
+    try:
+        deid.deidentify(ds, _fresh_map())
+    except deid.OCRUnavailable:
+        pass
+    else:
+        raise AssertionError("deidentify returned instead of raising OCRUnavailable")
+    assert "PatientIdentityRemoved" not in ds
+
+
+def test_allow_unmasked_continues_and_logs(monkeypatch, caplog):
+    """The explicit opt-out still strips the header and says so at ERROR."""
+    import logging
+    import pytesseract
+    monkeypatch.setattr(pytesseract, "image_to_data", _tesseract_missing)
+    ds, ident = _synthetic_instance(burned=False)
+
+    with caplog.at_level(logging.ERROR, logger="deid"):
+        report = deid.deidentify(ds, _fresh_map(), allow_unmasked=True)
+
+    assert report["text_regions_masked"] == 0
+    assert str(ds.PatientID) != ident["patient_id"]
+    assert ds.PatientIdentityRemoved == "YES"
+    assert any("NOT MASKED" in r.getMessage() for r in caplog.records)
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):
