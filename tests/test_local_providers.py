@@ -93,3 +93,21 @@ def test_template_llm_leaves_impression_to_radiologist():
 def test_aws_stubs_name_their_service(cls, call):
     with pytest.raises(NotImplementedError, match="Prompt 3"):
         call(cls())
+
+
+def test_fileblob_signed_urls_expire_and_resist_tampering(tmp_path):
+    from urllib.parse import parse_qs, urlsplit
+    b = FileBlob(tmp_path, url_base="/api/blob")
+    b.put("evidence/x.png", b"png")
+    u = urlsplit(b.presigned_url("evidence/x.png", ttl=60))
+    q = {k: v[0] for k, v in parse_qs(u.query).items()}
+    assert u.path == "/api/blob/evidence/x.png"
+    assert b.open_signed("evidence/x.png", int(q["expires"]), q["sig"]).read_bytes() == b"png"
+    with pytest.raises(PermissionError):
+        b.open_signed("evidence/y.png", int(q["expires"]), q["sig"])        # other key
+    with pytest.raises(PermissionError):
+        b.open_signed("evidence/x.png", int(q["expires"]) + 1, q["sig"])    # longer expiry
+    u = urlsplit(b.presigned_url("evidence/x.png", ttl=-5))
+    q = {k: v[0] for k, v in parse_qs(u.query).items()}
+    with pytest.raises(PermissionError, match="expired"):
+        b.open_signed("evidence/x.png", int(q["expires"]), q["sig"])

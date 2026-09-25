@@ -98,6 +98,29 @@ def render_gradcam(model_input: np.ndarray, heat: np.ndarray, driver: str) -> by
     return buf.getvalue()
 
 
+def render_heat_layer(heat: np.ndarray) -> bytes:
+    """The Grad-CAM heat alone, as a transparent 224 px RGBA PNG, same colours
+    and threshold as render_gradcam. The viewer stretches it over
+    crop_box(...) so it sits on the frame the radiologist is looking at."""
+    from PIL import Image
+    colour = np.stack([np.full_like(heat, 255), 220 * (1 - heat), np.zeros_like(heat)], -1)
+    alpha = np.where(heat < 0.2, 0.0, 0.55 * heat)[..., None] * 255
+    rgba = np.concatenate([colour, alpha], -1).clip(0, 255).astype(np.uint8)
+    buf = io.BytesIO()
+    Image.fromarray(rgba, "RGBA").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def crop_box(rows: int, cols: int) -> list[int]:
+    """[x, y, size] in frame pixels of the square the model saw.
+
+    torchxrayvision.datasets.XRayCenterCrop (checked in the installed source):
+    crop_size = min(y, x); startx = x // 2 - crop_size // 2, likewise starty.
+    """
+    size = min(rows, cols)
+    return [cols // 2 - size // 2, rows // 2 - size // 2, size]
+
+
 class InProcessInference(InferencePort):
     def __init__(self, blob=None):
         """blob: a BlobPort for the Grad-CAM overlay. Without one, chest
@@ -142,10 +165,14 @@ class InProcessInference(InferencePort):
             heat = cam(input_tensor=x, targets=[target])[0]
             out = cam.outputs[0].detach().cpu().numpy()
         preds = {p: float(v) for p, v in zip(model.pathologies, out)}
-        key = f"evidence/{ref.study_uid}/gradcam_{_slug(target.driver)}.png"
-        self.blob.put(key, render_gradcam(x[0, 0].numpy(), heat, target.driver))
+        stem = f"evidence/{ref.study_uid}/gradcam_{_slug(target.driver)}"
+        self.blob.put(f"{stem}.png", render_gradcam(x[0, 0].numpy(), heat, target.driver))
+        self.blob.put(f"{stem}_layer.png", render_heat_layer(heat))
         return {"preds": preds,
-                "evidence": {"gradcam_png": key, "gradcam_finding": target.driver}}
+                "evidence": {"gradcam_png": f"{stem}.png",
+                             "gradcam_layer_png": f"{stem}_layer.png",
+                             "gradcam_box": crop_box(*pixels.shape[:2]),
+                             "gradcam_finding": target.driver}}
 
     def _segmentation(self, model_cfg, *, nifti: dict[str, Path], **_) -> dict[str, Any]:
         """nifti: {"T1c", "T1", "T2", "FLAIR"} -> paths. Returns metrics.json.

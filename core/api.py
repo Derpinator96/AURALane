@@ -12,6 +12,14 @@ not read patient studies. A radiologist token on an admin route is 403.
 The API never returns pixels. frame-url returns a URL the browser fetches from
 the datastore directly.
 
+Two kinds of image leave this system, and the rule differs between them:
+  - DICOM frames live in the datastore (Orthanc, HealthImaging). The browser
+    fetches them from the datastore itself; the API never proxies them.
+  - Evidence overlays (Grad-CAM, segmentation) are derived artefacts in blob
+    storage. The API hands out BlobPort.presigned_url for them: an S3 presigned
+    URL on AWS, or locally a signed /api/blob URL this app serves. Serving a
+    derived PNG from blob storage is not proxying the datastore.
+
 Every number in a response comes from a stored row or the registry. Nothing is
 recomputed here, and the browser computes nothing.
 
@@ -25,6 +33,7 @@ from collections import Counter
 from typing import Any, Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 import triage
@@ -172,9 +181,30 @@ def create_app(p: dict, registry: Registry | None = None) -> FastAPI:
         draft = p["llm"].draft({"study": study, "model_id": row.get("model_id"),
                                 "lane": row["lane"], "triage": row.get("triage") or {},
                                 "findings": row.get("findings") or {}})
+        evidence = dict(row.get("evidence") or {})
+        evidence_urls = {k: p["blob"].presigned_url(v) for k, v in evidence.items()
+                         if isinstance(v, str) and k.endswith("_png")}
         return {"disclaimer": DISCLAIMER, "study": view(row), "findings": findings,
                 "top_findings": (row.get("triage") or {}).get("top_findings", []),
-                "evidence": row.get("evidence") or {}, "series": series, "draft": draft}
+                "evidence": evidence, "evidence_urls": evidence_urls, "series": series,
+                "draft": draft}
+
+    @app.get("/api/studies/{study}/series/{series_uid}")
+    def series(study: str, series_uid: str, who: Principal = Depends(radiologist)):
+        """Per instance: the frame URL the browser fetches pixels from, and the
+        DICOM header the viewer needs to decode them. Headers, never pixels."""
+        row = row_or_404(study)
+        ref = StudyRef(study, row["datastore_id"])
+        try:
+            items = p["datastore"].series_metadata(ref, series_uid)
+        except LookupError as e:
+            raise HTTPException(404, str(e))
+        instances = []
+        for meta in items:
+            sop = meta["00080018"]["Value"][0]
+            instances.append({"sop": sop, "metadata": meta,
+                              "frame_url": p["datastore"].frame_url(ref, series_uid, sop)})
+        return {"series_uid": series_uid, "instances": instances}
 
     @app.get("/api/studies/{study}/frame-url")
     def frame_url(study: str, series: str, instance: str, frame: int = 1,
@@ -203,6 +233,23 @@ def create_app(p: dict, registry: Registry | None = None) -> FastAPI:
             detail={"verdict": body.verdict, "lane": row["lane"], "acuity": t.get("acuity"),
                     "driver": t.get("driver"), "model_id": row.get("model_id")}))
         return {"disclaimer": DISCLAIMER, "study": view(row)}
+
+    @app.get("/api/blob/{key:path}")
+    def blob(key: str, expires: int, sig: str):
+        """Evidence PNGs behind a local presigned URL. The signature and expiry in
+        the URL are the credential, as with an S3 presigned URL, so no bearer
+        token is needed. Only providers that sign locally (FileBlob) have
+        open_signed; S3 URLs never point here."""
+        opener = getattr(p["blob"], "open_signed", None)
+        if opener is None:
+            raise HTTPException(404, "no local blob store")
+        try:
+            path = opener(key, expires, sig)
+        except PermissionError as e:
+            raise HTTPException(403, str(e))
+        except (FileNotFoundError, ValueError):
+            raise HTTPException(404, "no such object")
+        return FileResponse(path, headers={"Cache-Control": "private, max-age=300"})
 
     # -- admin ----------------------------------------------------------------
     @app.get("/api/admin/audit")

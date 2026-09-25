@@ -2,7 +2,8 @@
 
     python scripts/make_fixtures.py
 
-Writes fixtures/worklist.json and client/public/fixtures/frames/sample-cr.dcm.
+Writes fixtures/worklist.json, the sample frame under client/public/fixtures/,
+and Grad-CAM overlays under fixtures/blob/.
 Run AURALANE_RUNTIME=fixture python -m core.run serve to serve them.
 
 Every number in a fixture row is a real computation, and each row says where
@@ -23,8 +24,15 @@ pseudonymous patient ID (FIXTURE-nnnn).
 
 The sample frame is TorchXRayVision's public example image
 (shaurya-webapp/tests/16747_3_1.jpg) wrapped as CR DICOM by
-sim/generator/make_dicom.py. Every fixture chest row displays this one image;
-it is not the image the row's numbers were computed from.
+sim/generator/make_dicom.py, stored as its raw pixel bytes plus its DICOM
+header, which is what a WADO-RS frame request returns. Every fixture chest row
+displays this one image; it is not the image the row's numbers were computed
+from.
+
+Each chest row's Grad-CAM overlay is computed on that sample image for the
+row's own driver finding (the one that set its lane in scores.json), with
+TorchXRayVision, so the heat sits on the image actually shown. Each row's
+evidence says so. Needs torch and the DenseNet weights.
 """
 from __future__ import annotations
 
@@ -48,16 +56,17 @@ from core.types import Findings             # noqa: E402
 import make_dicom                           # noqa: E402
 
 OUT = ROOT / "fixtures" / "worklist.json"
-FRAME = ROOT / "client" / "public" / "fixtures" / "frames" / "sample-cr.dcm"
-FRAME_URL = "/fixtures/frames/sample-cr.dcm"
+FRAME = ROOT / "client" / "public" / "fixtures" / "frames" / "sample-cr.frame1.raw"
+FRAME_URL = "/fixtures/frames/sample-cr.frame1.raw"
+BLOB = ROOT / "fixtures" / "blob"
 SAMPLE = ROOT / "shaurya-webapp" / "tests" / "16747_3_1.jpg"
 BRAIN = ROOT / "_external" / "brainmri" / "data" / "studies"
 BRAIN_CASES = ["00000057", "MRI-1790025179", "MRI-1790070297", "MRI-1790081977"]
 PER_LANE = 3
 
 
-def sample_frame() -> dict:
-    """Write the one fixture frame; return its series entry."""
+def sample_frame():
+    """Write the one fixture frame; return (series entry, the dataset)."""
     img = Image.open(SAMPLE).convert("L")
     img.thumbnail((512, 512))
     when = datetime.datetime(2026, 9, 25, 8, 0, 0)
@@ -65,10 +74,43 @@ def sample_frame() -> dict:
     ds = make_dicom.build_instance(np.asarray(img), 255, ident, when, SAMPLE.name)
     ds.PatientName, ds.PatientID = "FIXTURE^SAMPLE", "FIXTURE-SAMPLE"
     FRAME.parent.mkdir(parents=True, exist_ok=True)
-    ds.save_as(FRAME, enforce_file_format=True)
-    return {"series_uid": str(ds.SeriesInstanceUID), "number": 1, "description": "PA",
-            "instance_count": 1, "instance_uids": [str(ds.SOPInstanceUID)],
-            "frame_url": FRAME_URL}
+    for old in FRAME.parent.glob("sample-cr*"):
+        old.unlink()
+    FRAME.write_bytes(ds.PixelData)
+    header = ds.to_json_dict()
+    header.pop("7FE00010", None)
+    return ({"series_uid": str(ds.SeriesInstanceUID), "number": 1, "description": "PA",
+             "instance_count": 1, "instance_uids": [str(ds.SOPInstanceUID)],
+             "frame_url": FRAME_URL, "metadata": [header]}, ds)
+
+
+def gradcam_for(ds, drivers) -> dict:
+    """{driver: evidence} for the sample image, one Grad-CAM per driver."""
+    import io
+    import imaging
+    import torchxrayvision as xrv
+    from pytorch_grad_cam import GradCAM
+    from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+    from core.providers.local.inference import (_png_bytes, _slug, crop_box,
+                                                render_gradcam, render_heat_layer)
+    model = xrv.models.DenseNet(weights="densenet121-res224-all")
+    x = imaging.to_model_input(io.BytesIO(_png_bytes(ds.pixel_array)))
+    out = {}
+    for driver in sorted(drivers):
+        target = ClassifierOutputTarget(list(model.pathologies).index(driver))
+        with GradCAM(model=model, target_layers=[model.features]) as cam:
+            heat = cam(input_tensor=x, targets=[target])[0]
+        stem = f"evidence/fixture-sample/gradcam_{_slug(driver)}"
+        (BLOB / stem).parent.mkdir(parents=True, exist_ok=True)
+        (BLOB / f"{stem}.png").write_bytes(render_gradcam(x[0, 0].numpy(), heat, driver))
+        (BLOB / f"{stem}_layer.png").write_bytes(render_heat_layer(heat))
+        out[driver] = {
+            "gradcam_png": f"{stem}.png", "gradcam_layer_png": f"{stem}_layer.png",
+            "gradcam_box": crop_box(*ds.pixel_array.shape), "gradcam_finding": driver,
+            "gradcam_note": (f"Fixture: Grad-CAM of the public sample image for {driver}, "
+                             f"the finding that set this row's lane. Not this study's image."),
+        }
+    return out
 
 
 def chest_rows(series) -> list[dict]:
@@ -118,8 +160,12 @@ def brain_rows() -> list[dict]:
 
 
 def main() -> int:
-    series = sample_frame()
-    rows = chest_rows(series) + brain_rows()
+    series, ds = sample_frame()
+    chest = chest_rows(series)
+    cams = gradcam_for(ds, {r["triage"]["driver"] for r in chest})
+    for r in chest:
+        r["evidence"] = cams[r["triage"]["driver"]]
+    rows = chest + brain_rows()
     order = list(range(len(rows)))
     random.Random(7).shuffle(order)
     start = datetime.datetime(2026, 9, 25, 8, 0, 0, tzinfo=datetime.timezone.utc)
@@ -136,6 +182,7 @@ def main() -> int:
         lanes[r["lane"]] = lanes.get(r["lane"], 0) + 1
     print(f"wrote {len(rows)} rows to {OUT.relative_to(ROOT)}: {lanes}")
     print(f"wrote {FRAME.relative_to(ROOT)} ({FRAME.stat().st_size:,} bytes)")
+    print(f"wrote {len(cams)} Grad-CAM overlays under {BLOB.relative_to(ROOT)}")
     return 0
 
 

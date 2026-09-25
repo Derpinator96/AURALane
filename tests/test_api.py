@@ -11,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from core.api import DISCLAIMER, LANE_ORDER, create_app
-from core.providers.fixture import WORKLIST, FixtureDatastore, FixtureTable
+from core.providers.fixture import BLOB, WORKLIST, FixtureDatastore, FixtureTable
 from core.providers.local import DevAuth, FileBlob, TemplateLLM
 
 FIXTURE = json.loads(Path(WORKLIST).read_text())
@@ -22,13 +22,15 @@ STUDY_ROUTES = [("get", "/api/worklist"), ("get", f"/api/studies/{CHEST['study']
                 ("get", f"/api/studies/{CHEST['study']}/frame-url?series="
                         f"{CHEST['series'][0]['series_uid']}&instance="
                         f"{CHEST['series'][0]['instance_uids'][0]}"),
+                ("get", f"/api/studies/{CHEST['study']}/series/{CHEST['series'][0]['series_uid']}"),
                 ("post", f"/api/studies/{CHEST['study']}/verdict")]
 
 
 @pytest.fixture
 def client(tmp_path):
     table = FixtureTable()
-    app = create_app({"runtime": "fixture", "blob": FileBlob(tmp_path), "table": table,
+    app = create_app({"runtime": "fixture", "blob": FileBlob(BLOB, url_base="/api/blob"),
+                      "table": table,
                       "datastore": FixtureDatastore(table), "auth": DevAuth(),
                       "llm": TemplateLLM()})
     c = TestClient(app)
@@ -137,3 +139,26 @@ def test_models_lists_the_registry(client):
     body = client.get("/api/admin/models", headers=client.admin).json()
     assert {m["id"] for m in body["models"]} == {"cxr-densenet-v1", "brain-brats-monai-v0.5.4"}
     assert body["abstain_band"] == [0.35, 0.60]
+
+
+def test_series_gives_frame_urls_and_headers_never_pixels(client):
+    s = CHEST["series"][0]
+    body = client.get(f"/api/studies/{CHEST['study']}/series/{s['series_uid']}",
+                      headers=client.radiologist).json()
+    inst = body["instances"]
+    assert [i["sop"] for i in inst] == s["instance_uids"]
+    assert inst[0]["frame_url"] == s["frame_url"]
+    assert inst[0]["metadata"]["00280010"]["Value"] == [s["metadata"][0]["00280010"]["Value"][0]]
+    assert "7FE00010" not in inst[0]["metadata"]
+
+
+def test_evidence_is_served_by_signed_url_only(client):
+    body = client.get(f"/api/studies/{CHEST['study']}", headers=client.radiologist).json()
+    url = body["evidence_urls"]["gradcam_layer_png"]
+    assert url.startswith("/api/blob/") and "sig=" in url and "expires=" in url
+    r = client.get(url)                                  # no bearer token: the URL is the credential
+    assert r.status_code == 200 and r.content[:8] == b"\x89PNG\r\n\x1a\n"
+    assert client.get(url.replace("sig=", "sig=0")).status_code == 403
+    path, _ = url.split("?")
+    assert client.get(f"{path}?expires=1&sig=x").status_code == 403
+    assert client.get("/api/blob/../worklist.json?expires=9999999999&sig=x").status_code in (403, 404)

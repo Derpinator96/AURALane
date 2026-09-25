@@ -35,6 +35,12 @@ class DatastorePort(ABC):
     def frame_url(self, ref: StudyRef, series_uid: str, instance_uid: str,
                   frame: int = 1, ttl: int = 300) -> str: ...
 
+    @abstractmethod
+    def series_metadata(self, ref: StudyRef, series_uid: str) -> list[dict]:
+        """DICOM JSON (PS3.18 F.2) for every instance of the series, ordered by
+        InstanceNumber, bulk data removed. Headers only, never pixels: the
+        viewer needs them to decode the frames it fetches from frame_url."""
+
 
 class BlobPort(ABC):
     @abstractmethod

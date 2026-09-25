@@ -21,6 +21,7 @@ from core.types import AuditEvent, SeriesMeta, StudyMeta, StudyRef
 
 ROOT = Path(__file__).resolve().parents[3]
 WORKLIST = ROOT / "fixtures" / "worklist.json"
+BLOB = ROOT / "fixtures" / "blob"          # Grad-CAM overlays, built by make_fixtures.py
 NO_STUDY = "-"
 
 
@@ -88,6 +89,13 @@ class FixtureDatastore(DatastorePort):
             if s["series_uid"] == series_uid and instance_uid in s["instance_uids"]:
                 return s["frame_url"]
         raise LookupError(f"no fixture frame for {series_uid}/{instance_uid}")
+
+    def series_metadata(self, ref, series_uid) -> list[dict]:
+        row = self.table.get_item("worklist", {"study": ref.study_uid}) or {}
+        for s in row.get("series", []):
+            if s["series_uid"] == series_uid:
+                return s.get("metadata", [])
+        raise LookupError(f"no fixture series {series_uid}")
 
     def import_study(self, dicom_paths):
         raise NotImplementedError("fixture datastore is read only")

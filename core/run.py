@@ -23,22 +23,25 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_DB = ROOT / "data" / "identity" / "identity.db"
 DEV_KEY = ROOT / "data" / "dev" / "devauth.key"
+BLOB_URL = "/api/blob"        # served by core.api from a FileBlob's signed URLs
 DISCLAIMER = "NON-DIAGNOSTIC; DECISION SUPPORT ONLY"
 
 def providers() -> dict:
     runtime = os.environ.get("AURALANE_RUNTIME", "local")
     if runtime == "local":
         from core.providers import local as p
-        blob = p.FileBlob()
-        return {"runtime": runtime, "blob": blob, "datastore": p.OrthancDatastore(),
+        blob = p.FileBlob(url_base=BLOB_URL)
+        # The browser reaches Orthanc through the web server's /dicom-web proxy
+        # (client/vite.config.js); Orthanc itself sends no CORS headers.
+        return {"runtime": runtime, "blob": blob,
+                "datastore": p.OrthancDatastore(public_web="/dicom-web"),
                 "table": p.DynamoLocalTable(), "inference": p.InProcessInference(blob=blob),
                 "auth": p.DevAuth(key_file=DEV_KEY), "llm": p.TemplateLLM()}
     if runtime == "fixture":
-        import tempfile
         from core.providers import fixture as f
         from core.providers import local as p
         table = f.FixtureTable()
-        return {"runtime": runtime, "blob": p.FileBlob(tempfile.mkdtemp(prefix="auralane-fx-")),
+        return {"runtime": runtime, "blob": p.FileBlob(f.BLOB, url_base=BLOB_URL),
                 "datastore": f.FixtureDatastore(table), "table": table, "inference": None,
                 "auth": p.DevAuth(key_file=DEV_KEY), "llm": p.TemplateLLM()}
     if runtime == "aws":

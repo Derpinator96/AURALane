@@ -41,18 +41,283 @@
    "Consolidation": 0.629,
    "Effusion": 0.571
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_edema.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_edema_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Edema",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-042 (00001373_052.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -104,18 +369,283 @@
    "Pneumonia": 0.732,
    "Effusion": 0.477
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_edema.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_edema_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Edema",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-050 (00001558_018.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -167,18 +697,283 @@
    "Effusion": 0.874,
    "Pneumonia": 0.692
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_edema.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_edema_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Edema",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-081 (00002395_021.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -230,18 +1025,283 @@
    "Pneumonia": 1.0,
    "Pneumothorax": 0.363
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_edema.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_edema_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Edema",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-001 (00000013_005.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -293,18 +1353,283 @@
    "Pneumonia": 0.7,
    "Pneumothorax": 0.286
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_edema.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_edema_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Edema",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-016 (00000468_007.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -356,18 +1681,283 @@
    "Edema": 0.61,
    "Lung Opacity": 0.62
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_pneumonia.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_pneumonia_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Pneumonia",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Pneumonia, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-052 (00001582_004.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -419,18 +2009,283 @@
    "Effusion": 0.613,
    "Consolidation": 0.434
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_edema.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_edema_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Edema",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-002 (00000032_001.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -482,18 +2337,283 @@
    "Lung Lesion": 1.0,
    "Pneumothorax": 0.285
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_effusion.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_effusion_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Effusion",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Effusion, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-005 (00000132_002.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -545,18 +2665,283 @@
    "Mass": 0.094,
    "Fibrosis": 0.086
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_nodule.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_nodule_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Nodule",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Nodule, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-028 (00000997_000.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -608,18 +2993,283 @@
    "Pneumothorax": 0.279,
    "Consolidation": 0.286
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_pneumonia.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_pneumonia_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Pneumonia",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Pneumonia, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-004 (00000116_019.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -671,18 +3321,283 @@
    "Pneumothorax": 0.277,
    "Consolidation": 0.237
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_effusion.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_effusion_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Effusion",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Effusion, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-006 (00000231_005.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -734,18 +3649,283 @@
    "Pneumothorax": 0.315,
    "Effusion": 0.438
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_mass.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_mass_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Mass",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Mass, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-008 (00000246_016.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -797,18 +3977,283 @@
    "Consolidation": 0.0,
    "Infiltration": 0.0
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_atelectasis.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_atelectasis_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Atelectasis",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Atelectasis, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-003 (00000083_000.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -860,18 +4305,283 @@
    "Consolidation": 0.0,
    "Infiltration": 0.0
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_atelectasis.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_atelectasis_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Atelectasis",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Atelectasis, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-007 (00000239_003.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
@@ -923,18 +4633,283 @@
    "Atelectasis": 0.0,
    "Consolidation": 0.0
   },
-  "evidence": {},
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/gradcam_infiltration.png",
+   "gradcam_layer_png": "evidence/fixture-sample/gradcam_infiltration_layer.png",
+   "gradcam_box": [
+    38,
+    0,
+    437
+   ],
+   "gradcam_finding": "Infiltration",
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Infiltration, the finding that set this row's lane. Not this study's image."
+  },
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+     "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
     ],
-    "frame_url": "/fixtures/frames/sample-cr.dcm"
+    "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
+    "metadata": [
+     {
+      "00100010": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "FIXTURE^SAMPLE"
+        }
+       ]
+      },
+      "00100020": {
+       "vr": "LO",
+       "Value": [
+        "FIXTURE-SAMPLE"
+       ]
+      },
+      "00100030": {
+       "vr": "DA",
+       "Value": [
+        "19531028"
+       ]
+      },
+      "00100040": {
+       "vr": "CS",
+       "Value": [
+        "M"
+       ]
+      },
+      "0020000D": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.54430010094751298154265823051799483"
+       ]
+      },
+      "00080020": {
+       "vr": "DA",
+       "Value": [
+        "20260925"
+       ]
+      },
+      "00080030": {
+       "vr": "TM",
+       "Value": [
+        "080000"
+       ]
+      },
+      "00080050": {
+       "vr": "SH",
+       "Value": [
+        "A202609259000"
+       ]
+      },
+      "00080090": {
+       "vr": "PN",
+       "Value": [
+        {
+         "Alphabetic": "SIM^REFERRER^C"
+        }
+       ]
+      },
+      "00081030": {
+       "vr": "LO",
+       "Value": [
+        "CHEST PA"
+       ]
+      },
+      "00200010": {
+       "vr": "SH",
+       "Value": [
+        "09000"
+       ]
+      },
+      "0020000E": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.252079367083913896140841929709994150"
+       ]
+      },
+      "00200011": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080060": {
+       "vr": "CS",
+       "Value": [
+        "CR"
+       ]
+      },
+      "0008103E": {
+       "vr": "LO",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00180015": {
+       "vr": "CS",
+       "Value": [
+        "CHEST"
+       ]
+      },
+      "00185101": {
+       "vr": "CS",
+       "Value": [
+        "PA"
+       ]
+      },
+      "00080080": {
+       "vr": "LO",
+       "Value": [
+        "SIMULATED GENERAL HOSPITAL"
+       ]
+      },
+      "00081010": {
+       "vr": "SH",
+       "Value": [
+        "CR_ROOM2"
+       ]
+      },
+      "00080070": {
+       "vr": "LO",
+       "Value": [
+        "AURALANE SIM"
+       ]
+      },
+      "00081090": {
+       "vr": "LO",
+       "Value": [
+        "PNG-WRAPPER"
+       ]
+      },
+      "00080016": {
+       "vr": "UI",
+       "Value": [
+        "1.2.840.10008.5.1.4.1.1.1"
+       ]
+      },
+      "00080018": {
+       "vr": "UI",
+       "Value": [
+        "1.2.826.0.1.3680043.10.1421.860047603351713586906866930978898950"
+       ]
+      },
+      "00200013": {
+       "vr": "IS",
+       "Value": [
+        1
+       ]
+      },
+      "00080008": {
+       "vr": "CS",
+       "Value": [
+        "DERIVED",
+        "SECONDARY"
+       ]
+      },
+      "00280002": {
+       "vr": "US",
+       "Value": [
+        1
+       ]
+      },
+      "00280004": {
+       "vr": "CS",
+       "Value": [
+        "MONOCHROME2"
+       ]
+      },
+      "00280010": {
+       "vr": "US",
+       "Value": [
+        437
+       ]
+      },
+      "00280011": {
+       "vr": "US",
+       "Value": [
+        512
+       ]
+      },
+      "00280100": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280101": {
+       "vr": "US",
+       "Value": [
+        8
+       ]
+      },
+      "00280102": {
+       "vr": "US",
+       "Value": [
+        7
+       ]
+      },
+      "00280103": {
+       "vr": "US",
+       "Value": [
+        0
+       ]
+      },
+      "00281052": {
+       "vr": "DS",
+       "Value": [
+        0.0
+       ]
+      },
+      "00281053": {
+       "vr": "DS",
+       "Value": [
+        1.0
+       ]
+      },
+      "00281054": {
+       "vr": "LO",
+       "Value": [
+        "US"
+       ]
+      },
+      "00281050": {
+       "vr": "DS",
+       "Value": [
+        127.0
+       ]
+      },
+      "00281051": {
+       "vr": "DS",
+       "Value": [
+        255.0
+       ]
+      },
+      "00280301": {
+       "vr": "CS",
+       "Value": [
+        "NO"
+       ]
+      },
+      "00104000": {
+       "vr": "LT",
+       "Value": [
+        "SIMULATED STUDY - source image 16747_3_1.jpg"
+       ]
+      },
+      "00082111": {
+       "vr": "ST",
+       "Value": [
+        "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
+       ]
+      }
+     }
+    ]
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-010 (00000272_003.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",

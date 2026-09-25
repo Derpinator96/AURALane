@@ -15,5 +15,6 @@
 | blob_delete | not measured | not measured | not measured | not measured |
 | **total** | not measured | not measured | not measured | not measured |
 | outcome | not measured | not measured | not measured | not measured |
+| Grad-CAM inside infer | not measured | not measured | not measured | not measured |
 
-Run 1 includes loading the model into memory. Later runs re-ingest the same study, so the datastore already holds its instances. `prepare_inputs` is pipeline work before the model (for brain, identifying the four channels and rebuilding them as NIfTI); `infer` is the model call alone. One machine and one study per modality: a measurement, not a benchmark.
+Run 1 includes loading the model into memory. Later runs re-ingest the same study, so the datastore already holds its instances. `prepare_inputs` is pipeline work before the model (for brain, identifying the four channels and rebuilding them as NIfTI); `infer` is the model call, and for chest it includes the Grad-CAM backward pass and overlay writes when the Grad-CAM row says yes (the platform default since Prompt 4). One machine and one study per modality: a measurement, not a benchmark.

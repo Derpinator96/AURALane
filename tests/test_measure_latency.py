@@ -13,7 +13,7 @@ def _ev(action, ms, outcome="ok"):
 
 
 def test_table_shows_recorded_durations_failures_and_unreached_steps():
-    scored = {"status": "SCORED, URGENT", "events": [_ev(s, 10.0 * (i + 1))
+    scored = {"status": "SCORED, URGENT", "gradcam": "yes", "events": [_ev(s, 10.0 * (i + 1))
                                                      for i, s in enumerate(ml.STEPS)]}
     failed = {"status": "FAILED", "events": [_ev("deidentify", 1234.5), _ev("blob_put", 2.0),
                                              _ev("import", 3.0), _ev("prepare_inputs", 7.0),
@@ -29,6 +29,7 @@ def test_table_shows_recorded_durations_failures_and_unreached_steps():
     assert rows["adapt"] == ["60.0", "not reached"]
     assert rows["**total**"] == ["450.0", "1,261.5"]
     assert rows["outcome"] == ["SCORED, URGENT", "FAILED"]
+    assert rows["Grad-CAM inside infer"] == ["yes", "not recorded"]
     assert "Awaiting" not in page and "- CPU: x" in page
 
 

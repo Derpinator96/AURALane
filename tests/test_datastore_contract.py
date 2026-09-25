@@ -145,3 +145,15 @@ def test_frames(store, imported):
     assert np.array_equal(pixels, src.pixel_array), "frame is not lossless"
 
     assert fetch(store.frame_url(ref, series.series_uid, sop)) == data
+
+
+def test_series_metadata_is_headers_only_in_instance_order(store, imported):
+    label, uid, files, ref = imported
+    meta = store.get_metadata(ref)
+    for series in meta.series:
+        items = store.series_metadata(ref, series.series_uid)
+        assert len(items) == series.instance_count
+        sops = [i["00080018"]["Value"][0] for i in items]
+        assert sops == list(series.instance_uids)
+        assert all("00280010" in i and "00280011" in i for i in items)   # Rows, Columns
+        assert not any("7FE00010" in i for i in items), "pixel data leaked into metadata"

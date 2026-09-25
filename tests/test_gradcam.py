@@ -61,6 +61,9 @@ def test_gradcam_explains_the_triage_driver(result):
     png = Image.open(io.BytesIO(blob.get(out["evidence"]["gradcam_png"])))
     assert png.size == (448, 496)
     assert out["evidence"]["gradcam_png"].startswith("evidence/1.2.3/gradcam_")
+    layer = Image.open(io.BytesIO(blob.get(out["evidence"]["gradcam_layer_png"])))
+    assert layer.mode == "RGBA" and layer.size == (224, 224)
+    assert out["evidence"]["gradcam_box"] == [0, 0, 512]     # square frame: whole image
 
 
 def test_adapter_carries_the_overlay_key_into_findings(result):
@@ -77,3 +80,11 @@ def test_without_blob_no_overlay_is_made():
     except Exception as e:
         pytest.skip(f"chest model unavailable ({e}). NOT VERIFIED: chest inference")
     assert out["evidence"] == {} and len(out["preds"]) == 18
+
+
+def test_crop_box_matches_torchxrayvision_center_crop():
+    from core.providers.local.inference import crop_box
+    for rows, cols in [(885, 1036), (1036, 885), (512, 512), (3001, 2500)]:
+        img = np.arange(rows * cols).reshape(1, rows, cols)
+        x, y, size = crop_box(rows, cols)
+        assert np.array_equal(xrv.datasets.XRayCenterCrop()(img), img[:, y:y + size, x:x + size])
