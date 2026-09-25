@@ -32,6 +32,7 @@ NOT A DIAGNOSTIC DEVICE.
 """
 import datetime
 import logging
+import re
 
 import numpy as np
 from PIL import Image
@@ -180,6 +181,43 @@ DUMMY_VALUES = {
     "StudyDescription": "TRIAGE STUDY",
     "SeriesDescription": "TRIAGE SERIES",
 }
+
+# MR sequence names that survive de-identification, as a controlled vocabulary.
+#
+# SeriesDescription is free text and can carry identity, so it is a DUMMY
+# action. But for MR it is also the only field that says which sequence a
+# series is, and the brain model needs T1c, T1, T2 and FLAIR in a fixed order.
+# SeriesNumber cannot stand in: scanners number series by acquisition order.
+#
+# For MR only, the description is normalised (uppercase, everything that is not
+# A-Z or 0-9 removed) and, if the WHOLE normalised string is a key below, it is
+# replaced by the canonical token. Anything else gets the dummy. Exact match,
+# never substring: substring matching on free text is how "SMITH T1" gets
+# through. A real description such as "Ax T1 MPRAGE +C" does not match, is
+# dummied, and the study then fails channel identification and is refused
+# rather than guessed at.
+#
+# Production needs a site-specific mapping table maintained by the hospital,
+# not a wider pattern here.
+#
+# Canonical tokens match the MONAI bundle's input channel_def
+# (_external/brainmri/brats_mri_segmentation/configs/metadata.json, bundle
+# 0.5.4): 0 = T1c, 1 = T1, 2 = T2, 3 = FLAIR.
+MR_SEQUENCE_VOCABULARY = {
+    "T1":    "T1",    "T1N":  "T1",    "T1W": "T1",
+    "T1C":   "T1C",   "T1CE": "T1C",   "T1GD": "T1C",
+    "T2":    "T2",    "T2W":  "T2",
+    "FLAIR": "FLAIR", "T2F":  "FLAIR", "T2FLAIR": "FLAIR",
+}
+
+
+def mr_sequence_token(ds):
+    """Canonical sequence token for an MR series description, or None."""
+    if str(getattr(ds, "Modality", "")).upper() != "MR":
+        return None
+    normalised = re.sub(r"[^A-Z0-9]", "", str(getattr(ds, "SeriesDescription", "")).upper())
+    return MR_SEQUENCE_VOCABULARY.get(normalised)
+
 
 # PS3.15 CID 7050 codes describing what was applied. A de-identified object is
 # required to say how it was de-identified -- a receiving system needs to know
@@ -391,8 +429,11 @@ def deidentify(ds, identity, mask_burned_in=True, allow_unmasked: bool = False):
             raise RuntimeError(f"pixel masking failed, refusing to forward: {e}")
 
     # --- metadata ---------------------------------------------------------
+    sequence = mr_sequence_token(ds)          # read before the dummy replaces it
     removed, remapped = [], []
     _walk(ds, identity, removed, remapped)
+    if sequence is not None:
+        ds.SeriesDescription = sequence
 
     # Pseudonyms the hospital can resolve locally.
     ds.PatientID = pseudo_patient

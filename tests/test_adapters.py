@@ -17,6 +17,7 @@ import triage
 from adapters import brats
 from core.providers.local import FileBlob
 from core.registry import Registry, rank
+from core.types import Findings
 
 ROOT = Path(__file__).resolve().parents[1]
 CASE = ROOT / "_external" / "brainmri" / "data" / "studies" / "00000057"
@@ -138,3 +139,62 @@ def test_overlay_display_is_radiological(codes):
     sl = np.take(vol, 0, axis=si)
     out = brats._radiological(sl, si, codes)
     assert out[0, 9, 0] == 255, codes              # row 0 = anterior, last column = patient left
+
+
+# -- real metrics.json from Shaurya's pipeline --------------------------------
+# Four distinct cases (several study folders are byte-identical copies of case
+# 00000057). Two are L,P,S and two R,A,S, so the left-right axis is read from
+# the orientation codes on real output in both conventions. Brain volume and
+# the left-right width come from each case's own T1c input.
+
+STUDIES = ROOT / "_external" / "brainmri" / "data" / "studies"
+REAL_CASES = ["00000057", "MRI-1790025179", "MRI-1790070297", "MRI-1790081977"]
+
+
+def _expected(m, brain, width):
+    """The findings, written out independently of the adapter."""
+    lr = [i for i, c in enumerate(m["orientation"]) if c in "LR"][0]
+    clamp = lambda x: max(0.0, min(1.0, x))
+    burden = clamp((m["wt_volume_cm3"] / brain - 0.005) / (0.10 - 0.005))
+    ecc = min(1.0, abs(m["centroid_voxel"][lr] - width / 2) / (width / 2))
+    return {
+        "enhancing_tumor": clamp((m["et_volume_cm3"] - 0.5) / (40 - 0.5)),
+        "edema_volume": clamp((m["wt_volume_cm3"] - m["tc_volume_cm3"] - 5) / (100 - 5)),
+        "tumor_burden": burden,
+        "mass_effect": burden * (0.5 + 0.5 * ecc),
+    }
+
+
+@pytest.mark.parametrize("case", REAL_CASES)
+def test_findings_on_real_metrics(case):
+    metrics = STUDIES / case / "output" / "metrics.json"
+    if not metrics.exists():
+        pytest.fail(f"{metrics} missing; clone shauryajain111/brainmri into _external/brainmri")
+    m = json.loads(metrics.read_text())
+    t1c = nib.load(next((STUDIES / case / "input").glob("t1ce.nii*")))
+    lr = [i for i, c in enumerate(m["orientation"]) if c in "LR"][0]
+    brain = float((np.asarray(t1c.dataobj) > 0).sum()) * float(np.prod(t1c.header.get_zooms()[:3])) / 1000
+
+    findings, derived = brats.findings_from_metrics(m, BRAIN, brain, t1c.shape[lr])
+
+    assert findings == pytest.approx(_expected(m, brain, t1c.shape[lr]))
+    assert all(0.0 <= v <= 1.0 for v in findings.values())
+    assert derived["lr_axis"] == lr == 0
+    assert 900 < brain < 2000, f"{case}: brain volume {brain:.0f} cm3 is implausible"
+    t = rank(Findings(findings), BRAIN)
+    assert t["lane"] in {"CRITICAL", "URGENT", "EXPEDITED", "ROUTINE", "ABSTAIN"}
+
+
+def test_real_cases_are_distinct_and_cover_both_orientations():
+    metrics = [json.loads((STUDIES / c / "output" / "metrics.json").read_text()) for c in REAL_CASES]
+    assert len({m["wt_volume_cm3"] for m in metrics}) == 4
+    assert {tuple(m["orientation"]) for m in metrics} == {("L", "P", "S"), ("R", "A", "S")}
+
+
+def test_volume_gate_abstains_on_zero_volume_dict():
+    zero = {"wt_volume_cm3": 0.0, "tc_volume_cm3": 0.0, "et_volume_cm3": 0.0,
+            "orientation": ["L", "P", "S"], "centroid_voxel": [0.0, 0.0, 0.0],
+            "slice_range": [0, 0], "dice_validation": None}
+    f = brats.adapt(zero, {"entry": BRAIN, "study": "zero"})
+    assert f.findings == {} and f.evidence == {}
+    assert "below min_tumor_ml" in f.meta["abstain_reason"]
