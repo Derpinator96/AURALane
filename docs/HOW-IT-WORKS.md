@@ -42,10 +42,11 @@ inside the hospital; the cloud only ever sees pseudonyms. Locally it is
 
 ## The pipeline (`core/pipeline.py`)
 
-One function, `ingest`, takes a study's files through eight steps:
-de-identify, keep a transient copy, import into the datastore, run the model,
-turn the output into findings, triage, write the worklist row, delete the
-transient copy. Every step writes an audit event with how long it took in
+One function, `ingest`, takes a study's files through nine steps:
+de-identify, keep a transient copy, import into the datastore, prepare the
+model's inputs, run the model, turn the output into findings, triage, write the
+worklist row, delete the transient copy. Preparing inputs and running the model
+are timed separately, so pipeline overhead is never reported as model time. Every step writes an audit event with how long it took in
 milliseconds. If any step fails, the study still gets a worklist row, with
 status FAILED and the error, so it cannot silently vanish.
 

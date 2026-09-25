@@ -3,11 +3,16 @@
     1 deidentify    sim/edge/deid.py, pseudonyms recorded in the identity map
     2 blob_put      the cleaned study, transient copy
     3 import        datastore.import_study
-    4 infer         registry entry by modality, inference.score
-    5 adapt         adapter.adapt -> Findings
-    6 triage        triage.rank -> lane, or abstention
-    7 persist       worklist row
-    8 blob_delete   the transient copy, always, even after a failure
+    4 prepare_inputs  registry entry by modality; the model's inputs (for brain,
+                      channels identified and rebuilt as NIfTI)
+    5 infer         inference.score, the model alone
+    6 adapt         adapter.adapt -> Findings
+    7 triage        triage.rank -> lane, or abstention
+    8 persist       worklist row
+    9 blob_delete   the transient copy, always, even after a failure
+
+prepare_inputs and infer are separate steps so the audit, and the latency
+table built from it, never counts pipeline overhead as model time.
 
 Every step appends an audit event with its measured duration in milliseconds.
 If a step raises, the audit records the failure, the worklist gets a row with
@@ -198,10 +203,12 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
                 d.update(datastore_id=ref.datastore_id, modality=meta.modality,
                          series=len(meta.series))
 
-            with run.step("infer") as d:
+            with run.step("prepare_inputs") as d:
                 entry = registry.for_modality(meta.modality)
-                d.update(model_id=entry["id"], runtime=entry["runtime"])
+                d.update(model_id=entry["id"], format=entry["input"]["format"])
                 inputs = _model_inputs(entry, registry.adapter(entry), cleaned, meta, work)
+
+            with run.step("infer", model_id=entry["id"], runtime=entry["runtime"]):
                 raw = inference.score(ref, entry, **inputs)
 
             with run.step("adapt", model_id=entry["id"]) as d:

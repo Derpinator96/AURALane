@@ -2,8 +2,8 @@
 
 Chest: the real DenseNet, in process (needs torch and torchxrayvision).
 Brain: RecordedInference replays the output Shaurya's pipeline recorded for
-BraTS case 00057 (_external/brainmri/data/studies/00000057/output, Dice
-0.92 / 0.98 / 0.94 against ground truth, so it is model output). The brain
+BraTS case 00057 (_external/brainmri/data/studies/00000057/output; its Dice is
+not 1.0 on every channel, so it is not the ground-truth substitute). The brain
 study under data/brain/dicom was converted from that same case's inputs, so the
 replay is the model's answer for this study. It stands in for the SegResNet
 checkpoint, which this build machine cannot download. Everything else in the
@@ -39,8 +39,8 @@ import make_dicom  # noqa: E402
 
 pytestmark = pytest.mark.privacy
 TESSERACT = shutil.which("tesseract") is not None
-STEPS = ["deidentify", "blob_put", "import", "infer", "adapt", "triage", "persist",
-         "blob_delete"]
+STEPS = ["deidentify", "blob_put", "import", "prepare_inputs", "infer", "adapt", "triage",
+         "persist", "blob_delete"]
 CASE57 = ROOT / "_external" / "brainmri" / "data" / "studies" / "00000057" / "output"
 
 
@@ -62,7 +62,7 @@ def _study_files(corpus):
     manifest = root / "manifest.json"
     if not manifest.exists():
         pytest.skip(f"needs the corpus at {root} (not in git). NOT VERIFIED: end-to-end "
-                    f"ingest of a real {corpus.split('/')[0]} study through all eight steps")
+                    f"ingest of a real {corpus.split('/')[0]} study through all nine steps")
     entries = json.loads(manifest.read_text())
     uid = entries[0]["study_uid"]
     return [root / e["path"] for e in entries if e["study_uid"] == uid], entries[0]
@@ -183,8 +183,9 @@ def test_inference_failure_leaves_a_failed_row(ports, tmp_path):
     assert row["status"] == "FAILED" and row["lane"] == "FAILED"
     steps, rows = _audit(ports["table"], v.ref.study_uid)
     assert steps == [("deidentify", "ok"), ("blob_put", "ok"), ("import", "ok"),
-                     ("infer", "failed"), ("persist", "ok"), ("blob_delete", "ok")]
-    assert "unreachable" in rows[3]["detail"]["error"]
+                     ("prepare_inputs", "ok"), ("infer", "failed"), ("persist", "ok"),
+                     ("blob_delete", "ok")]
+    assert "unreachable" in rows[4]["detail"]["error"]
 
 
 @pytest.mark.skipif(not TESSERACT, reason=(

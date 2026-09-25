@@ -29,8 +29,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-STEPS = ["deidentify", "blob_put", "import", "infer", "adapt", "triage", "persist",
-         "blob_delete"]
+STEPS = ["deidentify", "blob_put", "import", "prepare_inputs", "infer", "adapt", "triage",
+         "persist", "blob_delete"]
 OUT = ROOT / "docs" / "LATENCY.md"
 
 
@@ -97,10 +97,10 @@ def render(columns: list[tuple[str, dict | None]], info: dict[str, str] | None) 
     lines.append("| outcome | " + " | ".join(
         "not measured" if c is None else c["status"] for _, c in columns) + " |")
     lines += ["", "Run 1 includes loading the model into memory. Later runs re-ingest the "
-              "same study, so the datastore already holds its instances. `infer` includes "
-              "assembling the model inputs (for brain, rebuilding four NIfTI volumes from "
-              "DICOM). One machine and one study per modality: a measurement, not a "
-              "benchmark.", ""]
+              "same study, so the datastore already holds its instances. `prepare_inputs` "
+              "is pipeline work before the model (for brain, identifying the four "
+              "channels and rebuilding them as NIfTI); `infer` is the model call alone. "
+              "One machine and one study per modality: a measurement, not a benchmark.", ""]
     return "\n".join(lines)
 
 

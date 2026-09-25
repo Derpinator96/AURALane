@@ -16,16 +16,18 @@ def test_table_shows_recorded_durations_failures_and_unreached_steps():
     scored = {"status": "SCORED, URGENT", "events": [_ev(s, 10.0 * (i + 1))
                                                      for i, s in enumerate(ml.STEPS)]}
     failed = {"status": "FAILED", "events": [_ev("deidentify", 1234.5), _ev("blob_put", 2.0),
-                                             _ev("import", 3.0), _ev("infer", 4.0, "failed"),
+                                             _ev("import", 3.0), _ev("prepare_inputs", 7.0),
+                                             _ev("infer", 4.0, "failed"),
                                              _ev("persist", 5.0), _ev("blob_delete", 6.0)]}
     page = ml.render([("chest", scored), ("brain", failed)], {"Date": "2026-09-25", "CPU": "x"})
 
     rows = {line.split("|")[1].strip(): [c.strip() for c in line.split("|")[2:-1]]
             for line in page.splitlines() if line.startswith("| ")}
     assert rows["deidentify"] == ["10.0", "1,234.5"]
-    assert rows["infer"] == ["40.0", "4.0 (failed)"]
-    assert rows["adapt"] == ["50.0", "not reached"]
-    assert rows["**total**"] == ["360.0", "1,254.5"]
+    assert rows["prepare_inputs"] == ["40.0", "7.0"]
+    assert rows["infer"] == ["50.0", "4.0 (failed)"]
+    assert rows["adapt"] == ["60.0", "not reached"]
+    assert rows["**total**"] == ["450.0", "1,261.5"]
     assert rows["outcome"] == ["SCORED, URGENT", "FAILED"]
     assert "Awaiting" not in page and "- CPU: x" in page
 

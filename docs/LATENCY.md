@@ -7,6 +7,7 @@
 | deidentify | not measured | not measured | not measured | not measured |
 | blob_put | not measured | not measured | not measured | not measured |
 | import | not measured | not measured | not measured | not measured |
+| prepare_inputs | not measured | not measured | not measured | not measured |
 | infer | not measured | not measured | not measured | not measured |
 | adapt | not measured | not measured | not measured | not measured |
 | triage | not measured | not measured | not measured | not measured |
@@ -15,4 +16,4 @@
 | **total** | not measured | not measured | not measured | not measured |
 | outcome | not measured | not measured | not measured | not measured |
 
-Run 1 includes loading the model into memory. Later runs re-ingest the same study, so the datastore already holds its instances. `infer` includes assembling the model inputs (for brain, rebuilding four NIfTI volumes from DICOM). One machine and one study per modality: a measurement, not a benchmark.
+Run 1 includes loading the model into memory. Later runs re-ingest the same study, so the datastore already holds its instances. `prepare_inputs` is pipeline work before the model (for brain, identifying the four channels and rebuilding them as NIfTI); `infer` is the model call alone. One machine and one study per modality: a measurement, not a benchmark.
