@@ -88,12 +88,33 @@ decides. Otherwise acuity sets the lane: Critical (under 15 min), Urgent (under
 1 hr), Expedited (under 4 hr), Routine. Every model's findings go through the
 same arithmetic.
 
-## The API (`python -m core.run serve`)
+## The API (`python -m core.run serve`, port 8100)
 
-Worklist sorted Critical, Urgent, Abstain and Failed, Expedited, Routine, and by
-acuity within a lane. Study detail with the audit trail and a drafted note.
-Frame URLs for the viewer. Every route except health needs a bearer token; in
-development `python -m core.run token radiologist` prints one.
+The worklist comes back already in priority order: Critical, Urgent, then the
+studies a human must place (abstained or failed), then Expedited, Routine; by
+acuity within a lane. Study detail gives the findings, the series list and a
+drafted note. Frame URLs let the viewer fetch pixels from the datastore
+directly; the API never sends pixels. Agree or disagree with a lane is written
+to the audit trail and shown on the row.
+
+Radiologists can read studies and cannot see admin screens. Admins can see the
+audit log, the lane mix and the model registry, and cannot open a study. The
+API refuses both with 403; hiding a button is not access control.
+
+## The web app (`client/`)
+
+One ordered list, dark and dense for a reading room. Lane names are always
+written out, not left to colour. The "needs human triage" group is always shown
+and no filter can hide it. Every number on screen is the API's; the browser
+computes none. The non-diagnostic banner is on every screen, login included.
+
+## Grad-CAM (chest only)
+
+For a chest study, the same forward pass that scores the image also produces a
+Grad-CAM heatmap for the finding that set the lane, stored as the study's
+evidence. It is a sanity check on why the study was placed where it was, not a
+localisation claim, and the viewer shows it only on request. Brain studies do
+not get one: the tumour outline is its own, better explanation.
 
 ## The drafted note (`TemplateLLM`)
 

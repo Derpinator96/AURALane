@@ -39,6 +39,7 @@ class DynamoTable(TablePort):
 
 
 class CognitoAuth(AuthPort):
+    login = _todo("Amazon Cognito InitiateAuth")
     verify = _todo("Amazon Cognito JWT verification")
 
 

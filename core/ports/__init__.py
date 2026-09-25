@@ -76,6 +76,10 @@ class TablePort(ABC):
 
 class AuthPort(ABC):
     @abstractmethod
+    def login(self, username: str, password: str) -> str:
+        """A bearer token, or PermissionError."""
+
+    @abstractmethod
     def verify(self, token: str) -> Principal: ...
 
 

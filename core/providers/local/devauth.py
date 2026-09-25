@@ -12,6 +12,10 @@ the three, the key is random per instance.
 Two seeded users, both synthetic:
     radiologist@dev.auralane.local   group radiologist
     admin@dev.auralane.local         group admin
+
+login() accepts either seeded user (by key or email) with the development
+password: AURALANE_DEV_PASSWORD if set, else "auralane-dev". It is written
+here in a public repository on purpose: it guards nothing but a laptop.
 """
 from __future__ import annotations
 
@@ -26,6 +30,7 @@ from core.ports import AuthPort
 from core.types import Principal
 
 ISSUER = "auralane-devauth"
+DEV_PASSWORD = "auralane-dev"
 AUDIENCE = "auralane-local"
 
 SEEDED = {
@@ -46,6 +51,13 @@ class DevAuth(AuthPort):
                 path.chmod(0o600)
             self._key = path.read_text().strip()
         self._key = self._key or secrets.token_hex(32)
+
+    def login(self, username: str, password: str) -> str:
+        user = next((k for k, p in SEEDED.items() if username in (k, p.email)), None)
+        expected = os.environ.get("AURALANE_DEV_PASSWORD", DEV_PASSWORD)
+        if user is None or not secrets.compare_digest(password.encode(), expected.encode()):
+            raise PermissionError("unknown user or wrong password")
+        return self.issue(user)
 
     def issue(self, user: str, ttl: int = 3600) -> str:
         p = SEEDED[user]

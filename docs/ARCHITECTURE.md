@@ -35,7 +35,7 @@ succeeds.
 | `DatastorePort` | `import_study`, `search`, `get_metadata`, `get_frame`, `frame_url` | pipeline step 3, API frame URLs |
 | `BlobPort` | `put`, `get`, `delete`, `presigned_url` | transient study copy, evidence PNGs |
 | `TablePort` | `put_item`, `get_item`, `query`, `scan`, `append_audit` | worklist rows, audit trail |
-| `AuthPort` | `verify(token) -> Principal` | API, every route except health |
+| `AuthPort` | `login(username, password) -> token`, `verify(token) -> Principal` | API login, every route except health and login |
 | `InferencePort` | `score(ref, model_cfg, **inputs)` | pipeline step 4 |
 | `LLMPort` | `draft(context) -> str` | API study detail |
 
@@ -122,11 +122,35 @@ never from this repository.
 ## Commands
 
 ```
-AURALANE_RUNTIME=local python -m core.run ingest <study dir or .dcm>
-AURALANE_RUNTIME=local python -m core.run serve            # API on 127.0.0.1:8080
-AURALANE_RUNTIME=local python -m core.run token radiologist
-python server.py                                           # round-2 demo, port 8000
+AURALANE_RUNTIME=local   python -m core.run ingest <study dir or .dcm>
+AURALANE_RUNTIME=local   python -m core.run serve     # API on 127.0.0.1:8100
+AURALANE_RUNTIME=fixture python -m core.run serve     # same API over fixtures/worklist.json
+AURALANE_RUNTIME=local   python -m core.run token radiologist
+cd client && npm install && npm run dev               # web app on 5173, /api proxied to 8100
+python server.py                                      # round-2 demo, port 8000
 ```
 
-`serve` uses 8080 because 8000 belongs to the round-2 demo, which is the
+`serve` uses 8100 because 8000 belongs to the round-2 demo, which is the
 fallback and must start while the PoC stack is up.
+
+## The fixture runtime
+
+`AURALANE_RUNTIME=fixture` runs the API with no Docker and no `data/`: an
+in-memory table seeded from `fixtures/worklist.json` and a read-only datastore
+whose frame URLs point at static files the web server serves. The client makes
+the same calls in every runtime and cannot tell which one answered. Each
+fixture row carries a `source` field saying where its numbers came from
+(`scores.json`, or Shaurya's recorded brain metrics) and what was assigned
+rather than computed (arrival time, pseudonymous ID); the worklist shows it as
+a tag. `scripts/make_fixtures.py` rebuilds the file.
+
+## Access control
+
+Enforced by the API on every route, not by the client:
+
+| group | may | gets 403 on |
+|---|---|---|
+| radiologist | worklist, study detail, frame URLs, verdicts | `/api/admin/*` |
+| admin | audit log, lane mix, model registry | worklist and every study route |
+
+Admins configure the system; they do not read patient studies.

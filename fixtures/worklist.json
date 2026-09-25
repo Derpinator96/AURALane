@@ -1,0 +1,1275 @@
+[
+ {
+  "study": "fixture-cr-ST-042",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "CRITICAL",
+  "triage": {
+   "acuity": 85.0,
+   "lane": "CRITICAL",
+   "sla": "< 15 min",
+   "sla_minutes": 15,
+   "abstained": false,
+   "driver": "Edema",
+   "confidence": 0.534,
+   "signal": 1.0,
+   "raw": 0.555,
+   "top_findings": [
+    {
+     "name": "Edema",
+     "confidence": 0.534,
+     "signal": 1.0,
+     "urgency": 0.85
+    },
+    {
+     "name": "Consolidation",
+     "confidence": 0.604,
+     "signal": 0.629,
+     "urgency": 0.78
+    },
+    {
+     "name": "Effusion",
+     "confidence": 0.647,
+     "signal": 0.571,
+     "urgency": 0.66
+    }
+   ]
+  },
+  "findings": {
+   "Edema": 1.0,
+   "Consolidation": 0.629,
+   "Effusion": 0.571
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-042 (00001373_052.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:24:00+00:00",
+  "patient_id": "FIXTURE-0009",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-050",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "CRITICAL",
+  "triage": {
+   "acuity": 85.0,
+   "lane": "CRITICAL",
+   "sla": "< 15 min",
+   "sla_minutes": 15,
+   "abstained": false,
+   "driver": "Edema",
+   "confidence": 0.524,
+   "signal": 1.0,
+   "raw": 0.538,
+   "top_findings": [
+    {
+     "name": "Edema",
+     "confidence": 0.524,
+     "signal": 1.0,
+     "urgency": 0.85
+    },
+    {
+     "name": "Pneumonia",
+     "confidence": 0.527,
+     "signal": 0.732,
+     "urgency": 0.75
+    },
+    {
+     "name": "Effusion",
+     "confidence": 0.612,
+     "signal": 0.477,
+     "urgency": 0.66
+    }
+   ]
+  },
+  "findings": {
+   "Edema": 1.0,
+   "Pneumonia": 0.732,
+   "Effusion": 0.477
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-050 (00001558_018.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:45:00+00:00",
+  "patient_id": "FIXTURE-0016",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-081",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "CRITICAL",
+  "triage": {
+   "acuity": 78.0,
+   "lane": "CRITICAL",
+   "sla": "< 15 min",
+   "sla_minutes": 15,
+   "abstained": false,
+   "driver": "Edema",
+   "confidence": 0.504,
+   "signal": 0.918,
+   "raw": 0.507,
+   "top_findings": [
+    {
+     "name": "Edema",
+     "confidence": 0.504,
+     "signal": 0.918,
+     "urgency": 0.85
+    },
+    {
+     "name": "Effusion",
+     "confidence": 0.785,
+     "signal": 0.874,
+     "urgency": 0.66
+    },
+    {
+     "name": "Pneumonia",
+     "confidence": 0.516,
+     "signal": 0.692,
+     "urgency": 0.75
+    }
+   ]
+  },
+  "findings": {
+   "Edema": 0.918,
+   "Effusion": 0.874,
+   "Pneumonia": 0.692
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-081 (00002395_021.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:03:00+00:00",
+  "patient_id": "FIXTURE-0002",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-001",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "URGENT",
+  "triage": {
+   "acuity": 77.2,
+   "lane": "URGENT",
+   "sla": "< 1 hr",
+   "sla_minutes": 60,
+   "abstained": false,
+   "driver": "Edema",
+   "confidence": 0.502,
+   "signal": 0.908,
+   "raw": 0.503,
+   "top_findings": [
+    {
+     "name": "Edema",
+     "confidence": 0.502,
+     "signal": 0.908,
+     "urgency": 0.85
+    },
+    {
+     "name": "Pneumonia",
+     "confidence": 0.658,
+     "signal": 1.0,
+     "urgency": 0.75
+    },
+    {
+     "name": "Pneumothorax",
+     "confidence": 0.524,
+     "signal": 0.363,
+     "urgency": 1.0
+    }
+   ]
+  },
+  "findings": {
+   "Edema": 0.908,
+   "Pneumonia": 1.0,
+   "Pneumothorax": 0.363
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-001 (00000013_005.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:21:00+00:00",
+  "patient_id": "FIXTURE-0008",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-016",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "URGENT",
+  "triage": {
+   "acuity": 76.9,
+   "lane": "URGENT",
+   "sla": "< 1 hr",
+   "sla_minutes": 60,
+   "abstained": false,
+   "driver": "Edema",
+   "confidence": 0.501,
+   "signal": 0.905,
+   "raw": 0.502,
+   "top_findings": [
+    {
+     "name": "Edema",
+     "confidence": 0.501,
+     "signal": 0.905,
+     "urgency": 0.85
+    },
+    {
+     "name": "Pneumonia",
+     "confidence": 0.518,
+     "signal": 0.7,
+     "urgency": 0.75
+    },
+    {
+     "name": "Pneumothorax",
+     "confidence": 0.505,
+     "signal": 0.286,
+     "urgency": 1.0
+    }
+   ]
+  },
+  "findings": {
+   "Edema": 0.905,
+   "Pneumonia": 0.7,
+   "Pneumothorax": 0.286
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-016 (00000468_007.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:51:00+00:00",
+  "patient_id": "FIXTURE-0018",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-052",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "URGENT",
+  "triage": {
+   "acuity": 75.0,
+   "lane": "URGENT",
+   "sla": "< 1 hr",
+   "sla_minutes": 60,
+   "abstained": false,
+   "driver": "Pneumonia",
+   "confidence": 0.803,
+   "signal": 1.0,
+   "raw": 0.905,
+   "top_findings": [
+    {
+     "name": "Pneumonia",
+     "confidence": 0.803,
+     "signal": 1.0,
+     "urgency": 0.75
+    },
+    {
+     "name": "Edema",
+     "confidence": 0.439,
+     "signal": 0.61,
+     "urgency": 0.85
+    },
+    {
+     "name": "Lung Opacity",
+     "confidence": 0.914,
+     "signal": 0.62,
+     "urgency": 0.52
+    }
+   ]
+  },
+  "findings": {
+   "Pneumonia": 1.0,
+   "Edema": 0.61,
+   "Lung Opacity": 0.62
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-052 (00001582_004.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:30:00+00:00",
+  "patient_id": "FIXTURE-0011",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-002",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "ABSTAIN",
+  "triage": {
+   "acuity": 46.9,
+   "lane": "ABSTAIN",
+   "sla": "a human picks the lane",
+   "sla_minutes": null,
+   "abstained": true,
+   "driver": "Edema",
+   "confidence": 0.426,
+   "signal": 0.551,
+   "raw": 0.383,
+   "top_findings": [
+    {
+     "name": "Edema",
+     "confidence": 0.426,
+     "signal": 0.551,
+     "urgency": 0.85
+    },
+    {
+     "name": "Effusion",
+     "confidence": 0.663,
+     "signal": 0.613,
+     "urgency": 0.66
+    },
+    {
+     "name": "Consolidation",
+     "confidence": 0.552,
+     "signal": 0.434,
+     "urgency": 0.78
+    }
+   ]
+  },
+  "findings": {
+   "Edema": 0.551,
+   "Effusion": 0.613,
+   "Consolidation": 0.434
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-002 (00000032_001.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:15:00+00:00",
+  "patient_id": "FIXTURE-0006",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-005",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "ABSTAIN",
+  "triage": {
+   "acuity": 36.8,
+   "lane": "ABSTAIN",
+   "sla": "a human picks the lane",
+   "sla_minutes": null,
+   "abstained": true,
+   "driver": "Effusion",
+   "confidence": 0.642,
+   "signal": 0.558,
+   "raw": 0.718,
+   "top_findings": [
+    {
+     "name": "Effusion",
+     "confidence": 0.642,
+     "signal": 0.558,
+     "urgency": 0.66
+    },
+    {
+     "name": "Lung Lesion",
+     "confidence": 0.395,
+     "signal": 1.0,
+     "urgency": 0.3
+    },
+    {
+     "name": "Pneumothorax",
+     "confidence": 0.504,
+     "signal": 0.285,
+     "urgency": 1.0
+    }
+   ]
+  },
+  "findings": {
+   "Effusion": 0.558,
+   "Lung Lesion": 1.0,
+   "Pneumothorax": 0.285
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-005 (00000132_002.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:12:00+00:00",
+  "patient_id": "FIXTURE-0005",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-028",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "ABSTAIN",
+  "triage": {
+   "acuity": 15.5,
+   "lane": "ABSTAIN",
+   "sla": "a human picks the lane",
+   "sla_minutes": null,
+   "abstained": true,
+   "driver": "Nodule",
+   "confidence": 0.552,
+   "signal": 0.351,
+   "raw": 0.583,
+   "top_findings": [
+    {
+     "name": "Nodule",
+     "confidence": 0.552,
+     "signal": 0.351,
+     "urgency": 0.44
+    },
+    {
+     "name": "Mass",
+     "confidence": 0.537,
+     "signal": 0.094,
+     "urgency": 0.58
+    },
+    {
+     "name": "Fibrosis",
+     "confidence": 0.524,
+     "signal": 0.086,
+     "urgency": 0.16
+    }
+   ]
+  },
+  "findings": {
+   "Nodule": 0.351,
+   "Mass": 0.094,
+   "Fibrosis": 0.086
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-028 (00000997_000.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:36:00+00:00",
+  "patient_id": "FIXTURE-0013",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-004",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "EXPEDITED",
+  "triage": {
+   "acuity": 48.0,
+   "lane": "EXPEDITED",
+   "sla": "< 4 hr",
+   "sla_minutes": 240,
+   "abstained": false,
+   "driver": "Pneumonia",
+   "confidence": 0.502,
+   "signal": 0.639,
+   "raw": 0.503,
+   "top_findings": [
+    {
+     "name": "Pneumonia",
+     "confidence": 0.502,
+     "signal": 0.639,
+     "urgency": 0.75
+    },
+    {
+     "name": "Pneumothorax",
+     "confidence": 0.503,
+     "signal": 0.279,
+     "urgency": 1.0
+    },
+    {
+     "name": "Consolidation",
+     "confidence": 0.513,
+     "signal": 0.286,
+     "urgency": 0.78
+    }
+   ]
+  },
+  "findings": {
+   "Pneumonia": 0.639,
+   "Pneumothorax": 0.279,
+   "Consolidation": 0.286
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-004 (00000116_019.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:27:00+00:00",
+  "patient_id": "FIXTURE-0010",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-006",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "EXPEDITED",
+  "triage": {
+   "acuity": 44.7,
+   "lane": "EXPEDITED",
+   "sla": "< 4 hr",
+   "sla_minutes": 240,
+   "abstained": false,
+   "driver": "Effusion",
+   "confidence": 0.69,
+   "signal": 0.677,
+   "raw": 0.782,
+   "top_findings": [
+    {
+     "name": "Effusion",
+     "confidence": 0.69,
+     "signal": 0.677,
+     "urgency": 0.66
+    },
+    {
+     "name": "Pneumothorax",
+     "confidence": 0.502,
+     "signal": 0.277,
+     "urgency": 1.0
+    },
+    {
+     "name": "Consolidation",
+     "confidence": 0.501,
+     "signal": 0.237,
+     "urgency": 0.78
+    }
+   ]
+  },
+  "findings": {
+   "Effusion": 0.677,
+   "Pneumothorax": 0.277,
+   "Consolidation": 0.237
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-006 (00000231_005.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:54:00+00:00",
+  "patient_id": "FIXTURE-0019",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-008",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "EXPEDITED",
+  "triage": {
+   "acuity": 45.5,
+   "lane": "EXPEDITED",
+   "sla": "< 4 hr",
+   "sla_minutes": 240,
+   "abstained": false,
+   "driver": "Mass",
+   "confidence": 0.714,
+   "signal": 0.785,
+   "raw": 0.812,
+   "top_findings": [
+    {
+     "name": "Mass",
+     "confidence": 0.714,
+     "signal": 0.785,
+     "urgency": 0.58
+    },
+    {
+     "name": "Pneumothorax",
+     "confidence": 0.512,
+     "signal": 0.315,
+     "urgency": 1.0
+    },
+    {
+     "name": "Effusion",
+     "confidence": 0.598,
+     "signal": 0.438,
+     "urgency": 0.66
+    }
+   ]
+  },
+  "findings": {
+   "Mass": 0.785,
+   "Pneumothorax": 0.315,
+   "Effusion": 0.438
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-008 (00000246_016.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:00:00+00:00",
+  "patient_id": "FIXTURE-0001",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-003",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "ROUTINE",
+  "triage": {
+   "acuity": 0.0,
+   "lane": "ROUTINE",
+   "sla": "scheduled",
+   "sla_minutes": 1440,
+   "abstained": false,
+   "driver": "Atelectasis",
+   "confidence": 0.32,
+   "signal": 0.0,
+   "raw": 0.23,
+   "top_findings": [
+    {
+     "name": "Atelectasis",
+     "confidence": 0.32,
+     "signal": 0.0,
+     "urgency": 0.3
+    },
+    {
+     "name": "Consolidation",
+     "confidence": 0.222,
+     "signal": 0.0,
+     "urgency": 0.78
+    },
+    {
+     "name": "Infiltration",
+     "confidence": 0.209,
+     "signal": 0.0,
+     "urgency": 0.46
+    }
+   ]
+  },
+  "findings": {
+   "Atelectasis": 0.0,
+   "Consolidation": 0.0,
+   "Infiltration": 0.0
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-003 (00000083_000.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:48:00+00:00",
+  "patient_id": "FIXTURE-0017",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-007",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "ROUTINE",
+  "triage": {
+   "acuity": 0.0,
+   "lane": "ROUTINE",
+   "sla": "scheduled",
+   "sla_minutes": 1440,
+   "abstained": false,
+   "driver": "Atelectasis",
+   "confidence": 0.138,
+   "signal": 0.0,
+   "raw": 0.051,
+   "top_findings": [
+    {
+     "name": "Atelectasis",
+     "confidence": 0.138,
+     "signal": 0.0,
+     "urgency": 0.3
+    },
+    {
+     "name": "Consolidation",
+     "confidence": 0.139,
+     "signal": 0.0,
+     "urgency": 0.78
+    },
+    {
+     "name": "Infiltration",
+     "confidence": 0.502,
+     "signal": 0.0,
+     "urgency": 0.46
+    }
+   ]
+  },
+  "findings": {
+   "Atelectasis": 0.0,
+   "Consolidation": 0.0,
+   "Infiltration": 0.0
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-007 (00000239_003.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:39:00+00:00",
+  "patient_id": "FIXTURE-0014",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-cr-ST-010",
+  "modality": "CR",
+  "model_id": "cxr-densenet-v1",
+  "status": "SCORED",
+  "lane": "ROUTINE",
+  "triage": {
+   "acuity": 0.7,
+   "lane": "ROUTINE",
+   "sla": "scheduled",
+   "sla_minutes": 1440,
+   "abstained": false,
+   "driver": "Infiltration",
+   "confidence": 0.52,
+   "signal": 0.016,
+   "raw": 0.531,
+   "top_findings": [
+    {
+     "name": "Infiltration",
+     "confidence": 0.52,
+     "signal": 0.016,
+     "urgency": 0.46
+    },
+    {
+     "name": "Atelectasis",
+     "confidence": 0.128,
+     "signal": 0.0,
+     "urgency": 0.3
+    },
+    {
+     "name": "Consolidation",
+     "confidence": 0.208,
+     "signal": 0.0,
+     "urgency": 0.78
+    }
+   ]
+  },
+  "findings": {
+   "Infiltration": 0.016,
+   "Atelectasis": 0.0,
+   "Consolidation": 0.0
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "1.2.826.0.1.3680043.10.1421.782102541227397847677749886102628940",
+    "number": 1,
+    "description": "PA",
+    "instance_count": 1,
+    "instance_uids": [
+     "1.2.826.0.1.3680043.10.1421.69443166757983681948046672851888629"
+    ],
+    "frame_url": "/fixtures/frames/sample-cr.dcm"
+   }
+  ],
+  "source": "Fixture. Numbers: scores.json ST-010 (00000272_003.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:33:00+00:00",
+  "patient_id": "FIXTURE-0012",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-mr-00000057",
+  "modality": "MR",
+  "model_id": "brain-brats-monai-v0.5.4",
+  "status": "SCORED",
+  "lane": "URGENT",
+  "triage": {
+   "acuity": 72.1,
+   "lane": "URGENT",
+   "sla": "< 1 hr",
+   "sla_minutes": 60,
+   "abstained": false,
+   "driver": "enhancing_tumor",
+   "confidence": null,
+   "signal": 0.759,
+   "raw": null,
+   "top_findings": [
+    {
+     "name": "enhancing_tumor",
+     "confidence": null,
+     "signal": 0.759,
+     "urgency": 0.95
+    },
+    {
+     "name": "tumor_burden",
+     "confidence": null,
+     "signal": 0.399,
+     "urgency": 0.6
+    },
+    {
+     "name": "mass_effect",
+     "confidence": null,
+     "signal": 0.233,
+     "urgency": 1.0
+    }
+   ]
+  },
+  "findings": {
+   "mass_effect": 0.23308789138314956,
+   "enhancing_tumor": 0.7587341772151899,
+   "tumor_burden": 0.39909462746633306,
+   "edema_volume": 0.15757894736842112
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "fixture-mr-00000057-1",
+    "number": 1,
+    "description": "T1C",
+    "instance_count": 0,
+    "instance_uids": []
+   },
+   {
+    "series_uid": "fixture-mr-00000057-2",
+    "number": 2,
+    "description": "T1",
+    "instance_count": 0,
+    "instance_uids": []
+   },
+   {
+    "series_uid": "fixture-mr-00000057-3",
+    "number": 3,
+    "description": "T2",
+    "instance_count": 0,
+    "instance_uids": []
+   },
+   {
+    "series_uid": "fixture-mr-00000057-4",
+    "number": 4,
+    "description": "FLAIR",
+    "instance_count": 0,
+    "instance_uids": []
+   }
+  ],
+  "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case 00000057 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:42:00+00:00",
+  "patient_id": "FIXTURE-0015",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-mr-MRI-1790025179",
+  "modality": "MR",
+  "model_id": "brain-brats-monai-v0.5.4",
+  "status": "SCORED",
+  "lane": "URGENT",
+  "triage": {
+   "acuity": 55.0,
+   "lane": "URGENT",
+   "sla": "< 1 hr",
+   "sla_minutes": 60,
+   "abstained": false,
+   "driver": "edema_volume",
+   "confidence": null,
+   "signal": 1.0,
+   "raw": null,
+   "top_findings": [
+    {
+     "name": "edema_volume",
+     "confidence": null,
+     "signal": 1.0,
+     "urgency": 0.55
+    },
+    {
+     "name": "tumor_burden",
+     "confidence": null,
+     "signal": 0.859,
+     "urgency": 0.6
+    },
+    {
+     "name": "mass_effect",
+     "confidence": null,
+     "signal": 0.509,
+     "urgency": 1.0
+    }
+   ]
+  },
+  "findings": {
+   "mass_effect": 0.5092290406227824,
+   "enhancing_tumor": 0.22658227848101264,
+   "tumor_burden": 0.8590354238382498,
+   "edema_volume": 1.0
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "fixture-mr-MRI-1790025179-1",
+    "number": 1,
+    "description": "T1C",
+    "instance_count": 0,
+    "instance_uids": []
+   },
+   {
+    "series_uid": "fixture-mr-MRI-1790025179-2",
+    "number": 2,
+    "description": "T1",
+    "instance_count": 0,
+    "instance_uids": []
+   },
+   {
+    "series_uid": "fixture-mr-MRI-1790025179-3",
+    "number": 3,
+    "description": "T2",
+    "instance_count": 0,
+    "instance_uids": []
+   },
+   {
+    "series_uid": "fixture-mr-MRI-1790025179-4",
+    "number": 4,
+    "description": "FLAIR",
+    "instance_count": 0,
+    "instance_uids": []
+   }
+  ],
+  "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case MRI-1790025179 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:18:00+00:00",
+  "patient_id": "FIXTURE-0007",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-mr-MRI-1790070297",
+  "modality": "MR",
+  "model_id": "brain-brats-monai-v0.5.4",
+  "status": "SCORED",
+  "lane": "CRITICAL",
+  "triage": {
+   "acuity": 95.0,
+   "lane": "CRITICAL",
+   "sla": "< 15 min",
+   "sla_minutes": 15,
+   "abstained": false,
+   "driver": "enhancing_tumor",
+   "confidence": null,
+   "signal": 1.0,
+   "raw": null,
+   "top_findings": [
+    {
+     "name": "enhancing_tumor",
+     "confidence": null,
+     "signal": 1.0,
+     "urgency": 0.95
+    },
+    {
+     "name": "mass_effect",
+     "confidence": null,
+     "signal": 0.634,
+     "urgency": 1.0
+    },
+    {
+     "name": "tumor_burden",
+     "confidence": null,
+     "signal": 1.0,
+     "urgency": 0.6
+    }
+   ]
+  },
+  "findings": {
+   "mass_effect": 0.63425,
+   "enhancing_tumor": 1.0,
+   "tumor_burden": 1.0,
+   "edema_volume": 0.5652631578947367
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "fixture-mr-MRI-1790070297-1",
+    "number": 1,
+    "description": "T1C",
+    "instance_count": 0,
+    "instance_uids": []
+   },
+   {
+    "series_uid": "fixture-mr-MRI-1790070297-2",
+    "number": 2,
+    "description": "T1",
+    "instance_count": 0,
+    "instance_uids": []
+   },
+   {
+    "series_uid": "fixture-mr-MRI-1790070297-3",
+    "number": 3,
+    "description": "T2",
+    "instance_count": 0,
+    "instance_uids": []
+   },
+   {
+    "series_uid": "fixture-mr-MRI-1790070297-4",
+    "number": 4,
+    "description": "FLAIR",
+    "instance_count": 0,
+    "instance_uids": []
+   }
+  ],
+  "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case MRI-1790070297 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:09:00+00:00",
+  "patient_id": "FIXTURE-0004",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-mr-MRI-1790081977",
+  "modality": "MR",
+  "model_id": "brain-brats-monai-v0.5.4",
+  "status": "SCORED",
+  "lane": "CRITICAL",
+  "triage": {
+   "acuity": 87.9,
+   "lane": "CRITICAL",
+   "sla": "< 15 min",
+   "sla_minutes": 15,
+   "abstained": false,
+   "driver": "enhancing_tumor",
+   "confidence": null,
+   "signal": 0.925,
+   "raw": null,
+   "top_findings": [
+    {
+     "name": "enhancing_tumor",
+     "confidence": null,
+     "signal": 0.925,
+     "urgency": 0.95
+    },
+    {
+     "name": "tumor_burden",
+     "confidence": null,
+     "signal": 1.0,
+     "urgency": 0.6
+    },
+    {
+     "name": "mass_effect",
+     "confidence": null,
+     "signal": 0.59,
+     "urgency": 1.0
+    }
+   ]
+  },
+  "findings": {
+   "mass_effect": 0.5900833333333333,
+   "enhancing_tumor": 0.9253164556962025,
+   "tumor_burden": 1.0,
+   "edema_volume": 1.0
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "fixture-mr-MRI-1790081977-1",
+    "number": 1,
+    "description": "T1C",
+    "instance_count": 0,
+    "instance_uids": []
+   },
+   {
+    "series_uid": "fixture-mr-MRI-1790081977-2",
+    "number": 2,
+    "description": "T1",
+    "instance_count": 0,
+    "instance_uids": []
+   },
+   {
+    "series_uid": "fixture-mr-MRI-1790081977-3",
+    "number": 3,
+    "description": "T2",
+    "instance_count": 0,
+    "instance_uids": []
+   },
+   {
+    "series_uid": "fixture-mr-MRI-1790081977-4",
+    "number": 4,
+    "description": "FLAIR",
+    "instance_count": 0,
+    "instance_uids": []
+   }
+  ],
+  "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case MRI-1790081977 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py.",
+  "created_at": "2026-09-25T08:06:00+00:00",
+  "patient_id": "FIXTURE-0003",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ }
+]
