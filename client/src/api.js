@@ -45,4 +45,9 @@ export const api = {
   login: (username, password) =>
     call("/api/auth/login", { method: "POST", body: { username, password } }),
   worklist: (token) => call("/api/worklist", { token }),
+  study: (token, id) => call(`/api/studies/${encodeURIComponent(id)}`, { token }),
+  series: (token, id, seriesUid) =>
+    call(`/api/studies/${encodeURIComponent(id)}/series/${encodeURIComponent(seriesUid)}`, { token }),
+  verdict: (token, id, verdict) =>
+    call(`/api/studies/${encodeURIComponent(id)}/verdict`, { token, method: "POST", body: { verdict } }),
 };

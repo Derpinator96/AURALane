@@ -108,6 +108,22 @@ written out, not left to colour. The "needs human triage" group is always shown
 and no filter can hide it. Every number on screen is the API's; the browser
 computes none. The non-diagnostic banner is on every screen, login included.
 
+## The viewer (study detail)
+
+Cornerstone3D, inside the app rather than linked out. The browser fetches each
+frame straight from the datastore using the URL the API returned. Chest: one
+image with window and level, zoom, pan, invert and reset. Brain: the four
+series by sequence name (T1C, T1, T2, FLAIR), and the mouse wheel scrolls
+slices. The right panel shows the lane and its clock, the driving finding, the
+confidence and what it means, every finding's signal and urgency, and Agree or
+Disagree, which is written to the audit trail and shown on the worklist row.
+
+"Triage rationale" is off when a study opens. For chest it lays the Grad-CAM
+heat over the image, pinned to the square the model saw, and it follows zoom
+and pan; if Grad-CAM found no region above the display threshold the caption
+says so instead of showing an empty layer. For brain it shows the tumour
+outline on the slice with the largest tumour area, beside the viewer.
+
 ## Grad-CAM (chest only)
 
 For a chest study, the same forward pass that scores the image also produces a

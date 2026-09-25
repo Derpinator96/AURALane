@@ -32,7 +32,7 @@ succeeds.
 
 | port | methods | used by |
 |---|---|---|
-| `DatastorePort` | `import_study`, `search`, `get_metadata`, `get_frame`, `frame_url` | pipeline step 3, API frame URLs |
+| `DatastorePort` | `import_study`, `search`, `get_metadata`, `get_frame`, `frame_url`, `series_metadata` | pipeline step 3, API frame URLs and frame headers for the viewer |
 | `BlobPort` | `put`, `get`, `delete`, `presigned_url` | transient study copy, evidence PNGs |
 | `TablePort` | `put_item`, `get_item`, `query`, `scan`, `append_audit` | worklist rows, audit trail |
 | `AuthPort` | `login(username, password) -> token`, `verify(token) -> Principal` | API login, every route except health and login |
@@ -43,6 +43,12 @@ Two rules the ports enforce:
 
 - `frame_url` exists so the browser fetches pixels from the datastore
   directly. The API returns a URL and never proxies pixel data.
+  `series_metadata` returns the DICOM headers the viewer needs to decode
+  those frames (bulk data removed); headers are not pixels.
+- Evidence overlays are different: they are derived PNGs in blob storage, not
+  datastore frames. The API hands out `BlobPort.presigned_url` for them, an S3
+  presigned URL on AWS or, locally, an HMAC-signed, expiring `/api/blob` URL
+  that the API itself serves.
 - `TablePort` has no update or delete for audit. `append_audit` is conditional
   on the event id not existing, `put_item` refuses the audit table, and `scan`
   refuses it too. Audit is append only.
@@ -132,6 +138,10 @@ python server.py                                      # round-2 demo, port 8000
 
 `serve` uses 8100 because 8000 belongs to the round-2 demo, which is the
 fallback and must start while the PoC stack is up.
+
+In the local runtime the browser reaches Orthanc through the web server's
+`/dicom-web` proxy (`client/vite.config.js`), because Orthanc sends no CORS
+headers. Frames still go browser to datastore; the API is not in that path.
 
 ## The fixture runtime
 

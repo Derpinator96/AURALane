@@ -111,6 +111,14 @@ def render_heat_layer(heat: np.ndarray) -> bytes:
     return buf.getvalue()
 
 
+def heat_coverage(heat: np.ndarray) -> float:
+    """Fraction of the model's view the overlay draws on (heat at or above the
+    0.2 display threshold). 0.0 means Grad-CAM found no supporting region for
+    the finding at that threshold, which the viewer says in words rather than
+    showing an empty layer."""
+    return round(float((heat >= 0.2).mean()), 4)
+
+
 def crop_box(rows: int, cols: int) -> list[int]:
     """[x, y, size] in frame pixels of the square the model saw.
 
@@ -172,7 +180,8 @@ class InProcessInference(InferencePort):
                 "evidence": {"gradcam_png": f"{stem}.png",
                              "gradcam_layer_png": f"{stem}_layer.png",
                              "gradcam_box": crop_box(*pixels.shape[:2]),
-                             "gradcam_finding": target.driver}}
+                             "gradcam_finding": target.driver,
+                             "gradcam_coverage": heat_coverage(heat)}}
 
     def _segmentation(self, model_cfg, *, nifti: dict[str, Path], **_) -> dict[str, Any]:
         """nifti: {"T1c", "T1", "T2", "FLAIR"} -> paths. Returns metrics.json.

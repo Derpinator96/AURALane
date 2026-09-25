@@ -64,6 +64,8 @@ def test_gradcam_explains_the_triage_driver(result):
     layer = Image.open(io.BytesIO(blob.get(out["evidence"]["gradcam_layer_png"])))
     assert layer.mode == "RGBA" and layer.size == (224, 224)
     assert out["evidence"]["gradcam_box"] == [0, 0, 512]     # square frame: whole image
+    alpha = np.asarray(layer)[..., 3]
+    assert out["evidence"]["gradcam_coverage"] == round(float((alpha > 0).mean()), 4)
 
 
 def test_adapter_carries_the_overlay_key_into_findings(result):

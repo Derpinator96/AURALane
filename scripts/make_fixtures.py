@@ -91,7 +91,7 @@ def gradcam_for(ds, drivers) -> dict:
     import torchxrayvision as xrv
     from pytorch_grad_cam import GradCAM
     from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
-    from core.providers.local.inference import (_png_bytes, _slug, crop_box,
+    from core.providers.local.inference import (_png_bytes, _slug, crop_box, heat_coverage,
                                                 render_gradcam, render_heat_layer)
     model = xrv.models.DenseNet(weights="densenet121-res224-all")
     x = imaging.to_model_input(io.BytesIO(_png_bytes(ds.pixel_array)))
@@ -107,6 +107,7 @@ def gradcam_for(ds, drivers) -> dict:
         out[driver] = {
             "gradcam_png": f"{stem}.png", "gradcam_layer_png": f"{stem}_layer.png",
             "gradcam_box": crop_box(*ds.pixel_array.shape), "gradcam_finding": driver,
+            "gradcam_coverage": heat_coverage(heat),
             "gradcam_note": (f"Fixture: Grad-CAM of the public sample image for {driver}, "
                              f"the finding that set this row's lane. Not this study's image."),
         }

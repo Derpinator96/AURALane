@@ -13,6 +13,10 @@ const api = {
 
 export default defineConfig({
   plugins: [react()],
+  // The DICOM image loader ships web workers and WASM codecs; Vite must not
+  // pre-bundle it, and workers are ES modules.
+  optimizeDeps: { exclude: ["@cornerstonejs/dicom-image-loader"], include: ["dicom-parser"] },
+  worker: { format: "es" },
   server: { port: 5173, strictPort: true, proxy: api },
   preview: { port: 4173, strictPort: true, proxy: api },
   test: {
