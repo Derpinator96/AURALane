@@ -6,6 +6,7 @@
    "patient_id": "FIXTURE-0013",
    "exam": "CR Chest",
    "modality": "CR",
+   "pool": "Chest",
    "model_id": "cxr-densenet-v1",
    "arrived": "2026-09-25T08:36:00+00:00",
    "lane": "ABSTAIN",

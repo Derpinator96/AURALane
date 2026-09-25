@@ -63,6 +63,9 @@ class VerdictIn(BaseModel):
     verdict: Literal["agree", "disagree"]
 
 
+UNASSIGNED = "Unassigned"          # no registered model for the study's modality
+
+
 def _label(name: str | None) -> str | None:
     """Finding name for display: underscores to spaces, first letter capital."""
     if not name:
@@ -102,6 +105,17 @@ def create_app(p: dict, registry: Registry | None = None) -> FastAPI:
             raise HTTPException(404, "no such study")
         return row
 
+    def pool_of(row: dict) -> str:
+        """The reading pool: the registry entry's, else the one registered model
+        for the row's modality (a study can fail before a model is chosen)."""
+        entry = registry.entries.get(row.get("model_id") or "")
+        if entry is None:
+            try:
+                entry = registry.for_modality(row.get("modality") or "")
+            except LookupError:
+                return UNASSIGNED
+        return entry["reading_pool"]
+
     def view(row: dict) -> dict[str, Any]:
         """A worklist row as the client shows it. Values copied, not computed."""
         t = row.get("triage") or {}
@@ -113,6 +127,7 @@ def create_app(p: dict, registry: Registry | None = None) -> FastAPI:
             "patient_id": row.get("patient_id"),
             "exam": f"{row.get('modality') or ''} {entry.get('body_part', '')}".strip(),
             "modality": row.get("modality"),
+            "pool": pool_of(row),
             "model_id": row.get("model_id"),
             "arrived": row.get("created_at"),
             "lane": lane,
@@ -161,7 +176,13 @@ def create_app(p: dict, registry: Registry | None = None) -> FastAPI:
         lanes = [{"lane": lane, "label": LANE_LABEL.get(lane, lane), "clock": CLOCK[lane],
                   "pinned": lane in ("ABSTAIN", "FAILED")}
                  for lane in sorted(LANE_ORDER, key=lambda l: (LANE_ORDER[l], l != "ABSTAIN"))]
-        return {"disclaimer": DISCLAIMER, "lanes": lanes, "studies": [view(r) for r in rows]}
+        studies = [view(r) for r in rows]
+        # Reading pools: every registered pool, even when empty, in alphabetical
+        # order, which is not a ranking. Ranking never crosses pools.
+        names = {e["reading_pool"] for e in registry.entries.values()}
+        names |= {s["pool"] for s in studies}
+        pools = [{"pool": n, "label": n} for n in sorted(names, key=lambda n: (n == UNASSIGNED, n))]
+        return {"disclaimer": DISCLAIMER, "pools": pools, "lanes": lanes, "studies": studies}
 
     @app.get("/api/studies/{study}")
     def study(study: str, who: Principal = Depends(radiologist)):

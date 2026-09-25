@@ -157,6 +157,7 @@ export function Registry({ load }) {
               <h2 className="mono">{m.id}</h2>
               <dl>
                 <dt>Modality</dt><dd>{m.modality} {m.body_part}</dd>
+                <dt>Read by</dt><dd>{m.reading_pool} reading pool</dd>
                 <dt>Runs on</dt><dd className="mono">{m.runtime}</dd>
                 <dt>Input</dt><dd className="mono">{m.input.format}, {m.input.dims}D{m.input.channels ? `, ${m.input.channels.join(" ")}` : ""}</dd>
                 <dt>Output</dt><dd className="mono">{m.output_type}</dd>

@@ -13,8 +13,9 @@ test("radiologist sees the worklist in lane order with the abstention group", as
   await expect(page.getByTestId("study-row").first()).toBeVisible();
   const lanes = await page.getByTestId(/^section-/).evaluateAll(
     (els) => els.map((e) => e.dataset.testid.replace("section-", "")));
-  expect(lanes).toEqual(["CRITICAL", "URGENT", "ABSTAIN", "EXPEDITED", "ROUTINE"]);
-  await expect(page.getByTestId("section-ABSTAIN").getByRole("heading"))
+  expect(lanes).toEqual(["Chest-CRITICAL", "Chest-URGENT", "Chest-ABSTAIN", "Chest-EXPEDITED",
+                         "Chest-ROUTINE", "Neuro-CRITICAL", "Neuro-URGENT", "Neuro-ABSTAIN"]);
+  await expect(page.getByTestId("section-Neuro-ABSTAIN").getByRole("heading"))
     .toContainText("NEEDS HUMAN TRIAGE");
   await expect(page.getByRole("note", { name: "Non-diagnostic notice" })).toBeVisible();
   await page.screenshot({ path: "test-results/worklist.png", fullPage: true });
@@ -22,7 +23,7 @@ test("radiologist sees the worklist in lane order with the abstention group", as
   await page.getByLabel("Lane filter").selectOption("CRITICAL");
   const filtered = await page.getByTestId(/^section-/).evaluateAll(
     (els) => els.map((e) => e.dataset.testid.replace("section-", "")));
-  expect(filtered).toEqual(["CRITICAL", "ABSTAIN"]);
+  expect(filtered).toEqual(["Chest-CRITICAL", "Chest-ABSTAIN", "Neuro-CRITICAL", "Neuro-ABSTAIN"]);
 });
 
 test("admin lands on admin screens and the API refuses it the worklist", async ({ page }) => {

@@ -18,7 +18,7 @@ PATH = Path(__file__).resolve().parents[1] / "models" / "registry.json"
 
 # Required keys and their types, then extra keys per output_type.
 SCHEMA = {
-    "id": str, "modality": str, "input": dict, "runtime": str,
+    "id": str, "modality": str, "reading_pool": str, "input": dict, "runtime": str,
     "output_type": str, "adapter": str, "urgency": dict,
 }
 BY_OUTPUT = {

@@ -49,6 +49,7 @@
     "id": "cxr-densenet-v1",
     "modality": "CR",
     "body_part": "Chest",
+    "reading_pool": "Chest",
     "input": {
      "format": "dicom",
      "dims": 2,
@@ -87,6 +88,7 @@
     "id": "brain-brats-monai-v0.5.4",
     "modality": "MR",
     "body_part": "Brain",
+    "reading_pool": "Neuro",
     "input": {
      "format": "nifti",
      "dims": 3,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import fixture from "./test/worklist.api.json";
-import { arrange } from "./worklist.js";
+import { arrange, arrangePools } from "./worklist.js";
 
-const { studies, lanes } = fixture;
+const { studies, lanes, pools } = fixture;
 const lanesOf = (sections) => sections.map((s) => s.lane);
 const ids = (sections) => sections.flatMap((s) => s.rows.map((r) => r.study));
 
@@ -45,5 +45,25 @@ describe("arrange", () => {
       [one.study, ...rows.filter((r) => r.lane === "ABSTAIN").map((r) => r.study)].sort((a, b) =>
         ids(arrange(rows, lanes)).indexOf(a) - ids(arrange(rows, lanes)).indexOf(b)));
     expect(ids(arrange(rows, lanes, { read: "unread" }))).not.toContain(one.study);
+  });
+});
+
+describe("arrangePools", () => {
+  it("never ranks across pools and gives every pool its own pinned sections", () => {
+    const out = arrangePools(studies, pools, lanes);
+    expect(out.map((p) => p.pool)).toEqual(pools.map((p) => p.pool));
+    for (const p of out) {
+      expect(ids(p.sections).every((id) => studies.find((r) => r.study === id).pool === p.pool)).toBe(true);
+      expect(lanesOf(p.sections)).toContain("ABSTAIN");
+    }
+    expect(out.flatMap((p) => ids(p.sections)).sort()).toEqual(studies.map((r) => r.study).sort());
+  });
+
+  it("a failed study stays pinned in its own pool, whatever the filter", () => {
+    const failed = { ...studies.find((r) => r.pool === "Neuro"), study: "f1", lane: "FAILED" };
+    const out = arrangePools([...studies, failed], pools, lanes, { lane: "ROUTINE" });
+    const neuro = out.find((p) => p.pool === "Neuro");
+    expect(lanesOf(neuro.sections)).toEqual(["ABSTAIN", "FAILED"]);
+    expect(lanesOf(out.find((p) => p.pool === "Chest").sections)).not.toContain("FAILED");
   });
 });

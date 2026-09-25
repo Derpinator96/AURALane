@@ -103,7 +103,13 @@ API refuses both with 403; hiding a button is not access control.
 
 ## The web app (`client/`)
 
-One ordered list, dark and dense for a reading room. Lane names are always
+One screen, dark and dense for a reading room, split by reading pool: Neuro
+for MR, Chest for CR, from each model's `reading_pool` in the registry. A
+neuroradiologist reads the MRI and a chest radiologist the X-ray, so studies
+are ranked within a pool and never across. The split is not a claim that one
+modality outranks the other. Each pool has its own NEEDS HUMAN TRIAGE and
+PIPELINE FAILED groups, because the reader who has to place or chase the
+study is that pool's reader. Lane names are always
 written out, not left to colour. The "needs human triage" group is always shown
 and no filter can hide it. Every number on screen is the API's; the browser
 computes none. The non-diagnostic banner is on every screen, login included,

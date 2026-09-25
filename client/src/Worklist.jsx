@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { arrange, READ_FILTERS, SORTS, timeUTC, isUnread } from "./worklist.js";
+import { arrangePools, READ_FILTERS, SORTS, timeUTC, isUnread } from "./worklist.js";
 
 const LANE_FILTERS = ["ALL", "CRITICAL", "URGENT", "EXPEDITED", "ROUTINE"];
 
@@ -31,9 +31,9 @@ function Row({ row }) {
   );
 }
 
-function Section({ s }) {
+function Section({ s, pool }) {
   return (
-    <section className={`lane lane-${s.lane}`} data-testid={`section-${s.lane}`}>
+    <section className={`lane lane-${s.lane}`} data-testid={`section-${pool}-${s.lane}`}>
       <h2>
         <span className="lanename">{s.label}</span>
         {s.clock && <span className="clock">{s.clock}</span>}
@@ -63,8 +63,8 @@ export default function Worklist({ load }) {
     return () => { live = false; };
   }, [load]);
 
-  const sections = useMemo(
-    () => (data ? arrange(data.studies, data.lanes, { sort, lane, read }) : []),
+  const pools = useMemo(
+    () => (data ? arrangePools(data.studies, data.pools, data.lanes, { sort, lane, read }) : []),
     [data, sort, lane, read]);
 
   if (error) return <main className="worklist"><p className="error" role="alert">Could not load the worklist: {String(error.message)}</p></main>;
@@ -90,11 +90,17 @@ export default function Worklist({ load }) {
         </label>
         <span className="note">Needs human triage is always shown and is not affected by filters.</span>
       </div>
+      <p className="note">Grouped by reading pool because a neuroradiologist reads the MRI and a chest radiologist reads the X-ray; studies are ranked within a pool, never across.</p>
       <div className="colhead" aria-hidden="true">
         <span>Lane</span><span>Patient (pseudonym)</span><span>Exam</span><span>Arrived UTC</span>
         <span>Driving finding</span><span>Acuity</span><span>Status</span><span />
       </div>
-      {sections.map((s) => <Section key={s.lane} s={s} />)}
+      {pools.map((p) => (
+        <section key={p.pool} className="pool" data-testid={`pool-${p.pool}`} aria-label={`${p.label} reading pool`}>
+          <h2 className="poolname">{p.label}</h2>
+          {p.sections.map((s) => <Section key={s.lane} s={s} pool={p.pool} />)}
+        </section>
+      ))}
     </main>
   );
 }
