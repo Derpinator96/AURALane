@@ -50,4 +50,7 @@ export const api = {
     call(`/api/studies/${encodeURIComponent(id)}/series/${encodeURIComponent(seriesUid)}`, { token }),
   verdict: (token, id, verdict) =>
     call(`/api/studies/${encodeURIComponent(id)}/verdict`, { token, method: "POST", body: { verdict } }),
+  audit: (token) => call("/api/admin/audit", { token }),
+  laneMix: (token) => call("/api/admin/lane-mix", { token }),
+  models: (token) => call("/api/admin/models", { token }),
 };

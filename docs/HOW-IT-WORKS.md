@@ -108,6 +108,17 @@ written out, not left to colour. The "needs human triage" group is always shown
 and no filter can hide it. Every number on screen is the API's; the browser
 computes none. The non-diagnostic banner is on every screen, login included.
 
+## The admin screens
+
+Four screens for the admin group: the audit log (append only, newest first),
+the lane mix (counted by the API from the worklist rows when asked; in fixture
+mode it says the rows were picked three per lane, so it is not a population
+mix), the thresholds, and the model registry. Thresholds are shown, not edited:
+lane floors and the abstention band live in `triage.py` and operating points in
+`models/registry.json`, and changing one re-lanes every study, so it is a
+reviewed code change. Study IDs in the audit log are plain text; admins cannot
+open a study, and the API refuses them if they try.
+
 ## The viewer (study detail)
 
 Cornerstone3D, inside the app rather than linked out. The browser fetches each

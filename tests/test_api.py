@@ -137,6 +137,8 @@ def test_lane_mix_counts_real_rows(client):
     for lane in counts:
         assert counts[lane] == sum(r["lane"] == lane for r in FIXTURE)
     assert body["total"] == len(FIXTURE)
+    for l in body["lanes"]:
+        assert l["percent"] == round(100 * l["count"] / len(FIXTURE), 1)
 
 
 def test_models_lists_the_registry(client):

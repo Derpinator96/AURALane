@@ -53,7 +53,7 @@ header.top {
 .role { font-family: var(--mono); color: var(--ink); }
 
 main { padding: 12px 16px 40px; }
-.notbuilt h1, .login h1 { font-size: 17px; font-weight: 600; margin: 8px 0 12px; }
+.login h1 { font-size: 17px; font-weight: 600; margin: 8px 0 12px; }
 .login form { display: grid; gap: 10px; max-width: 320px; }
 .login label { display: grid; gap: 4px; color: var(--soft); }
 .note, .why { color: var(--faint); font-size: 12.5px; }
@@ -87,18 +87,18 @@ section.lane .why { margin: 0 0 4px; }
 .read.unread { color: var(--ink); }
 .source { color: var(--failed); font-size: 11.5px; border: 1px solid var(--failed); border-radius: 2px; padding: 0 4px; justify-self: start; }
 
-.lane-CRITICAL h2 .lanename, .row.lane-CRITICAL .lanetag { color: var(--critical); }
+.lane-CRITICAL h2 .lanename, .row.lane-CRITICAL .lanetag, tr.lane-CRITICAL .lanetag { color: var(--critical); }
 .row.lane-CRITICAL { border-left-color: var(--critical); }
-.lane-URGENT h2 .lanename, .row.lane-URGENT .lanetag { color: var(--urgent); }
+.lane-URGENT h2 .lanename, .row.lane-URGENT .lanetag, tr.lane-URGENT .lanetag { color: var(--urgent); }
 .row.lane-URGENT { border-left-color: var(--urgent); }
-.lane-EXPEDITED h2 .lanename, .row.lane-EXPEDITED .lanetag { color: #7c9fe0; }
+.lane-EXPEDITED h2 .lanename, .row.lane-EXPEDITED .lanetag, tr.lane-EXPEDITED .lanetag { color: #7c9fe0; }
 .row.lane-EXPEDITED { border-left-color: var(--expedited); }
-.lane-ROUTINE h2 .lanename, .row.lane-ROUTINE .lanetag { color: var(--soft); }
+.lane-ROUTINE h2 .lanename, .row.lane-ROUTINE .lanetag, tr.lane-ROUTINE .lanetag { color: var(--soft); }
 .row.lane-ROUTINE { border-left-color: var(--routine); }
-.lane-ABSTAIN h2 .lanename, .row.lane-ABSTAIN .lanetag { color: var(--abstain); }
+.lane-ABSTAIN h2 .lanename, .row.lane-ABSTAIN .lanetag, tr.lane-ABSTAIN .lanetag { color: var(--abstain); }
 .row.lane-ABSTAIN { border-left: 4px dashed var(--abstain); }
 section.lane-ABSTAIN { border: 1px dashed var(--abstain); padding: 6px 8px; }
-.lane-FAILED h2 .lanename, .row.lane-FAILED .lanetag { color: var(--failed); }
+.lane-FAILED h2 .lanename, .row.lane-FAILED .lanetag, tr.lane-FAILED .lanetag { color: var(--failed); }
 .row.lane-FAILED { border-left-color: var(--failed); }
 
 /* Study detail: viewer left, facts right. */
@@ -147,3 +147,26 @@ tr.driver-row td { color: #fff; font-weight: 600; }
 .source-note { font-size: 12px; color: var(--faint); }
 .draft summary { cursor: pointer; color: var(--soft); margin-top: 12px; }
 .draft pre { white-space: pre-wrap; font-size: 12px; color: var(--soft); }
+
+/* Admin screens */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.tabs a { padding: 6px 12px; color: var(--soft); border: 1px solid transparent; border-bottom: none; }
+.tabs a.active { color: var(--ink); border-color: var(--line); background: var(--panel); }
+.adminpage h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.4px; margin: 18px 0 6px; }
+.adminpage h3 { font-size: 13px; font-weight: 500; margin: 14px 0 4px; }
+table.admin { border-collapse: collapse; margin: 4px 0 8px; }
+table.admin th { text-align: left; color: var(--faint); font-size: 11.5px; font-weight: 400; padding: 4px 12px 4px 0; border-bottom: 1px solid var(--line); }
+table.admin td { padding: 4px 12px 4px 0; border-bottom: 1px solid var(--raise); vertical-align: top; }
+table.admin .num { text-align: right; }
+table.admin .detail { color: var(--soft); font-size: 12px; max-width: 520px; overflow-wrap: anywhere; }
+.barcol { width: 240px; }
+.bar { display: block; height: 10px; background: var(--soft); }
+tr.lane-CRITICAL .bar { background: var(--critical); }
+tr.lane-URGENT .bar { background: var(--urgent); }
+tr.lane-EXPEDITED .bar { background: var(--expedited); }
+tr.lane-ROUTINE .bar { background: var(--routine); }
+tr.lane-ABSTAIN .bar { background: var(--abstain); }
+tr.lane-FAILED .bar { background: var(--failed); }
+.model dl { display: grid; grid-template-columns: 90px 1fr; gap: 2px 12px; margin: 0 0 8px; }
+.model dt { color: var(--faint); }
+.model dd { margin: 0; }

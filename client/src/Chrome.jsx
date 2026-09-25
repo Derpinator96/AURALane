@@ -26,12 +26,3 @@ export function Header({ session, onSignOut }) {
     </header>
   );
 }
-
-export function NotBuilt({ what, task }) {
-  return (
-    <main className="notbuilt">
-      <h1>{what}: not built yet</h1>
-      <p>Scheduled for {task}.</p>
-    </main>
-  );
-}

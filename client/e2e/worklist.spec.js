@@ -27,9 +27,9 @@ test("radiologist sees the worklist in lane order with the abstention group", as
 
 test("admin lands on admin screens and the API refuses it the worklist", async ({ page }) => {
   await signIn(page, "admin");
-  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page).toHaveURL(/\/admin\/audit$/);
   await page.goto("/");
-  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page).toHaveURL(/\/admin\/audit$/);
   const token = await page.evaluate(() => JSON.parse(sessionStorage.getItem("auralane.session")).token);
   const res = await page.request.get("/api/worklist", { headers: { Authorization: `Bearer ${token}` } });
   expect(res.status()).toBe(403);

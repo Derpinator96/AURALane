@@ -265,10 +265,15 @@ def create_app(p: dict, registry: Registry | None = None) -> FastAPI:
         counts = Counter(r["lane"] for r in rows)
         return {"disclaimer": DISCLAIMER, "total": len(rows),
                 "lanes": [{"lane": lane, "label": LANE_LABEL.get(lane, lane),
-                           "count": counts.get(lane, 0)}
+                           "count": counts.get(lane, 0),
+                           "percent": (round(100 * counts.get(lane, 0) / len(rows), 1)
+                                       if rows else None)}
                           for lane in ("CRITICAL", "URGENT", "ABSTAIN", "EXPEDITED",
                                        "ROUTINE", "FAILED")],
-                "basis": f"counted from {len(rows)} worklist rows at request time"}
+                "basis": f"counted from {len(rows)} worklist rows at request time"
+                         + (". Fixture rows were picked three per lane by make_fixtures.py, "
+                            "so this is not a population lane mix"
+                            if p.get("runtime") == "fixture" else "")}
 
     @app.get("/api/admin/models")
     def models(who: Principal = Depends(admin)):
