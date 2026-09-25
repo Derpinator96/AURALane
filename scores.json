@@ -73,33 +73,33 @@
    "image": "images/00000032_001.png"
   },
   {
-   "acuity": 0.0,
+   "acuity": 0.8,
    "lane": "ROUTINE",
    "sla": "scheduled",
    "sla_minutes": 1440,
    "abstained": false,
-   "driver": "Atelectasis",
-   "confidence": 0.32,
-   "signal": 0.0,
-   "raw": 0.23,
+   "driver": "Cardiomegaly",
+   "confidence": 0.367,
+   "signal": 0.033,
+   "raw": 0.294,
    "top_findings": [
     {
+     "name": "Cardiomegaly",
+     "confidence": 0.367,
+     "signal": 0.033,
+     "urgency": 0.24
+    },
+    {
      "name": "Atelectasis",
-     "confidence": 0.32,
+     "confidence": 0.314,
      "signal": 0.0,
      "urgency": 0.3
     },
     {
      "name": "Consolidation",
-     "confidence": 0.222,
+     "confidence": 0.186,
      "signal": 0.0,
      "urgency": 0.78
-    },
-    {
-     "name": "Infiltration",
-     "confidence": 0.209,
-     "signal": 0.0,
-     "urgency": 0.46
     }
    ],
    "id": "ST-003",
@@ -345,33 +345,33 @@
    "image": "images/00000272_003.png"
   },
   {
-   "acuity": 0.0,
+   "acuity": 0.3,
    "lane": "ROUTINE",
    "sla": "scheduled",
    "sla_minutes": 1440,
    "abstained": false,
-   "driver": "Atelectasis",
-   "confidence": 0.084,
-   "signal": 0.0,
-   "raw": 0.022,
+   "driver": "Emphysema",
+   "confidence": 0.481,
+   "signal": 0.014,
+   "raw": 0.47,
    "top_findings": [
     {
+     "name": "Emphysema",
+     "confidence": 0.481,
+     "signal": 0.014,
+     "urgency": 0.18
+    },
+    {
      "name": "Atelectasis",
-     "confidence": 0.084,
+     "confidence": 0.07,
      "signal": 0.0,
      "urgency": 0.3
     },
     {
      "name": "Consolidation",
-     "confidence": 0.154,
+     "confidence": 0.182,
      "signal": 0.0,
      "urgency": 0.78
-    },
-    {
-     "name": "Infiltration",
-     "confidence": 0.141,
-     "signal": 0.0,
-     "urgency": 0.46
     }
    ],
    "id": "ST-011",
@@ -7553,33 +7553,33 @@
    "image": "images/00006409_000.png"
   },
   {
-   "acuity": 5.8,
-   "lane": "ROUTINE",
-   "sla": "scheduled",
-   "sla_minutes": 1440,
-   "abstained": false,
+   "acuity": 13.4,
+   "lane": "ABSTAIN",
+   "sla": "a human picks the lane",
+   "sla_minutes": null,
+   "abstained": true,
    "driver": "Cardiomegaly",
-   "confidence": 0.422,
-   "signal": 0.242,
-   "raw": 0.377,
+   "confidence": 0.501,
+   "signal": 0.559,
+   "raw": 0.502,
    "top_findings": [
     {
      "name": "Cardiomegaly",
-     "confidence": 0.422,
-     "signal": 0.242,
+     "confidence": 0.501,
+     "signal": 0.559,
      "urgency": 0.24
     },
     {
-     "name": "Emphysema",
-     "confidence": 0.5,
-     "signal": 0.1,
-     "urgency": 0.18
+     "name": "Nodule",
+     "confidence": 0.502,
+     "signal": 0.052,
+     "urgency": 0.44
     },
     {
-     "name": "Atelectasis",
-     "confidence": 0.253,
-     "signal": 0.0,
-     "urgency": 0.3
+     "name": "Fracture",
+     "confidence": 0.459,
+     "signal": 0.052,
+     "urgency": 0.42
     }
    ],
    "id": "ST-223",
@@ -8947,33 +8947,33 @@
    "image": "images/00007195_003.png"
   },
   {
-   "acuity": 16.1,
+   "acuity": 17.3,
    "lane": "ROUTINE",
    "sla": "scheduled",
    "sla_minutes": 1440,
    "abstained": false,
    "driver": "Cardiomegaly",
-   "confidence": 0.528,
-   "signal": 0.67,
-   "raw": 0.545,
+   "confidence": 0.541,
+   "signal": 0.72,
+   "raw": 0.565,
    "top_findings": [
     {
      "name": "Cardiomegaly",
-     "confidence": 0.528,
-     "signal": 0.67,
+     "confidence": 0.541,
+     "signal": 0.72,
      "urgency": 0.24
     },
     {
-     "name": "Fibrosis",
-     "confidence": 0.508,
-     "signal": 0.011,
-     "urgency": 0.16
+     "name": "Nodule",
+     "confidence": 0.5,
+     "signal": 0.043,
+     "urgency": 0.44
     },
     {
-     "name": "Atelectasis",
-     "confidence": 0.324,
-     "signal": 0.0,
-     "urgency": 0.3
+     "name": "Fibrosis",
+     "confidence": 0.509,
+     "signal": 0.014,
+     "urgency": 0.16
     }
    ],
    "id": "ST-264",
@@ -9055,25 +9055,25 @@
    "sla_minutes": 1440,
    "abstained": false,
    "driver": "Atelectasis",
-   "confidence": 0.224,
+   "confidence": 0.168,
    "signal": 0.0,
-   "raw": 0.12,
+   "raw": 0.072,
    "top_findings": [
     {
      "name": "Atelectasis",
-     "confidence": 0.224,
+     "confidence": 0.168,
      "signal": 0.0,
      "urgency": 0.3
     },
     {
      "name": "Consolidation",
-     "confidence": 0.18,
+     "confidence": 0.153,
      "signal": 0.0,
      "urgency": 0.78
     },
     {
      "name": "Infiltration",
-     "confidence": 0.145,
+     "confidence": 0.275,
      "signal": 0.0,
      "urgency": 0.46
     }
@@ -16671,25 +16671,25 @@
    "sla_minutes": 1440,
    "abstained": false,
    "driver": "Atelectasis",
-   "confidence": 0.17,
+   "confidence": 0.152,
    "signal": 0.0,
-   "raw": 0.073,
+   "raw": 0.06,
    "top_findings": [
     {
      "name": "Atelectasis",
-     "confidence": 0.17,
+     "confidence": 0.152,
      "signal": 0.0,
      "urgency": 0.3
     },
     {
      "name": "Consolidation",
-     "confidence": 0.203,
+     "confidence": 0.137,
      "signal": 0.0,
      "urgency": 0.78
     },
     {
      "name": "Infiltration",
-     "confidence": 0.205,
+     "confidence": 0.503,
      "signal": 0.0,
      "urgency": 0.46
     }
