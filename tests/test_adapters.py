@@ -1,7 +1,8 @@
 """Adapter behaviour. The brain tests use one real case from Shaurya's repo
 (_external/brainmri/data/studies/00000057: metrics.json, prediction.nii.gz and
-the T1c input), where Dice against ground truth is 0.92 / 0.98 / 0.94, so the
-metrics are the model's own output.
+the T1c input). Its Dice is not 1.0 on every channel, so the metrics are the
+model's own output rather than the ground-truth substitute. No Dice figure is
+quoted here: MRI-1790025179 records WT Dice 0.0 and is unexplained.
 """
 import copy
 import io
