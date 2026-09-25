@@ -36,3 +36,9 @@ _external/
 data/chest/studies/
 data/brain/dicom/
 data/blob/
+
+# The identity map: original names and IDs against their pseudonyms. It stays on
+# the machine that ran de-identification and is never committed.
+data/identity/
+# DevAuth signing key for local development tokens.
+data/dev/

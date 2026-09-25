@@ -34,6 +34,7 @@ class DynamoTable(TablePort):
     put_item = _todo("Amazon DynamoDB PutItem")
     get_item = _todo("Amazon DynamoDB GetItem")
     query = _todo("Amazon DynamoDB Query")
+    scan = _todo("Amazon DynamoDB Scan")
     append_audit = _todo("Amazon DynamoDB PutItem (audit, conditional)")
 
 

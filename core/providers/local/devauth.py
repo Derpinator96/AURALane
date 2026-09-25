@@ -4,8 +4,10 @@ Never deploy this. It stands in for Cognito on localhost so the API can check a
 bearer token and a group without an AWS account. Anyone holding the key can
 mint any identity.
 
-The key comes from AURALANE_DEV_JWT_SECRET, or is generated per instance, in
-which case only that instance can verify what it issued.
+The key comes from the secret argument, else AURALANE_DEV_JWT_SECRET, else
+key_file (created with a random key on first use), so a token printed by
+`python -m core.run token` verifies in a separate `serve` process. With none of
+the three, the key is random per instance.
 
 Two seeded users, both synthetic:
     radiologist@dev.auralane.local   group radiologist
@@ -16,6 +18,7 @@ from __future__ import annotations
 import os
 import secrets
 import time
+from pathlib import Path
 
 import jwt      # PyJWT: jwt.encode(payload, key, algorithm=), jwt.decode(token, key, algorithms=, audience=)
 
@@ -33,8 +36,16 @@ SEEDED = {
 
 
 class DevAuth(AuthPort):
-    def __init__(self, secret: str | None = None):
-        self._key = secret or os.environ.get("AURALANE_DEV_JWT_SECRET") or secrets.token_hex(32)
+    def __init__(self, secret: str | None = None, key_file: str | os.PathLike | None = None):
+        self._key = secret or os.environ.get("AURALANE_DEV_JWT_SECRET")
+        if not self._key and key_file:
+            path = Path(key_file)
+            if not path.exists():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(secrets.token_hex(32))
+                path.chmod(0o600)
+            self._key = path.read_text().strip()
+        self._key = self._key or secrets.token_hex(32)
 
     def issue(self, user: str, ttl: int = 3600) -> str:
         p = SEEDED[user]

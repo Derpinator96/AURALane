@@ -39,6 +39,7 @@ import io
 from pathlib import Path
 from typing import Any
 
+import nibabel as nib
 import numpy as np
 
 from core.types import Findings
@@ -154,8 +155,9 @@ def adapt(model_output: dict[str, Any], context: dict[str, Any]) -> Findings:
     context: entry (registry entry), study (StudyInstanceUID), structural (T1c,
     nibabel image), prediction (his label-map NIfTI, nibabel image), blob (a
     BlobPort, receives the overlay PNG). brain_volume_cm3 may be supplied to
-    skip the count. All but brain_volume_cm3 are required: a scored brain study
-    always carries its overlay.
+    skip the count. From the pipeline, structural and prediction are absent and
+    are loaded from inputs["nifti"]["T1c"] and model_output["_prediction_path"].
+    A scored brain study always carries its overlay.
     """
     m, entry = model_output, context["entry"]
     study = context["study"]
@@ -171,6 +173,12 @@ def adapt(model_output: dict[str, Any], context: dict[str, Any]) -> Findings:
                                   f"{entry['min_tumor_ml']}; the model is trained on "
                                   f"positives only and is not trusted to call this")
         return Findings(findings={}, evidence={}, meta=meta)
+
+    # The pipeline passes paths; tests may pass loaded images.
+    if context.get("structural") is None:
+        context["structural"] = nib.load(context["inputs"]["nifti"]["T1c"])
+    if context.get("prediction") is None:
+        context["prediction"] = nib.load(m["_prediction_path"])
 
     brain = context.get("brain_volume_cm3") or brain_volume_cm3(study, context["structural"])
     a = entry["anchors"]
