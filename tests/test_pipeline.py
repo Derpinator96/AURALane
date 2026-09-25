@@ -12,12 +12,16 @@ NIfTI, the adapter, the overlay, triage, the worklist row.
 
 Needs: docker compose -f docker-compose.local.yml up -d, and both corpora.
 """
+import datetime
 import json
+import random
+import shutil
 import sys
 import uuid
 from pathlib import Path
 
 import nibabel as nib
+import numpy as np
 import pydicom
 import pytest
 
@@ -29,18 +33,36 @@ from core.types import Findings
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "sim" / "edge"))
-import identity  # noqa: E402
+sys.path.insert(0, str(ROOT / "sim" / "generator"))
+import identity    # noqa: E402
+import make_dicom  # noqa: E402
 
+pytestmark = pytest.mark.privacy
+TESSERACT = shutil.which("tesseract") is not None
 STEPS = ["deidentify", "blob_put", "import", "infer", "adapt", "triage", "persist",
          "blob_delete"]
 CASE57 = ROOT / "_external" / "brainmri" / "data" / "studies" / "00000057" / "output"
+
+
+def _synthetic_chest(tmp_path):
+    """One CR instance built by the generator, written to tmp_path. No corpus needed."""
+    when = datetime.datetime(2026, 9, 25, 7, 0, 0)
+    ident = make_dicom.make_identity(300, random.Random(5), when, False)
+    y, x = np.mgrid[0:256, 0:256]
+    ds = make_dicom.build_instance((40 + (x + y) * 0.3).astype(np.uint8), 255, ident, when,
+                                   "synthetic")
+    path = tmp_path / "study" / "cr.dcm"
+    path.parent.mkdir()
+    ds.save_as(path, enforce_file_format=True)
+    return [path], {"study_uid": ident["study_uid"], "patient_id": ident["patient_id"]}
 
 
 def _study_files(corpus):
     root = ROOT / "data" / corpus
     manifest = root / "manifest.json"
     if not manifest.exists():
-        pytest.fail(f"{manifest} missing; build the corpus first")
+        pytest.skip(f"needs the corpus at {root} (not in git). NOT VERIFIED: end-to-end "
+                    f"ingest of a real {corpus.split('/')[0]} study through all eight steps")
     entries = json.loads(manifest.read_text())
     uid = entries[0]["study_uid"]
     return [root / e["path"] for e in entries if e["study_uid"] == uid], entries[0]
@@ -73,6 +95,7 @@ class RecordedInference:
         return {**self.metrics, "_prediction_path": str(self.prediction)}
 
 
+@pytest.mark.local_data
 def test_chest_ingest_scores_and_audits_every_step(ports):
     files, source = _study_files("chest/studies")
     v = ingest(files, inference=InProcessInference(), **ports)
@@ -96,6 +119,7 @@ def test_chest_ingest_scores_and_audits_every_step(ports):
     assert not list((ports["blob"].root / "transient").rglob("*.dcm"))
 
 
+@pytest.mark.local_data
 def test_brain_ingest_scores_with_overlay(ports):
     if not (CASE57 / "metrics.json").exists():
         pytest.fail(f"{CASE57} missing; clone shauryajain111/brainmri into _external/brainmri")
@@ -123,15 +147,14 @@ def test_brain_ingest_scores_with_overlay(ports):
     assert steps == [(s, "ok") for s in STEPS]
 
 
-def test_ocr_unavailable_fails_visibly_before_anything_is_stored(ports, monkeypatch):
+def test_ocr_unavailable_fails_visibly_before_anything_is_stored(ports, monkeypatch, tmp_path):
     import pytesseract
 
     def missing(*a, **k):
         raise pytesseract.TesseractNotFoundError()
     monkeypatch.setattr(pytesseract, "image_to_data", missing)
 
-    files, source = _study_files("chest/studies")
-    before = ports["datastore"].search(study_uid=source["study_uid"])
+    files, source = _synthetic_chest(tmp_path)
     v = ingest(files, inference=InProcessInference(), **ports)
 
     assert v.status == "FAILED" and v.lane == "FAILED"
@@ -141,16 +164,19 @@ def test_ocr_unavailable_fails_visibly_before_anything_is_stored(ports, monkeypa
     assert rows[0]["study"].startswith("run:")       # no pseudonym was ever assigned
     steps, _ = _audit(ports["table"], NO_STUDY)       # events before any pseudonym exists
     assert steps == [("deidentify", "failed"), ("persist", "ok"), ("blob_delete", "ok")]
-    assert ports["datastore"].search(study_uid=source["study_uid"]) == before
+    assert ports["datastore"].search(study_uid=source["study_uid"]) == []   # never imported
     assert not list(ports["blob"].root.rglob("*.dcm"))
 
 
-def test_inference_failure_leaves_a_failed_row(ports):
+@pytest.mark.skipif(not TESSERACT, reason=(
+    "needs Tesseract: de-identification masks pixels before the step under test. "
+    "NOT VERIFIED: that an inference failure leaves a FAILED worklist row and a full audit"))
+def test_inference_failure_leaves_a_failed_row(ports, tmp_path):
     class Broken:
         def score(self, *a, **k):
             raise RuntimeError("model endpoint unreachable")
 
-    files, _ = _study_files("chest/studies")
+    files, _ = _synthetic_chest(tmp_path)
     v = ingest(files, inference=Broken(), **ports)
     assert v.status == "FAILED" and "unreachable" in v.error
     row = ports["table"].get_item("worklist", {"study": v.ref.study_uid})
@@ -161,7 +187,10 @@ def test_inference_failure_leaves_a_failed_row(ports):
     assert "unreachable" in rows[3]["detail"]["error"]
 
 
-def test_empty_findings_abstain_rather_than_score(ports, monkeypatch):
+@pytest.mark.skipif(not TESSERACT, reason=(
+    "needs Tesseract: de-identification masks pixels before the step under test. "
+    "NOT VERIFIED: that an adapter with no findings puts the study in ABSTAIN"))
+def test_empty_findings_abstain_rather_than_score(ports, monkeypatch, tmp_path):
     """An adapter that abstains (e.g. the brain volume gate) yields lane ABSTAIN."""
     reg = ports["registry"]
     entry = reg.for_modality("CR")
@@ -176,7 +205,7 @@ def test_empty_findings_abstain_rather_than_score(ports, monkeypatch):
         def score(self, *a, **k):
             return {}
 
-    files, _ = _study_files("chest/studies")
+    files, _ = _synthetic_chest(tmp_path)
     v = ingest(files, inference=Fixed(), **ports)
     assert v.status == "SCORED" and v.lane == "ABSTAIN"
     assert v.triage["reason"] == "below volume gate"

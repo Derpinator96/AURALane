@@ -122,7 +122,10 @@ def test_series_order_matches_the_model_channel_def():
 REAL = sorted(n2d.complete_cases()) if n2d.RAW.is_dir() else []
 
 
-@pytest.mark.skipif(not REAL, reason="no BraTS case in data/brain/raw")
+@pytest.mark.local_data
+@pytest.mark.skipif(not REAL, reason=(
+    "needs a BraTS case in data/brain/raw (not in git). NOT VERIFIED: that a real case "
+    "converts to DICOM and every value round-trips"))
 def test_real_case_end_to_end(tmp_path):
     case = REAL[0]
     gen = n2d._load_generator()

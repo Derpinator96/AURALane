@@ -8,17 +8,50 @@ true. If any of them fail, nothing downstream matters.
 """
 import json
 import os
+import shutil
 import sys
 import tempfile
 
 import numpy as np
 import pydicom
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import deid          # noqa: E402
 import identity      # noqa: E402
 
 STUDIES = os.environ.get("SIM_STUDIES", "../data/studies")
+
+# Loud skips. Every privacy test here is marked, and conftest.py at the repo root
+# lists every skip, and counts the privacy ones, at the end of the run.
+pytestmark = pytest.mark.privacy
+CORPUS_SIZE = 40
+TESSERACT = shutil.which("tesseract") is not None
+
+
+def _corpus_size():
+    try:
+        with open(os.path.join(STUDIES, "manifest.json")) as f:
+            return len(json.load(f))
+    except OSError:
+        return 0
+
+
+def needs_corpus(what):
+    """Skip unless the 40-study chest corpus and Tesseract are both present."""
+    missing = []
+    if _corpus_size() != CORPUS_SIZE:
+        missing.append(f"the {CORPUS_SIZE}-study chest corpus at {STUDIES} (found "
+                       f"{_corpus_size()}; build it with python "
+                       f"data/chest/make_chest_corpus.py)")
+    if not TESSERACT:
+        missing.append("Tesseract")
+    return pytest.mark.skipif(bool(missing), reason=(
+        f"needs {' and '.join(missing)}. NOT VERIFIED: {what}"))
+
+
+def needs_tesseract(what):
+    return pytest.mark.skipif(not TESSERACT, reason=f"needs Tesseract. NOT VERIFIED: {what}")
 
 # Attributes that must not survive with their original value. Split by the
 # PS3.15 action that applies, because "gone" means different things:
@@ -53,6 +86,7 @@ def _ocr_text(pixels):
 
 # --------------------------------------------------------------------------
 
+@needs_corpus("no original identifier survives in the header, across the corpus")
 def test_metadata_is_stripped():
     """No original identifier survives in the header."""
     imap = _fresh_map()
@@ -73,6 +107,7 @@ def test_metadata_is_stripped():
         assert ds.PatientIdentityRemoved == "YES"
 
 
+@needs_corpus("UIDs are remapped consistently, so studies do not split")
 def test_uids_are_remapped_and_consistent():
     """Study structure survives: same original UID always yields the same new one."""
     imap = _fresh_map()
@@ -95,6 +130,7 @@ def test_uids_are_remapped_and_consistent():
             "UID mapping is not stable -- a study would split downstream"
 
 
+@needs_corpus("burned-in identifiers are unreadable after masking (the 0 of 6 claim)")
 def test_burned_in_text_is_masked():
     """Identifiers rendered into the pixels are gone from the pixels."""
     imap = _fresh_map()
@@ -117,6 +153,7 @@ def test_burned_in_text_is_masked():
     assert checked, "manifest contained no burned-in studies to check"
 
 
+@needs_corpus("masking leaves clean images under 2% changed")
 def test_clean_images_are_not_damaged():
     """Masking must not touch images that carry no text."""
     imap = _fresh_map()
@@ -132,6 +169,7 @@ def test_clean_images_are_not_damaged():
             f"{changed} pixels altered on a clean image -- masking is too eager"
 
 
+@needs_corpus("pseudonyms resolve back through the local identity map")
 def test_identity_is_resolvable_locally():
     """A pseudonym resolves back to the original, in-hospital only."""
     imap = _fresh_map()
@@ -148,6 +186,7 @@ def test_identity_is_resolvable_locally():
     assert imap.resolve_study("1.2.3.4.not.a.real.uid") is None
 
 
+@needs_corpus("private and overlay tags are removed")
 def test_private_and_overlay_tags_are_removed():
     """Vendors put anything in private tags, including names."""
     imap = _fresh_map()
@@ -176,6 +215,7 @@ def _ocr_both_passes(pixels):
                     for a in (arr, bright))
 
 
+@needs_corpus("SIMID-000033's name, overlapping a laterality marker, is masked")
 def test_burned_in_survives_overlapping_marker():
     """Regression, pinned to the study that exposed it.
 
@@ -206,6 +246,7 @@ def test_burned_in_survives_overlapping_marker():
         assert token not in text, f"{token!r} still readable after masking: {text[:120]!r}"
 
 
+@needs_tesseract("the bright pass selects only glyphs on a 16-bit frame")
 def test_16bit_second_pass_thresholds_normalised_pixels(monkeypatch):
     """The bright pass must threshold after the uint8 normalisation.
 

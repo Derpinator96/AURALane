@@ -13,6 +13,7 @@
 services:
   orthanc:
     image: orthancteam/orthanc:latest
+    restart: unless-stopped
     ports:
       - "8042:8042"   # HTTP, REST and DICOMweb
       - "4242:4242"   # DICOM
@@ -29,6 +30,7 @@ services:
 
   dynamodb:
     image: amazon/dynamodb-local:latest
+    restart: unless-stopped
     ports:
       - "8001:8000"
     command: -jar DynamoDBLocal.jar -sharedDb -inMemory
