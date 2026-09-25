@@ -170,3 +170,15 @@ tr.lane-FAILED .bar { background: var(--failed); }
 .model dl { display: grid; grid-template-columns: 90px 1fr; gap: 2px 12px; margin: 0 0 8px; }
 .model dt { color: var(--faint); }
 .model dd { margin: 0; }
+
+/* Privacy, terms, footer */
+.legal { max-width: 760px; }
+.legal h1 { font-size: 17px; font-weight: 600; margin: 8px 0 8px; }
+.legal h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.4px; margin: 18px 0 4px; }
+.legal p { color: var(--soft); margin: 4px 0 8px; }
+.ul { text-decoration: underline; }
+.foot {
+  display: flex; gap: 16px; flex-wrap: wrap; padding: 10px 16px; border-top: 1px solid var(--line);
+  color: var(--faint); font-size: 12px;
+}
+.foot a { color: var(--soft); text-decoration: underline; }

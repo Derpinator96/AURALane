@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { api, loadSession, saveSession } from "./api.js";
 import Admin from "./Admin.jsx";
 import { Header } from "./Chrome.jsx";
+import { Footer, Privacy, Terms } from "./Legal.jsx";
 import Login from "./Login.jsx";
 import Study from "./Study.jsx";
 import Worklist from "./Worklist.jsx";
@@ -33,6 +34,8 @@ export default function App() {
     <>
       <Header session={session} onSignOut={onSignOut} />
       <Routes>
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/login" element={session ? <Navigate to={home(session)} /> : <Login onLogin={onLogin} />} />
         <Route path="/" element={radiologist ? <Worklist load={loadWorklist} /> : <Navigate to={home(session)} />} />
         <Route path="/studies/:id" element={radiologist
@@ -43,6 +46,7 @@ export default function App() {
           : <Navigate to={home(session)} />} />
         <Route path="*" element={<Navigate to={home(session)} />} />
       </Routes>
+      <Footer />
     </>
   );
 }

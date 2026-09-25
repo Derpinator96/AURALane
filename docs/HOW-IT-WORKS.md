@@ -106,7 +106,9 @@ API refuses both with 403; hiding a button is not access control.
 One ordered list, dark and dense for a reading room. Lane names are always
 written out, not left to colour. The "needs human triage" group is always shown
 and no filter can hide it. Every number on screen is the API's; the browser
-computes none. The non-diagnostic banner is on every screen, login included.
+computes none. The non-diagnostic banner is on every screen, login included,
+and every screen links the privacy and terms pages, which are readable
+without signing in. The app makes no request outside its own origin.
 
 ## The admin screens
 
