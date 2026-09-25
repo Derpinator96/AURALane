@@ -12,9 +12,14 @@ segmentation-probability    brain SegResNet, through Shaurya's pipeline in
 torch, torchxrayvision and MONAI are imported lazily: the rest of the platform
 runs without them.
 
-UNVERIFIED in this build: neither model path has been executed here, because
-the build container cannot reach download.pytorch.org. The dispatch itself is
-tested with stand-in handlers.
+The chest path runs Grad-CAM for the driver finding in the SAME forward pass
+that produces the 18 outputs, and writes the overlay through BlobPort. It is
+not generated on click: that would mean reloading weights per request. Brain
+studies get no Grad-CAM: the segmentation mask is its own explanation, and a
+better one.
+
+The brain path has not been executed on the build container: the SegResNet
+checkpoint is a Git LFS object it cannot fetch.
 """
 from __future__ import annotations
 
@@ -42,8 +47,62 @@ def _png_bytes(pixels: np.ndarray) -> bytes:
     return buf.getvalue()
 
 
+def _slug(name: str) -> str:
+    return "".join(c.lower() if c.isalnum() else "_" for c in name)
+
+
+class _DriverTarget:
+    """Grad-CAM target that picks the driver from the very outputs it is given.
+
+    pytorch_grad_cam calls the target on each model output after the forward
+    pass, before the backward pass. The driver is chosen exactly as the
+    pipeline will choose it later (adapters.multilabel then triage via
+    core.registry.rank), so the heatmap explains the finding that set the lane.
+    """
+
+    def __init__(self, pathologies, model_cfg):
+        self.pathologies, self.model_cfg = list(pathologies), model_cfg
+        self.driver = None
+
+    def __call__(self, output):
+        from adapters import multilabel
+        from core.registry import rank
+        preds = {p: float(v) for p, v in zip(self.pathologies, output.detach().cpu())}
+        self.driver = rank(multilabel.adapt(preds, {"entry": self.model_cfg}),
+                           self.model_cfg)["driver"]
+        return output[self.pathologies.index(self.driver)]
+
+
+def render_gradcam(model_input: np.ndarray, heat: np.ndarray, driver: str) -> bytes:
+    """The 224 px image the model saw, with the Grad-CAM heat over it, as PNG.
+
+    model_input is the normalised tensor (roughly -1024..1024); heat is 0..1.
+    Yellow to red only. Below 0.2 nothing is drawn, so faint noise does not
+    read as a region.
+    """
+    from PIL import Image, ImageDraw
+    grey = np.clip((model_input + 1024) / 2048 * 255, 0, 255)
+    rgb = np.repeat(grey[..., None], 3, axis=2)
+    colour = np.stack([np.full_like(heat, 255), 220 * (1 - heat), np.zeros_like(heat)], -1)
+    alpha = np.where(heat < 0.2, 0.0, 0.55 * heat)[..., None]
+    rgb = (1 - alpha) * rgb + alpha * colour
+    pic = Image.fromarray(rgb.astype(np.uint8)).resize((448, 448), Image.BILINEAR)
+    out = Image.new("RGB", (448, 448 + 48), (0, 0, 0))
+    out.paste(pic, (0, 0))
+    draw = ImageDraw.Draw(out)
+    for i, line in enumerate(("NON-DIAGNOSTIC", f"Triage rationale: Grad-CAM for {driver}",
+                              "A sanity check on the ordering, not a localisation")):
+        draw.text((6, 452 + 14 * i), line, fill=(255, 255, 255))
+    buf = io.BytesIO()
+    out.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 class InProcessInference(InferencePort):
-    def __init__(self):
+    def __init__(self, blob=None):
+        """blob: a BlobPort for the Grad-CAM overlay. Without one, chest
+        inference returns outputs only."""
+        self.blob = blob
         self._chest = None
         self._brain = None
         self.handlers = {
@@ -55,20 +114,45 @@ class InProcessInference(InferencePort):
         kind = model_cfg["output_type"]
         if kind not in self.handlers:
             raise ValueError(f"no in-process handler for output_type {kind!r}")
-        return self.handlers[kind](model_cfg, **inputs)
+        return self.handlers[kind](model_cfg, ref=ref, **inputs)
 
-    def _multilabel(self, model_cfg, *, pixels: np.ndarray, **_) -> dict[str, float]:
-        """-> {pathology: raw sigmoid}, the same dict prepare.py scores."""
+    def _multilabel(self, model_cfg, *, pixels: np.ndarray, ref=None, **_) -> dict[str, Any]:
+        """-> {"preds": {pathology: raw sigmoid}, "evidence": {...}}.
+
+        The image goes through imaging.to_model_input, the one preprocessing
+        path. One forward pass gives the outputs; Grad-CAM for the driver
+        finding reuses it. tests/test_gradcam.py checks the outputs equal
+        imaging.predict's.
+        """
         import imaging                          # pulls in torch; lazy on purpose
         if self._chest is None:
             import torchxrayvision as xrv
             self._chest = xrv.models.DenseNet(weights="densenet121-res224-all")
+        model = self._chest
         # A file-like, as server.py passes: skimage.io.imread (0.26) rejects raw
         # bytes despite imaging.read_grayscale's docstring.
-        return imaging.predict(self._chest, io.BytesIO(_png_bytes(pixels)))
+        x = imaging.to_model_input(io.BytesIO(_png_bytes(pixels)))
+        if self.blob is None or ref is None:
+            return {"preds": imaging.predict(model, io.BytesIO(_png_bytes(pixels))),
+                    "evidence": {}}
+
+        from pytorch_grad_cam import GradCAM
+        target = _DriverTarget(model.pathologies, model_cfg)
+        with GradCAM(model=model, target_layers=[model.features]) as cam:
+            heat = cam(input_tensor=x, targets=[target])[0]
+            out = cam.outputs[0].detach().cpu().numpy()
+        preds = {p: float(v) for p, v in zip(model.pathologies, out)}
+        key = f"evidence/{ref.study_uid}/gradcam_{_slug(target.driver)}.png"
+        self.blob.put(key, render_gradcam(x[0, 0].numpy(), heat, target.driver))
+        return {"preds": preds,
+                "evidence": {"gradcam_png": key, "gradcam_finding": target.driver}}
 
     def _segmentation(self, model_cfg, *, nifti: dict[str, Path], **_) -> dict[str, Any]:
         """nifti: {"T1c", "T1", "T2", "FLAIR"} -> paths. Returns metrics.json.
+
+        No Grad-CAM here, deliberately: the segmentation mask is its own
+        explanation, and a better one than a saliency map. adapters/brats.py
+        renders it as the evidence overlay.
 
         Never passes gt_path. Without a loadable model, Shaurya's pipeline
         substitutes the ground-truth mask for the prediction; with no gt_path it
