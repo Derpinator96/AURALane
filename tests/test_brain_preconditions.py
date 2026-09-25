@@ -55,3 +55,15 @@ def test_brain_inference_refuses_a_null_model_class(monkeypatch):
     with pytest.raises(MissingDependency, match="monai"):
         InProcessInference().score(StudyRef("s", "d"), ENTRY, nifti=NIFTI)
     assert built == []
+
+
+@pytest.mark.slow
+def test_monai_present_passes_the_precondition_and_the_external_module_sees_it():
+    """with monai installed, the brain precondition passes and mri_pipeline's SegResNet is real"""
+    pytest.importorskip("monai", reason="monai not installed. NOT VERIFIED: the monai-present path")
+    require_monai()
+    brainmri = str(inference.BRAINMRI)
+    if brainmri not in sys.path:
+        sys.path.insert(0, brainmri)
+    from backend.services import mri_pipeline
+    assert mri_pipeline.SegResNet is not None and mri_pipeline.SlidingWindowInferer is not None

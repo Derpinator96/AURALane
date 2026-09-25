@@ -10,11 +10,24 @@ missing, unless AURALANE_ALLOW_SKIP=1 is set, and this summary says when it was.
 Markers (registered in pyproject.toml):
     privacy     de-identification checks
     local_data  needs data that is not in git (images/, data/ corpora)
+    slow        minutes, not seconds; skipped unless AURALANE_RUN_SLOW=1, and
+                the skip is listed like any other
 """
 import os
 import shutil
 
 TESSERACT = shutil.which("tesseract") is not None
+
+
+def pytest_collection_modifyitems(config, items):
+    if os.environ.get("AURALANE_RUN_SLOW") == "1":
+        return
+    import pytest
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(pytest.mark.skip(
+                reason="slow; set AURALANE_RUN_SLOW=1. NOT VERIFIED in this run: "
+                       + (item.function.__doc__ or item.name).strip().splitlines()[0]))
 
 
 def pytest_terminal_summary(terminalreporter, exitstatus, config):

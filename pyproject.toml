@@ -9,4 +9,5 @@ norecursedirs = [
 markers = [
     "privacy: de-identification checks; skipped ones are counted in the run summary",
     "local_data: needs data that is not in git (images/, data/ corpora, fixtures)",
+    "slow: minutes, not seconds; skipped (loudly) unless AURALANE_RUN_SLOW=1",
 ]
