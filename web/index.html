@@ -135,18 +135,53 @@ main{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 24px}
 /* Right side: Triage & Segregation Details */
 .ws-details{display:flex;flex-direction:column;gap:12px;padding:14px 18px;overflow-y:auto;background:#fff}
 
-.triage-summary-box{background:#F8FAFC;border:1px solid var(--line);border-left:4px solid var(--b700);padding:12px 16px;border-radius:4px}
-.summary-grid{display:grid;grid-template-columns:repeat(4, 1fr);gap:12px;margin-bottom:10px}
-.summary-item{display:flex;flex-direction:column}
-.summary-item label{font-size:10px;color:var(--faint);font-weight:600;letter-spacing:.5px}
-.summary-item val{font-size:14px;font-weight:600;color:var(--ink)}
+/* Essential Summary Layout: Confidence & Segregation Cards */
+.essential-summary-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:10px}
+.essential-card{background:#F8FAFC;border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.card-eyebrow{font-size:9.5px;font-weight:700;letter-spacing:.7px;color:var(--faint);text-transform:uppercase}
+
+/* Confidence Card */
+.confidence-card{border-left:4px solid var(--b700);background:linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)}
+.conf-main-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.conf-score-large{font-size:30px;font-weight:700;color:var(--b900);font-family:var(--mono);line-height:1}
+.conf-badge-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.conf-calib-pill{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:3px;background:var(--b100);color:var(--b700);letter-spacing:.3px}
+.conf-signal-pill{font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;background:#DCFCE7;color:#15803D}
+.conf-bar-track{height:7px;background:#E2E8F0;border-radius:4px;overflow:hidden;margin:3px 0 1px}
+.conf-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg, var(--b500), var(--b700));transition:width 0.4s ease}
+.conf-sub-meta{font-size:10px;color:var(--faint);font-family:var(--mono)}
+
+/* Segregation Card */
+.segregation-card{border-left:4px solid #6366F1;background:linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)}
+.seg-main-row{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.seg-region-badge{background:#EEF2FF;color:#4F46E5;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:3px;letter-spacing:.4px}
+.seg-driver-finding{font-size:11.5px;color:var(--ink)}
+.seg-triage-row{display:grid;grid-template-columns:repeat(3, 1fr);gap:6px;background:#fff;border:1px solid var(--line);border-radius:4px;padding:6px 8px;margin-top:2px}
+.seg-stat{display:flex;flex-direction:column}
+.seg-stat label{font-size:8.5px;color:var(--faint);font-weight:700;letter-spacing:.4px}
+.seg-stat val{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Anatomical Portion Segregation Filter Box */
+.segregation-portion-box{background:#F8FAFC;border:1px solid var(--line);border-radius:6px;padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+.portion-header{display:flex;justify-content:space-between;align-items:center}
+.portion-title{font-size:10.5px;font-weight:700;color:var(--ink);letter-spacing:.5px;font-family:var(--mono)}
+.portion-hint{font-size:10px;color:var(--b700);font-weight:600}
+.portion-filter-bar{display:flex;gap:6px;flex-wrap:wrap}
+.portion-btn{font-size:10px;padding:4px 9px;border:1px solid var(--line);background:#fff;color:var(--soft);border-radius:3px;font-weight:600;transition:all 0.15s ease;cursor:pointer}
+.portion-btn:hover{border-color:var(--b700);color:var(--b700)}
+.portion-btn.active{background:var(--b700);color:#fff;border-color:var(--b700)}
+
+/* View More Details Toggle Button */
+.details-toggle-container{display:flex;align-items:center;justify-content:center;margin:2px 0}
+.toggle-details-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:9px 16px;background:#F1F5F9;border:1px solid #CBD5E1;color:var(--b700);font-weight:600;font-size:12px;border-radius:4px;cursor:pointer;transition:all 0.2s ease}
+.toggle-details-btn:hover{background:#E2E8F0;border-color:var(--b700);color:var(--b900);box-shadow:0 2px 4px rgba(0,0,0,0.05)}
+.toggle-icon{font-size:11px;transition:transform 0.2s ease}
+
+/* Collapsible Detailed Report Section */
+.detailed-report-section{display:flex;flex-direction:column;gap:12px;animation:fadeIn 0.25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 
 .priority-reason-box{font-size:12px;color:var(--soft);background:#EFF6FF;border:1px solid #BFDBFE;padding:8px 12px;border-radius:3px}
-
-/* Anatomical Portion Segregation Filter Bar */
-.portion-filter-bar{display:flex;gap:6px;background:#F1F5F9;padding:6px;border-radius:4px;border:1px solid var(--line);flex-wrap:wrap}
-.portion-btn{font-size:10.5px;padding:4px 10px;border:1px solid var(--line);background:#fff;color:var(--soft);border-radius:3px;font-weight:600}
-.portion-btn.active{background:var(--b700);color:#fff;border-color:var(--b700)}
 
 /* Table of Findings */
 .findings-table-wrap{border:1px solid var(--line);border-radius:4px;overflow:hidden}
@@ -313,77 +348,129 @@ footer{padding:12px 24px 28px;font-size:11.5px;color:var(--faint)}
 
       </div>
 
-      <!-- Right Column: Triage Details & Decision Trace -->
+      <!-- Right Column: Triage Overview, Segregation & Confidence Score -->
       <div class="ws-details">
         
-        <!-- Triage Summary Box -->
-        <div class="triage-summary-box">
-          <div class="summary-grid">
-            <div class="summary-item"><label>DRIVER FINDING</label><val id="sumDriver">—</val></div>
-            <div class="summary-item"><label>ACUITY SCORE</label><val id="sumAcuity">—</val></div>
-            <div class="summary-item"><label>SLA LANE</label><val id="sumLane">—</val></div>
-            <div class="summary-item"><label>ABSTENTION</label><val id="sumAbstain">NO</val></div>
+        <!-- Primary Confidence & Segregation Cards -->
+        <div class="essential-summary-grid">
+          
+          <!-- Confidence Score Card -->
+          <div class="essential-card confidence-card">
+            <div class="card-eyebrow">MODEL CONFIDENCE SCORE</div>
+            <div class="conf-main-row">
+              <div class="conf-score-large" id="confLargeScore">0.0%</div>
+              <div class="conf-badge-wrap">
+                <span class="conf-calib-pill" id="confCalibPill">CALIBRATED</span>
+                <span class="conf-signal-pill" id="confSignalPill">SIGNAL PASS</span>
+              </div>
+            </div>
+            <!-- Progress Bar -->
+            <div class="conf-bar-track">
+              <div class="conf-bar-fill" id="confBarFill" style="width: 0%;"></div>
+            </div>
+            <div class="conf-sub-meta" id="confSubMeta">
+              Raw Output: -- · Platt Scaling (T=1.6)
+            </div>
           </div>
+
+          <!-- Segregation & Driver Finding Card -->
+          <div class="essential-card segregation-card">
+            <div class="card-eyebrow">ANATOMICAL SEGREGATION</div>
+            <div class="seg-main-row">
+              <div class="seg-region-badge" id="segRegionBadge">PULMONARY REGION</div>
+              <div class="seg-driver-finding">
+                <span style="font-size:10px;color:var(--faint);font-weight:600;">FINDING:</span>
+                <strong id="segDriverName" style="color:var(--ink);font-size:13px;">—</strong>
+              </div>
+            </div>
+            <div class="seg-triage-row">
+              <div class="seg-stat"><label>SLA LANE</label><val id="sumLane">—</val></div>
+              <div class="seg-stat"><label>ACUITY</label><val id="sumAcuity">—</val></div>
+              <div class="seg-stat"><label>ABSTAIN</label><val id="sumAbstain">NO</val></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Anatomical Portion Segregation Selector -->
+        <div class="segregation-portion-box">
+          <div class="portion-header">
+            <span class="portion-title">ANATOMICAL PORTION SEGREGATION</span>
+            <span class="portion-hint" id="portionStatusHint">Active: All Portions (Full Chest)</span>
+          </div>
+          <div class="portion-filter-bar" id="portionFilterBar">
+            <button class="portion-btn active" data-portion="All">ALL PORTIONS (FULL CHEST)</button>
+            <button class="portion-btn" data-portion="Pulmonary">PULMONARY (LUNG FIELDS)</button>
+            <button class="portion-btn" data-portion="Cardiovascular">CARDIOVASCULAR (HEART)</button>
+            <button class="portion-btn" data-portion="Pleural">PLEURAL & DIAPHRAGM</button>
+            <button class="portion-btn" data-portion="Musculoskeletal">MUSCULOSKELETAL</button>
+          </div>
+        </div>
+
+        <!-- Toggle View More Details Button -->
+        <div class="details-toggle-container">
+          <button id="toggleDetailsBtn" class="toggle-details-btn" type="button">
+            <span id="toggleDetailsText">View more details</span>
+            <span id="toggleDetailsIcon" class="toggle-icon">▼</span>
+          </button>
+        </div>
+
+        <!-- Collapsible Detailed Report Section (Hidden by default) -->
+        <div id="detailedReport" class="detailed-report-section" style="display:none;">
+
+          <!-- Abstention Warning Alert -->
+          <div class="abstain-alert" id="abstainBanner">
+            <strong>MODEL UNCERTAINTY ABSTENTION:</strong> Confidence score fell within configured uncertainty interval [0.35, 0.60]. Automated SLA assignment withheld — mandatory human review required.
+          </div>
+
+          <!-- Priority Reason Box -->
           <div class="priority-reason-box" id="sumReason">
             Loading triage priority decision reason...
           </div>
-        </div>
 
-        <!-- Abstention Warning Alert -->
-        <div class="abstain-alert" id="abstainBanner">
-          <strong>MODEL UNCERTAINTY ABSTENTION:</strong> Confidence score fell within configured uncertainty interval [0.35, 0.60]. Automated SLA assignment withheld — mandatory human review required.
-        </div>
-
-        <!-- Anatomical Portion Segregation Filter Bar -->
-        <div class="portion-filter-bar" id="portionFilterBar">
-          <button class="portion-btn active" data-portion="All">ALL PORTIONS (FULL CHEST)</button>
-          <button class="portion-btn" data-portion="Pulmonary">PULMONARY (LUNG FIELDS)</button>
-          <button class="portion-btn" data-portion="Cardiovascular">CARDIOVASCULAR (HEART)</button>
-          <button class="portion-btn" data-portion="Pleural">PLEURAL & DIAPHRAGM</button>
-          <button class="portion-btn" data-portion="Musculoskeletal">MUSCULOSKELETAL</button>
-        </div>
-
-        <!-- Complete Model Findings Table -->
-        <div class="findings-table-wrap">
-          <h4>
-            <span>MODEL FINDINGS SEGREGATED BY ANATOMICAL REGION</span>
-            <span id="portionFindingCount" style="font-size:10px;color:var(--faint);">Showing all 18 findings</span>
-          </h4>
-          <table class="findings-table">
-            <thead>
-              <tr>
-                <th>FINDING / PATHOLOGY</th>
-                <th>REGION</th>
-                <th class="num-col">RAW</th>
-                <th class="num-col">CALIBRATED</th>
-                <th class="num-col">BASELINE</th>
-                <th class="num-col">SIGNAL</th>
-                <th class="num-col">URGENCY</th>
-                <th class="num-col">WEIGHTED</th>
-              </tr>
-            </thead>
-            <tbody id="findingsTableBody">
-              <!-- Populated dynamically -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- 12-Step Triage Decision Trace -->
-        <div class="trace-section">
-          <h4>COMPLETE TRIAGE DECISION TRACE</h4>
-          <div class="trace-chain" id="traceChain">
-            <!-- 12 steps populated dynamically -->
+          <!-- Complete Model Findings Table -->
+          <div class="findings-table-wrap">
+            <h4>
+              <span>MODEL FINDINGS SEGREGATED BY ANATOMICAL REGION</span>
+              <span id="portionFindingCount" style="font-size:10px;color:var(--faint);">Showing all 18 findings</span>
+            </h4>
+            <table class="findings-table">
+              <thead>
+                <tr>
+                  <th>FINDING / PATHOLOGY</th>
+                  <th>REGION</th>
+                  <th class="num-col">RAW</th>
+                  <th class="num-col">CALIBRATED</th>
+                  <th class="num-col">BASELINE</th>
+                  <th class="num-col">SIGNAL</th>
+                  <th class="num-col">URGENCY</th>
+                  <th class="num-col">WEIGHTED</th>
+                </tr>
+              </thead>
+              <tbody id="findingsTableBody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
           </div>
-        </div>
 
-        <!-- Model Metadata Section -->
-        <div class="metadata-section">
-          <div><label>MODEL & VERSION</label><span id="metaModel">—</span></div>
-          <div><label>STATUS & DATA SOURCE</label><span id="metaStatus">—</span></div>
-          <div><label>SEGMENTATION MODEL</label><span>PSPNet Anatomical (14 Targets)</span></div>
-          <div><label>CALIBRATION</label><span>Temperature Scaling (T=1.6)</span></div>
-          <div><label>REFERENCE CORPUS</label><span>Population Baseline Statistics</span></div>
-          <div><label>UNCERTAINTY BAND</label><span>[0.35, 0.60] Signal Range</span></div>
+          <!-- 12-Step Triage Decision Trace -->
+          <div class="trace-section">
+            <h4>COMPLETE TRIAGE DECISION TRACE</h4>
+            <div class="trace-chain" id="traceChain">
+              <!-- 12 steps populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Model Metadata Section -->
+          <div class="metadata-section">
+            <div><label>MODEL & VERSION</label><span id="metaModel">—</span></div>
+            <div><label>STATUS & DATA SOURCE</label><span id="metaStatus">—</span></div>
+            <div><label>SEGMENTATION MODEL</label><span>PSPNet Anatomical (14 Targets)</span></div>
+            <div><label>CALIBRATION</label><span>Temperature Scaling (T=1.6)</span></div>
+            <div><label>REFERENCE CORPUS</label><span>Population Baseline Statistics</span></div>
+            <div><label>UNCERTAINTY BAND</label><span>[0.35, 0.60] Signal Range</span></div>
+          </div>
+
         </div>
 
       </div>
@@ -674,11 +761,39 @@ async function openWorkstation(s){
     $('origDim').textContent = 'N/A';
   }
 
-  // Populate Triage Summary
-  $('sumDriver').textContent = s.driver.replace(/_/g, ' ');
-  $('sumAcuity').textContent = s.acuity;
+  // Populate Confidence Score Card
+  const confPct = s.confidence !== undefined ? (s.confidence * 100).toFixed(1) : '0.0';
+  $('confLargeScore').textContent = `${confPct}%`;
+  const barWidth = Math.min(100, Math.max(0, s.confidence !== undefined ? s.confidence * 100 : 0));
+  $('confBarFill').style.width = `${barWidth}%`;
+  if (activeLane === 'CRITICAL') {
+    $('confBarFill').style.background = 'linear-gradient(90deg, #EF4444, #B91C1C)';
+  } else if (activeLane === 'URGENT') {
+    $('confBarFill').style.background = 'linear-gradient(90deg, var(--b500), var(--b700))';
+  } else if (activeLane === 'ABSTAIN') {
+    $('confBarFill').style.background = 'linear-gradient(90deg, #F59E0B, #D97706)';
+  } else {
+    $('confBarFill').style.background = 'linear-gradient(90deg, #10B981, #059669)';
+  }
+
+  const rawPct = s.raw !== undefined ? (s.raw * 100).toFixed(1) + '%' : 'N/A';
+  $('confSubMeta').textContent = `Raw Output: ${rawPct} · Platt Scaling (T=1.6)`;
+  $('confSignalPill').textContent = s.abstained ? 'UNCERTAINTY BAND [0.35, 0.60]' : (s.signal !== undefined ? `SIGNAL +${(s.signal * 100).toFixed(0)}%` : 'SIGNAL PASS');
+
+  // Populate Segregation Card
+  const region = ANATOMY_MAP[s.driver] || (s.modality === 'CT' ? 'Cranial / Head' : (s.modality === 'MRI' ? 'Brain Parenchyma' : 'Pulmonary'));
+  $('segRegionBadge').textContent = `${region.toUpperCase()} REGION`;
+  $('segDriverName').textContent = s.driver.replace(/_/g, ' ');
   $('sumLane').textContent = `${activeLane} (${s.sla || '< 1 hr'})`;
-  $('sumAbstain').textContent = s.abstained ? 'YES (MANDATORY HUMAN REVIEW)' : 'NO';
+  $('sumAcuity').textContent = activeLane === 'ABSTAIN' ? '--' : s.acuity;
+  $('sumAbstain').textContent = s.abstained ? 'YES (ABSTAIN)' : 'NO';
+  $('portionStatusHint').textContent = `Target: ${s.driver.replace(/_/g, ' ')} (${region})`;
+
+  // Ensure Detailed Report is ALWAYS collapsed initially upon opening individual record
+  $('detailedReport').style.display = 'none';
+  $('toggleDetailsText').textContent = 'View more details';
+  $('toggleDetailsIcon').textContent = '▼';
+
   $('sumReason').textContent = s.priority_reason || `${s.driver} contributed to a ${s.lane} recommendation.`;
 
   if (s.abstained) {
@@ -784,11 +899,15 @@ document.querySelectorAll('.portion-btn').forEach(btn => {
     document.querySelectorAll('.portion-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     activePortion = btn.dataset.portion;
+    if ($('portionStatusHint')) {
+      $('portionStatusHint').textContent = activePortion === 'All' ? 'Active: All Portions (Full Chest)' : `Active Portion: ${activePortion}`;
+    }
     renderFindingsTable();
 
     // If an anatomical portion is selected and anatomical segmentation data exists, switch overlay to that system!
     if (explainData && explainData.segregated_systems && explainData.segregated_systems[activePortion]) {
       currentViewMode = 'anatomy';
+      updateViewModeButtons();
       updateExplainView();
     }
   };
@@ -912,6 +1031,21 @@ $('zoomReset').onclick = () => {
   zoomScale = 1.0;
   $('origImg').style.transform = 'scale(1.0)';
   $('zoomVal').textContent = '100%';
+};
+
+// Details Toggle Handler
+$('toggleDetailsBtn').onclick = () => {
+  const rep = $('detailedReport');
+  const isHidden = rep.style.display === 'none' || rep.style.display === '';
+  if (isHidden) {
+    rep.style.display = 'flex';
+    $('toggleDetailsText').textContent = 'Hide details';
+    $('toggleDetailsIcon').textContent = '▲';
+  } else {
+    rep.style.display = 'none';
+    $('toggleDetailsText').textContent = 'View more details';
+    $('toggleDetailsIcon').textContent = '▼';
+  }
 };
 
 // Workstation Close & Overrides
