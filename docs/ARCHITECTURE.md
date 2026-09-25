@@ -94,6 +94,35 @@ nothing else.
 | `cxr-densenet-v1` | CR | lambda | `adapters.multilabel` |
 | `brain-brats-monai-v0.5.4` | MR | sagemaker-async | `adapters.brats` |
 
+## Two ways of turning model output into a signal
+
+Every finding reaches triage as a signal from 0 to 1, but chest and brain get
+there differently, and the lane table compares the results.
+
+- Chest (`adapters/multilabel.py`): each of the 18 outputs is a z-score
+  against that finding's own reference distribution, the mean and standard
+  deviation over 1,000 scored NIH images in `reference.json`. Signal is 0 at
+  z = 0.5 and 1 at z = 2.5.
+- Brain (`adapters/brats.py`): each finding is linear between a fixed floor
+  and ceiling in `models/registry.json` (`anchors`), for example enhancing
+  tumour 0.5 to 40 cm3. `mass_effect` has no anchor of its own; it is derived
+  from tumour burden and off-midline position.
+
+The reason is the data, not a preference. Chest has a thousand images to
+estimate what is typical. Brain has two BraTS cases in this repository and
+four recorded model outputs, all of them tumours: there is no population to
+take a z-score against, and BraTS has no normal brains, so "typical for the
+corpus" would mean "typical tumour".
+
+The brain anchors are therefore provisional, chosen by hand, and not
+calibrated. Replacing
+them needs a reference population of brain MRI that includes normal studies
+alongside tumours, with a read-urgency label for each, so the floors and
+ceilings (or a reference distribution, as for chest) are fitted to how fast
+each study actually needed a neuroradiologist, and then checked on studies
+held out from that fit. Until then they are not tuned, including to make a
+demonstration case land in a particular lane.
+
 ## Moving from local to AWS
 
 Today the switch is one variable, and the AWS side is not built:
