@@ -40,4 +40,15 @@ def test_empty_page_claims_no_measurement():
             if line.startswith("| ") and not line.startswith("| step")]
     cells = {c.strip() for line in body for c in line.split("|")[2:-1]}
     assert cells == {"not measured"}                       # no figure in any cell
-    assert (ROOT / "docs" / "LATENCY.md").read_text() == page
+
+    # The committed page is either this empty page or one the script rendered
+    # from a real run: never hand-edited figures, never a mix of the two.
+    committed = (ROOT / "docs" / "LATENCY.md").read_text()
+    if committed != page:
+        assert committed.startswith("# Pipeline latency per step, from the audit trail\n\n"
+                                    "Measured by `scripts/measure_latency.py` on ")
+        rows = [line.split("|")[1].strip() for line in committed.splitlines()
+                if line.startswith("| ")]
+        assert rows == ["step", *ml.STEPS, "**total**", "outcome", "Grad-CAM inside infer"]
+        assert "not measured" not in committed and "Awaiting" not in committed
+        assert page.rstrip().splitlines()[-1] in committed  # the one-machine caveat
