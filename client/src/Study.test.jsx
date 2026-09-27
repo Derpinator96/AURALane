@@ -74,18 +74,19 @@ describe("Study", () => {
   });
 
   it("states the datastore note only when the API sends one", async () => {
+    // The fixture API sends one; Orthanc and HealthImaging send null.
     await show();
-    expect(screen.queryByTestId("datastore-note")).toBeNull();
+    expect(screen.getByTestId("datastore-note")).toHaveTextContent(detail.datastore_note);
+    expect(detail.datastore_note).toMatch(/^No DICOM datastore is connected/);
     cleanup();
-    const note = "No DICOM datastore is connected to this preview.";
     render(
       <MemoryRouter initialEntries={["/studies/x"]}>
         <Routes><Route path="/studies/:id" element={
-          <Study load={() => Promise.resolve({ ...detail, datastore_note: note })}
+          <Study load={() => Promise.resolve({ ...detail, datastore_note: null })}
                  loadSeries={() => Promise.resolve(series)} sendVerdict={vi.fn()} />} /></Routes>
       </MemoryRouter>);
     await screen.findByTestId("viewer-stub");
-    expect(screen.getByTestId("datastore-note")).toHaveTextContent(note);
+    expect(screen.queryByTestId("datastore-note")).toBeNull();
   });
 });
 
