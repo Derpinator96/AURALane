@@ -57,22 +57,27 @@ Two rules the ports enforce:
 
 | port | local provider | stands in for | AWS provider (status) |
 |---|---|---|---|
-| Datastore | `OrthancDatastore`: Orthanc 1.13.0 DICOMweb, STOW-RS in, QIDO-RS and WADO-RS out | AWS HealthImaging | `HealthImagingDatastore` (stub) |
-| Blob | `FileBlob`: a directory, `data/blob/` | Amazon S3 | `S3Blob` (stub) |
-| Table | `DynamoLocalTable`: DynamoDB Local on host port 8001 | Amazon DynamoDB | `DynamoTable` (stub; shares `_dynamodb.py` with the local provider) |
-| Auth | `DevAuth`: HS256 JWTs, two seeded users, development only | Amazon Cognito | `CognitoAuth` (stub) |
-| Inference | `InProcessInference`: the model in this process, dispatched on `output_type` | Lambda container (chest), SageMaker Async (brain) | `LambdaSageMakerInference` (stub) |
-| LLM | `TemplateLLM`: fills a fixed template, no model call | Amazon Bedrock | `BedrockLLM` (stub; Bedrock is blocked at the account level) |
+| Datastore | `OrthancDatastore`: Orthanc 1.13.0 DICOMweb, STOW-RS in, QIDO-RS and WADO-RS out | AWS HealthImaging | `HealthImagingDatastore`: StartDICOMImportJob from S3, cloud-native reads, presigned DICOMweb frame URLs |
+| Blob | `FileBlob`: a directory, `data/blob/` | Amazon S3 | `S3Blob`: presigned GETs for evidence PNGs |
+| Table | `DynamoLocalTable`: DynamoDB Local on host port 8001 | Amazon DynamoDB | `DynamoTable`: shares `_dynamodb.py` with the local provider; never creates tables |
+| Auth | `DevAuth`: HS256 JWTs, two seeded users, development only | Amazon Cognito | `CognitoAuth`: ID token checked against the pool's JWKS, `cognito:groups` onto `Principal.groups` |
+| Inference | `InProcessInference`: the model in this process, dispatched on `output_type` | Lambda container (chest), SageMaker Async (brain) | `LambdaSageMakerInference`: same output shapes as in-process |
+| LLM | `TemplateLLM`: fills a fixed template, no model call | Amazon Bedrock | `BedrockLLM` (stub, deliberately: Bedrock is blocked at the account level and drafting ships on `TemplateLLM`) |
 
-Every AWS stub method raises `NotImplementedError` naming the service it will
-call. Prompt 3 fills them.
+The AWS providers are written and tested without AWS: S3, DynamoDB and Cognito
+on moto, Lambda and SageMaker Runtime with botocore's Stubber, HealthImaging
+against a local server that speaks its wire formats
+(`tests/fakes/healthimaging.py`; moto has no HealthImaging). None has run
+against the live services; `infra/README.md` lists what is unverified. The
+stack that creates what they talk to is `infra/` (Python CDK), costed in
+`docs/AWS-COSTS.md`.
 
 Why Orthanc is a fair stand-in: HealthImaging's write surface is STOW-RS and its
 read surface is QIDO-RS and WADO-RS. `tests/test_datastore_contract.py` holds
 any datastore provider to the same assertions; HealthImaging is added to its
-provider list in Prompt 3 and must pass unchanged. It already decodes HTJ2K
-frames, which HealthImaging returns and Orthanc does not, so that branch has not
-run yet.
+provider list and passes unchanged against the fake. It decodes frames by what
+they are (the fake serves lossless JPEG 2000 in place of HTJ2K, which the test
+encoder cannot write; both are J2K codestreams).
 
 Why DynamoDB has one implementation: `core/providers/aws/_dynamodb.py` is the
 DynamoDB code for both runtimes. The local provider points it at
@@ -148,11 +153,12 @@ the lane would be wrong. That is what the segmentation check
 
 ## Moving from local to AWS
 
-Today the switch is one variable, and the AWS side is not built:
+The switch is one variable:
 
 ```
 AURALANE_RUNTIME=local    # default. Orthanc, DynamoDB Local, files, DevAuth
-AURALANE_RUNTIME=aws      # AWS stubs. Every call raises NotImplementedError
+AURALANE_RUNTIME=fixture  # the fixture worklist, no Docker
+AURALANE_RUNTIME=aws      # the AWS providers, configured from the stack's outputs
 ```
 
 The local runtime also needs:
@@ -167,16 +173,17 @@ Sign in as `radiologist` or `admin` with the development password. No password
 is written in this repository: without the variable, `serve` creates a random
 one in `data/dev/devauth.password` (gitignored, mode 0600) and prints that path.
 
-PLANNED, NOT YET READ BY ANY CODE. The AWS providers will need at least the
-following. The names are a plan for Prompt 3, not a contract:
+With `AURALANE_RUNTIME=aws`, `core/run.py` reads these (the stack prints each
+as an output whose description is the variable name) and refuses to start if
+one is missing. Region is us-east-1, fixed in `core/providers/aws/config.py`:
 
 | variable | for |
 |---|---|
-| `AWS_REGION=us-east-1` | every service; HealthImaging is not offered in Mumbai |
-| `AURALANE_DATASTORE_ID` | the HealthImaging datastore the CDK stack creates |
-| `AURALANE_BUCKET` | the S3 bucket for transient copies and evidence |
-| `AURALANE_TABLE_PREFIX` | DynamoDB table names (`<prefix>-worklist`, `<prefix>-audit`) |
-| `AURALANE_COGNITO_POOL_ID`, `AURALANE_COGNITO_CLIENT_ID` | token verification |
+| `AURALANE_BUCKET` | the S3 bucket for transient copies, import staging and evidence |
+| `AURALANE_TABLE_PREFIX` | DynamoDB table names (`<prefix>-worklist`, `<prefix>-audit`); default `auralane` |
+| `AURALANE_DATASTORE_ID` | the existing HealthImaging datastore; defaults to `293abea3292b4e888cbdf60e3a9ff283` |
+| `AURALANE_IMPORT_ROLE_ARN` | the role HealthImaging assumes to read the staged import |
+| `AURALANE_COGNITO_POOL_ID`, `AURALANE_COGNITO_CLIENT_ID` | login and token verification |
 | `AURALANE_CHEST_FUNCTION`, `AURALANE_BRAIN_ENDPOINT` | Lambda function and SageMaker Async endpoint |
 
 Credentials come from the standard AWS chain (environment, profile or role),
