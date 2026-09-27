@@ -100,8 +100,35 @@ def _call(c, method, url, headers):
     return c.get(url, headers=headers)
 
 
-def test_health_is_open_and_carries_disclaimer(client):
-    assert client.get("/api/health").json()["disclaimer"] == DISCLAIMER
+class _NoTouchTable(FixtureTable):
+    """A table that fails any access, to prove a route never reads it."""
+
+    def _refuse(self, *a, **k):
+        raise AssertionError("health must not touch the table")
+
+    get_item = query = scan = put_item = append_audit = _refuse
+
+
+def test_health_is_open_names_the_runtime_and_reads_nothing():
+    """The uptime probe: no token, no table read, the runtime name only. It is
+    outside the RBAC dependencies, so an unauthenticated monitor gets 200."""
+    table = _NoTouchTable()
+    app = create_app({"runtime": "fixture", "blob": FileBlob(BLOB, url_base="/api/blob"),
+                      "table": table, "datastore": FixtureDatastore(table),
+                      "auth": DevAuth(password=PASSWORD), "llm": TemplateLLM()})
+    r = TestClient(app).get("/api/health")
+    assert r.status_code == 200
+    assert r.json() == {"runtime": "fixture"}
+
+
+def test_me_carries_disclaimer(client):
+    assert client.get("/api/me", headers=client.radiologist).json()["disclaimer"] == DISCLAIMER
+
+
+def test_fixture_study_says_no_datastore_is_connected(client):
+    r = client.get(f"/api/studies/{CHEST['study']}", headers=client.radiologist).json()
+    assert r["datastore_note"] == FixtureDatastore.note
+    assert "No DICOM datastore is connected" in r["datastore_note"]
 
 
 def test_login_refuses_wrong_password(client):

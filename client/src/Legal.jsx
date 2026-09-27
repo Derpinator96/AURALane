@@ -18,7 +18,7 @@ export function Privacy() {
   return (
     <main className="legal">
       <h1>Privacy</h1>
-      <p className="note">Written by the AURALane team (Team Peanut Butter, NIT Raipur) for the Precision Care Challenge 2026 proof of concept. It describes this build, not a deployed service.</p>
+      <p className="note">Written by the AURALane team (Team Peanut Butter, NIT Raipur) for the Precision Care Challenge 2026 proof of concept. It describes this build: the local build we demonstrate on, and the hosted preview.</p>
 
       <h2>No real patient data</h2>
       <p>
@@ -62,6 +62,16 @@ export function Privacy() {
         HealthImaging is not offered in India. Under the plan above, only de-identified data would be
         stored outside the country; that is a data-residency question under the DPDP Act that a real
         deployment has to answer first.
+      </p>
+
+      <h2>The hosted preview</h2>
+      <p>
+        The hosted preview is this client served by Vercel and this API run by Render, in its
+        Singapore region. It has no image datastore and no model. It shows the committed fixture
+        worklist, which is synthetic rows, recorded model outputs and one public sample chest image.
+        Verdicts and audit events there are held in the API's memory only, and are lost whenever it
+        restarts or sleeps. Vercel and Render process each request, including your IP address, as
+        hosting providers under their own privacy policies.
       </p>
 
       <h2>How long</h2>
@@ -112,7 +122,8 @@ export function Terms() {
       <h2>Data you may use</h2>
       <p>
         Only public, openly licensed or synthetic images. Do not upload images or records of real
-        patients. The development sign-in is for local use; it protects a laptop, not patient data.
+        patients. The development sign-in, locally and on the hosted preview, protects a
+        demonstration of synthetic data, not patient data.
       </p>
 
       <h2>No warranty</h2>

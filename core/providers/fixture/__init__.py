@@ -70,6 +70,13 @@ class FixtureDatastore(DatastorePort):
     """Series lists from the fixture rows; frame URLs to static files the web
     server serves. Read only. Never returns pixels."""
 
+    # Shown in the study viewer. Every word is true of this provider: the chest
+    # frame is fixtures' one public sample, and the brain rows have no instances.
+    note = ("No DICOM datastore is connected to this preview. Chest studies show one "
+            "public sample image, not the study's own, and brain studies have no images "
+            "here. The live pipeline, from de-identification through the datastore to "
+            "scoring, runs locally.")
+
     def __init__(self, table: FixtureTable):
         self.table = table
 

@@ -1,8 +1,10 @@
 """DevAuth: HS256 JWTs signed with a local key. DEVELOPMENT ONLY.
 
-Never deploy this. It stands in for Cognito on localhost so the API can check a
-bearer token and a group without an AWS account. Anyone holding the key can
-mint any identity.
+Never deploy this in front of real data. It stands in for Cognito on localhost
+so the API can check a bearer token and a group without an AWS account. Anyone
+holding the key can mint any identity. The one hosted use is the fixture
+preview (synthetic rows, no datastore), and there core/run.py refuses to serve
+beyond loopback unless the password and signing key are set explicitly.
 
 The key comes from the secret argument, else AURALANE_DEV_JWT_SECRET, else
 key_file (created with a random key on first use), so a token printed by

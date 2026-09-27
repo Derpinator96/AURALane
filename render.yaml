@@ -1,0 +1,34 @@
+# Render Blueprint for the hosted preview API: the fixture runtime only.
+# No torch, no Orthanc, no DynamoDB, no DICOM datastore (docs/DEPLOY.md).
+# Create this service BEFORE the Vercel client: the client bakes the API's URL
+# in at build time.
+services:
+  - type: web
+    name: auralane-api
+    runtime: python
+    plan: free
+    region: singapore          # nearest Render region to the presenters; all data here is synthetic
+    buildCommand: pip install -r requirements-deploy.txt
+    startCommand: python -m core.run serve --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.3
+      - key: AURALANE_RUNTIME
+        value: fixture
+      # Prompted for at Blueprint creation, never committed. core/run.py refuses
+      # to start on 0.0.0.0 without it and names it in the deploy log.
+      - key: AURALANE_DEV_PASSWORD
+        sync: false
+      # Random 256-bit value, generated once by Render and kept, so tokens
+      # survive the free tier's sleep and every restart.
+      - key: AURALANE_DEV_JWT_SECRET
+        generateValue: true
+      # This service's own URL, e.g. https://auralane-api.onrender.com. Signed
+      # evidence URLs are built from it so the Vercel page can load them.
+      - key: AURALANE_PUBLIC_URL
+        sync: false
+      # The Vercel client's origin(s), comma-separated, scheme and host only.
+      - key: AURALANE_CORS_ORIGINS
+        sync: false

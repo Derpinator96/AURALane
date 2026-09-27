@@ -27,11 +27,39 @@ DEV_PASSWORD_FILE = ROOT / "data" / "dev" / "devauth.password"   # unless AURALA
 BLOB_URL = "/api/blob"        # served by core.api from a FileBlob's signed URLs
 DISCLAIMER = "NON-DIAGNOSTIC; DECISION SUPPORT ONLY"
 
+# Serving beyond loopback means other machines reach DevAuth. Its password and
+# signing key would otherwise come from data/dev (absent on a fresh host, so
+# created with random values nobody can read) or be random per process (lost at
+# every restart), and the evidence URLs would be relative to the wrong host. So
+# a non-loopback serve refuses to start without these. AWS uses Cognito.
+LOOPBACK = {"127.0.0.1", "localhost", "::1"}
+HOSTED_REQUIRED = {
+    "AURALANE_DEV_PASSWORD": "the sign-in password for both development users",
+    "AURALANE_DEV_JWT_SECRET": "the token signing key, so sessions survive a restart",
+    "AURALANE_PUBLIC_URL": "this API's own public URL, e.g. https://<service>.onrender.com",
+}
+
+
+def _blob_url() -> str:
+    """Where the API serves local blobs. Relative in development, where the Vite
+    proxy shares one origin. When the client is hosted elsewhere, absolute from
+    AURALANE_PUBLIC_URL: evidence overlays go straight into <img src>, so a
+    relative URL would resolve against the client's host, which has no API."""
+    return os.environ.get("AURALANE_PUBLIC_URL", "").rstrip("/") + BLOB_URL
+
+
+def cors_origins() -> list[str] | None:
+    """AURALANE_CORS_ORIGINS, comma-separated; None means core.api's development
+    defaults. Scheme and host only, no path: https://<project>.vercel.app"""
+    raw = os.environ.get("AURALANE_CORS_ORIGINS", "")
+    return [o.strip().rstrip("/") for o in raw.split(",") if o.strip()] or None
+
+
 def providers() -> dict:
     runtime = os.environ.get("AURALANE_RUNTIME", "local")
     if runtime == "local":
         from core.providers import local as p
-        blob = p.FileBlob(url_base=BLOB_URL)
+        blob = p.FileBlob(url_base=_blob_url())
         # The browser reaches Orthanc through the web server's /dicom-web proxy
         # (client/vite.config.js); Orthanc itself sends no CORS headers.
         return {"runtime": runtime, "blob": blob,
@@ -42,7 +70,7 @@ def providers() -> dict:
         from core.providers import fixture as f
         from core.providers import local as p
         table = f.FixtureTable()
-        return {"runtime": runtime, "blob": p.FileBlob(f.BLOB, url_base=BLOB_URL),
+        return {"runtime": runtime, "blob": p.FileBlob(f.BLOB, url_base=_blob_url()),
                 "datastore": f.FixtureDatastore(table), "table": table, "inference": None,
                 "auth": p.DevAuth(key_file=DEV_KEY, password_file=DEV_PASSWORD_FILE), "llm": p.TemplateLLM()}
     if runtime == "aws":
@@ -101,12 +129,22 @@ def cmd_ingest(args) -> int:
 
 
 def cmd_serve(args) -> int:
+    # Checked before providers(): DevAuth would otherwise create a random
+    # password file on this host before anyone saw the error.
+    if (args.host not in LOOPBACK
+            and os.environ.get("AURALANE_RUNTIME", "local") != "aws"):
+        missing = [v for v in HOSTED_REQUIRED if not os.environ.get(v)]
+        if missing:
+            sys.exit(f"refusing to serve on {args.host}: set "
+                     + "; ".join(f"{v} ({HOSTED_REQUIRED[v]})" for v in missing))
     import uvicorn
     from core.api import create_app
     prov = providers()
     if prov["runtime"] != "aws" and not os.environ.get("AURALANE_DEV_PASSWORD"):
         print(f"dev sign-in password: {DEV_PASSWORD_FILE.relative_to(ROOT)}")
-    uvicorn.run(create_app(prov), host=args.host, port=args.port)
+    origins = cors_origins()
+    print(f"CORS origins: {', '.join(origins) if origins else 'development defaults'}")
+    uvicorn.run(create_app(prov, cors_origins=origins), host=args.host, port=args.port)
     return 0
 
 

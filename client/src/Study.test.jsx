@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import fixture from "./test/study.api.json";
@@ -71,6 +71,22 @@ describe("Study", () => {
     expect(send).toHaveBeenCalledWith(detail.study.study, "agree");
     expect(screen.getByTestId("verdict-status")).toHaveTextContent("Agreed by radiologist@dev.auralane.local");
     expect(screen.getByRole("button", { name: "Agree" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("states the datastore note only when the API sends one", async () => {
+    // The fixture API sends one; Orthanc and HealthImaging send null.
+    await show();
+    expect(screen.getByTestId("datastore-note")).toHaveTextContent(detail.datastore_note);
+    expect(detail.datastore_note).toMatch(/^No DICOM datastore is connected/);
+    cleanup();
+    render(
+      <MemoryRouter initialEntries={["/studies/x"]}>
+        <Routes><Route path="/studies/:id" element={
+          <Study load={() => Promise.resolve({ ...detail, datastore_note: null })}
+                 loadSeries={() => Promise.resolve(series)} sendVerdict={vi.fn()} />} /></Routes>
+      </MemoryRouter>);
+    await screen.findByTestId("viewer-stub");
+    expect(screen.queryByTestId("datastore-note")).toBeNull();
   });
 });
 

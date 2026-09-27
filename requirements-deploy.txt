@@ -1,0 +1,27 @@
+# The hosted preview: AURALANE_RUNTIME=fixture, python -m core.run serve.
+# Only what that process imports. No torch, no monai, no Orthanc, no DynamoDB:
+# the fixture runtime has no model and no datastore (see docs/DEPLOY.md).
+# Verified by installing exactly this file into an empty Python 3.14 venv over
+# a copy of the committed tree, starting the API and calling every route.
+#
+# Why each one is here:
+#   fastapi, pydantic   core/api.py
+#   uvicorn             core/run.py serve
+#   PyJWT               core/providers/local/devauth.py (fixture sign-in)
+#   numpy, nibabel      adapters/brats.py, imported by core/registry.py
+#   boto3               core/providers/local/dynamo.py, imported by the local
+#                       package the fixture runtime reuses (never called)
+#   httpx, pydicom      core/providers/local/orthanc.py, same reason
+#
+# Not here: python-multipart. No route takes form data (no Form or UploadFile
+# in core/api.py). scipy is imported inside core/mask_check.check only, which
+# runs during ingest, never in the fixture runtime.
+fastapi==0.141.1
+pydantic==2.13.5
+uvicorn==0.53.0
+PyJWT==2.15.0
+numpy==2.5.2
+nibabel==5.4.2
+boto3==1.43.101
+httpx==0.28.1
+pydicom==3.0.2

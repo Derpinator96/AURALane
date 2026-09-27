@@ -3,6 +3,11 @@
 
 const KEY = "auralane.session";
 
+// Where the API lives. Empty in development: the Vite proxy forwards /api on the
+// same origin. The hosted client is built with VITE_API_BASE set to the API's own
+// origin, a different host, and every call below goes through this one prefix.
+const BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
+
 export function loadSession() {
   try {
     return JSON.parse(sessionStorage.getItem(KEY) || "null");
@@ -28,7 +33,7 @@ export class ApiError extends Error {
 }
 
 async function call(path, { token, method = "GET", body } = {}) {
-  const res = await fetch(path, {
+  const res = await fetch(BASE + path, {
     method,
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
