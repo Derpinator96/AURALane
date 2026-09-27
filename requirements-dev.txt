@@ -2,3 +2,7 @@
 #   pip install -r requirements-dev.txt
 dicom-validator>=0.9.0    # validate_iods: DICOM IOD conformance against the published standard
 pytest>=9.1.1
+moto[s3,dynamodb,cognitoidp]>=5.0   # AWS provider tests: S3, DynamoDB, Cognito, no AWS account
+requests                  # fetching moto's presigned S3 URLs in tests
+aws-cdk-lib>=2.170        # tests/test_infra.py synthesises the stack (skipped loudly if absent)
+constructs>=10.0

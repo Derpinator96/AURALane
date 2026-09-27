@@ -1,7 +1,9 @@
 """The datastore contract. If this passes for a provider, swapping runtimes is safe.
 
 Parameterised over providers. Today: Orthanc. Prompt 3 appends HealthImaging to
-PROVIDERS and every assertion below must pass unchanged. That is why frame bytes
+PROVIDERS and every assertion below must pass unchanged. It is now in the list,
+run against tests/fakes/healthimaging.py (HealthImaging's wire formats served
+locally; moto has no HealthImaging), with no AWS call and no credentials. That is why frame bytes
 are decoded by what they are (raw little-endian or JPEG 2000 / HTJ2K) and not by
 which provider sent them.
 
@@ -41,7 +43,27 @@ def _orthanc():
     return ds
 
 
-PROVIDERS = {"orthanc": _orthanc}
+def _healthimaging():
+    """HealthImagingDatastore against tests/fakes/healthimaging.py: real botocore
+    clients, fake endpoints, dummy credentials. No AWS call is made."""
+    import boto3
+    from botocore.config import Config
+    from core.providers.aws import HealthImagingDatastore
+    from tests.fakes.healthimaging import FakeHealthImaging
+    fake = FakeHealthImaging()
+    session = boto3.Session(aws_access_key_id="testing", aws_secret_access_key="testing",
+                            region_name="us-east-1")
+    return HealthImagingDatastore(
+        "fake-bucket", "arn:aws:iam::000000000000:role/fake-import", datastore_id=fake.datastore_id,
+        session=session, dicomweb=fake.url, poll_seconds=0.01,
+        client=session.client("medical-imaging", endpoint_url=fake.url,
+                              config=Config(inject_host_prefix=False)),
+        s3=session.client("s3", endpoint_url=fake.url,
+                          config=Config(s3={"addressing_style": "path"},
+                                        request_checksum_calculation="when_required")))
+
+
+PROVIDERS = {"orthanc": _orthanc, "healthimaging": _healthimaging}
 pytestmark = pytest.mark.local_data
 
 

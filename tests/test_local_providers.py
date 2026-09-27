@@ -51,14 +51,35 @@ def test_devauth_password_has_no_default(tmp_path, monkeypatch):
     assert DevAuth(password_file=f).login("admin@dev.auralane.local", env)
 
 
-@pytest.fixture
-def table():
-    t = DynamoLocalTable(prefix=f"test-{uuid.uuid4().hex[:8]}")
-    try:
-        t.ddb.meta.client.list_tables()
-    except Exception as e:
-        pytest.fail(f"DynamoDB Local is not answering on :8001 ({e}). Start the local stack.")
-    return t
+@pytest.fixture(params=["dynamodb-local", "dynamodb-aws-moto"])
+def table(request, monkeypatch):
+    """The same TablePort tests against DynamoDB Local and against the AWS
+    provider on moto, whose tables are created here the way the stack creates
+    them (DynamoTable never creates tables itself)."""
+    if request.param == "dynamodb-local":
+        t = DynamoLocalTable(prefix=f"test-{uuid.uuid4().hex[:8]}")
+        try:
+            t.ddb.meta.client.list_tables()
+        except Exception as e:
+            pytest.fail(f"DynamoDB Local is not answering on :8001 ({e}). Start the local stack.")
+        yield t
+        return
+    import boto3
+    from moto import mock_aws
+    from core.providers.aws._dynamodb import SCHEMA
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "testing")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "testing")
+    with mock_aws():
+        ddb = boto3.client("dynamodb", region_name="us-east-1")
+        for name, (pk, sk) in SCHEMA.items():
+            keys = [{"AttributeName": pk, "KeyType": "HASH"}]
+            attrs = [{"AttributeName": pk, "AttributeType": "S"}]
+            if sk:
+                keys.append({"AttributeName": sk, "KeyType": "RANGE"})
+                attrs.append({"AttributeName": sk, "AttributeType": "S"})
+            ddb.create_table(TableName=f"auralane-{name}", KeySchema=keys,
+                             AttributeDefinitions=attrs, BillingMode="PAY_PER_REQUEST")
+        yield aws.DynamoTable(prefix="auralane")
 
 
 def test_dynamo_worklist_round_trip(table):
@@ -97,17 +118,10 @@ def test_template_llm_leaves_impression_to_radiologist():
     assert "Edema" in text and "to be written by the reading radiologist" in text
 
 
-@pytest.mark.parametrize("cls, call", [
-    (aws.HealthImagingDatastore, lambda o: o.get_metadata(None)),
-    (aws.S3Blob, lambda o: o.get("k")),
-    (aws.DynamoTable, lambda o: o.query("worklist", study="1")),
-    (aws.CognitoAuth, lambda o: o.verify("t")),
-    (aws.LambdaSageMakerInference, lambda o: o.score(None, {})),
-    (aws.BedrockLLM, lambda o: o.draft({})),
-])
-def test_aws_stubs_name_their_service(cls, call):
-    with pytest.raises(NotImplementedError, match="Prompt 3"):
-        call(cls())
+def test_bedrock_stays_a_stub_that_names_its_service():
+    """Bedrock is blocked at the account level; drafting ships on TemplateLLM."""
+    with pytest.raises(NotImplementedError, match="Bedrock"):
+        aws.BedrockLLM().draft({})
 
 
 def test_fileblob_signed_urls_expire_and_resist_tampering(tmp_path):

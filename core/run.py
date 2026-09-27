@@ -47,9 +47,22 @@ def providers() -> dict:
                 "auth": p.DevAuth(key_file=DEV_KEY, password_file=DEV_PASSWORD_FILE), "llm": p.TemplateLLM()}
     if runtime == "aws":
         from core.providers import aws as p
-        return {"runtime": runtime, "blob": p.S3Blob(), "datastore": p.HealthImagingDatastore(),
-                "table": p.DynamoTable(), "inference": p.LambdaSageMakerInference(),
-                "auth": p.CognitoAuth(), "llm": p.BedrockLLM()}
+        from core.providers.aws.config import ENV, EXISTING_DATASTORE_ID
+        missing = [v for k, v in ENV.items()
+                   if k not in ("datastore_id", "table_prefix") and not os.environ.get(v)]
+        if missing:
+            sys.exit(f"AURALANE_RUNTIME=aws needs {', '.join(missing)} (the CDK stack's "
+                     f"outputs; see infra/README.md)")
+        env = {k: os.environ.get(v) for k, v in ENV.items()}
+        return {"runtime": runtime, "blob": p.S3Blob(env["bucket"]),
+                "datastore": p.HealthImagingDatastore(
+                    env["bucket"], env["import_role_arn"],
+                    datastore_id=env["datastore_id"] or EXISTING_DATASTORE_ID),
+                "table": p.DynamoTable(prefix=env["table_prefix"] or "auralane"),
+                "inference": p.LambdaSageMakerInference(
+                    env["bucket"], env["chest_function"], env["brain_endpoint"]),
+                "auth": p.CognitoAuth(env["user_pool_id"], env["client_id"]),
+                "llm": p.BedrockLLM()}
     sys.exit(f"AURALANE_RUNTIME must be local, fixture or aws, got {runtime!r}")
 
 

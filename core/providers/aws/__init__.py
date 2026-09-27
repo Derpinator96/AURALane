@@ -1,52 +1,38 @@
-"""AWS providers. STUBS until Prompt 3: every method raises NotImplementedError
-naming the service it will call.
+"""AWS providers, one per port. core/run.py builds them from the environment
+(AURALANE_RUNTIME=aws); nothing else imports them.
 
-_dynamodb.py is the exception: it is the one DynamoDB implementation, already
-used by the local provider against DynamoDB Local. DynamoTable below stays a
-stub until it is run against real DynamoDB.
+  BlobPort       S3Blob                     core/providers/aws/s3.py
+  TablePort      DynamoTable                core/providers/aws/dynamo.py (shares _dynamodb.py)
+  DatastorePort  HealthImagingDatastore     core/providers/aws/healthimaging.py
+  AuthPort       CognitoAuth                core/providers/aws/cognito.py
+  InferencePort  LambdaSageMakerInference   core/providers/aws/inference.py
+  LLMPort        BedrockLLM                 stub, deliberately
+
+BedrockLLM stays a stub. Bedrock is blocked at the account level, and on
+2026-09-25 the team decided drafting ships on TemplateLLM; no support case
+will be opened before the presentation. It raises NotImplementedError naming
+the service, so switching is a code and config change if access arrives.
+
+No AWS SDK is imported anywhere outside this package.
 """
-from core.ports import (AuthPort, BlobPort, DatastorePort, InferencePort, LLMPort,
-                        TablePort)
+from core.ports import LLMPort
+from core.providers.aws.cognito import CognitoAuth
+from core.providers.aws.dynamo import DynamoTable
+from core.providers.aws.healthimaging import HealthImagingDatastore
+from core.providers.aws.inference import LambdaSageMakerInference
+from core.providers.aws.s3 import S3Blob
 
 
 def _todo(service):
     def method(self, *a, **k):
-        raise NotImplementedError(f"{service}: not wired yet (Prompt 3)")
+        raise NotImplementedError(f"{service}: not wired (Bedrock is blocked at the account "
+                                  f"level; drafting runs on TemplateLLM)")
     return method
 
 
-class HealthImagingDatastore(DatastorePort):
-    import_study = _todo("AWS HealthImaging StartDICOMImportJob")
-    search = _todo("AWS HealthImaging SearchImageSets")
-    get_metadata = _todo("AWS HealthImaging GetImageSetMetadata")
-    get_frame = _todo("AWS HealthImaging GetImageFrame")
-    frame_url = _todo("AWS HealthImaging DICOMweb frame URL")
-    series_metadata = _todo("AWS HealthImaging GetImageSetMetadata")
-
-
-class S3Blob(BlobPort):
-    put = _todo("Amazon S3 PutObject")
-    get = _todo("Amazon S3 GetObject")
-    delete = _todo("Amazon S3 DeleteObject")
-    presigned_url = _todo("Amazon S3 presigned GetObject URL")
-
-
-class DynamoTable(TablePort):
-    put_item = _todo("Amazon DynamoDB PutItem")
-    get_item = _todo("Amazon DynamoDB GetItem")
-    query = _todo("Amazon DynamoDB Query")
-    scan = _todo("Amazon DynamoDB Scan")
-    append_audit = _todo("Amazon DynamoDB PutItem (audit, conditional)")
-
-
-class CognitoAuth(AuthPort):
-    login = _todo("Amazon Cognito InitiateAuth")
-    verify = _todo("Amazon Cognito JWT verification")
-
-
-class LambdaSageMakerInference(InferencePort):
-    score = _todo("AWS Lambda Invoke / Amazon SageMaker InvokeEndpointAsync")
-
-
 class BedrockLLM(LLMPort):
-    draft = _todo("Amazon Bedrock InvokeModel (blocked at account level)")
+    draft = _todo("Amazon Bedrock InvokeModel")
+
+
+__all__ = ["S3Blob", "DynamoTable", "HealthImagingDatastore", "CognitoAuth",
+           "LambdaSageMakerInference", "BedrockLLM"]
