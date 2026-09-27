@@ -33,6 +33,7 @@ from collections import Counter
 from typing import Any, Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -65,6 +66,12 @@ class VerdictIn(BaseModel):
 
 UNASSIGNED = "Unassigned"          # no registered model for the study's modality
 
+# Origins allowed to call the API from a browser when none are configured: the
+# Vite dev server and vite preview. In development the proxy makes every call
+# same-origin anyway; these matter when the client calls the API directly.
+DEV_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173",
+               "http://localhost:4173", "http://127.0.0.1:4173")
+
 
 def _label(name: str | None) -> str | None:
     """Finding name for display: underscores to spaces, first letter capital."""
@@ -78,9 +85,16 @@ def _now() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
 
 
-def create_app(p: dict, registry: Registry | None = None) -> FastAPI:
+def create_app(p: dict, registry: Registry | None = None,
+               cors_origins: list[str] | None = None) -> FastAPI:
     registry = registry or Registry()               # startup error on a bad registry
     app = FastAPI(title="AURALane API")
+    # The hosted client is on another origin. Tokens travel in the Authorization
+    # header, never in a cookie, so credentials stay off; a wildcard origin can
+    # therefore never be combined with credentials.
+    app.add_middleware(CORSMiddleware, allow_origins=list(cors_origins or DEV_ORIGINS),
+                       allow_credentials=False, allow_methods=["GET", "POST"],
+                       allow_headers=["Authorization", "Content-Type"])
 
     def principal(authorization: str = Header(default="")) -> Principal:
         if not authorization.startswith("Bearer "):
@@ -153,7 +167,9 @@ def create_app(p: dict, registry: Registry | None = None) -> FastAPI:
     # -- open ---------------------------------------------------------------
     @app.get("/api/health")
     def health():
-        return {"ok": True, "disclaimer": DISCLAIMER}
+        """Uptime probe. No token, no table read, no model: an external monitor
+        calls it every few minutes for as long as the service exists."""
+        return {"runtime": p.get("runtime")}
 
     @app.post("/api/auth/login")
     def login(body: Login):
@@ -209,7 +225,10 @@ def create_app(p: dict, registry: Registry | None = None) -> FastAPI:
         return {"disclaimer": DISCLAIMER, "study": view(row), "findings": findings,
                 "top_findings": (row.get("triage") or {}).get("top_findings", []),
                 "evidence": evidence, "evidence_urls": evidence_urls, "series": series,
-                "draft": draft}
+                "draft": draft,
+                # A datastore with no real DICOM behind it says so, and the viewer
+                # shows it. Orthanc and HealthImaging have no note.
+                "datastore_note": getattr(p["datastore"], "note", None)}
 
     @app.get("/api/studies/{study}/series/{series_uid}")
     def series(study: str, series_uid: str, who: Principal = Depends(radiologist)):
