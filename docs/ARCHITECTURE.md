@@ -94,6 +94,58 @@ nothing else.
 | `cxr-densenet-v1` | CR | lambda | `adapters.multilabel` |
 | `brain-brats-monai-v0.5.4` | MR | sagemaker-async | `adapters.brats` |
 
+## Two ways of turning model output into a signal
+
+Every finding reaches triage as a signal from 0 to 1, but chest and brain get
+there differently, and the lane table compares the results.
+
+- Chest (`adapters/multilabel.py`): each of the 18 outputs is a z-score
+  against that finding's own reference distribution, the mean and standard
+  deviation over 1,000 scored NIH images in `reference.json`. Signal is 0 at
+  z = 0.5 and 1 at z = 2.5.
+- Brain (`adapters/brats.py`): each finding is linear between a fixed floor
+  and ceiling in `models/registry.json` (`anchors`), for example enhancing
+  tumour 0.5 to 40 cm3. `mass_effect` has no anchor of its own; it is derived
+  from tumour burden and off-midline position.
+
+The reason is the data, not a preference. Chest has a thousand images to
+estimate what is typical. Brain has two BraTS cases in this repository and
+four recorded model outputs, all of them tumours: there is no population to
+take a z-score against, and BraTS has no normal brains, so "typical for the
+corpus" would mean "typical tumour".
+
+The brain anchors are therefore provisional, chosen by hand, and not
+calibrated. Replacing
+them needs a reference population of brain MRI that includes normal studies
+alongside tumours, with a read-urgency label for each, so the floors and
+ceilings (or a reference distribution, as for chest) are fitted to how fast
+each study actually needed a neuroradiologist, and then checked on studies
+held out from that fit. Until then they are not tuned, including to make a
+demonstration case land in a particular lane.
+
+## Why acuity is the maximum, not the sum: a recorded case
+
+Acuity is the largest signal x urgency over a study's findings, not their
+sum. One recorded brain case shows what that protects against.
+
+MRI-1790081977 (Shaurya's recorded MONAI output, against its own reference
+label, BraTS 2023 convention): of the 130.8 mL the label marks as necrotic
+core, the model labelled 119.6 mL as edema. Edema is whole tumour minus
+tumour core, so the model's edema is 129.3 mL against the label's 28.9 mL.
+The edema signal saturates at 1.000 (ceiling 100 mL), weighted 55.0; with the
+label's volumes it would be 0.252, weighted 13.9.
+
+The lane does not move. Enhancing tumour, which the model gets right (ET Dice
+0.872, recomputed with the correct label convention), scores 0.925 x 0.95 =
+87.9 and sets the lane, CRITICAL, because 87.9 is larger than 55.0. Under a
+sum, the mislabelled volume would add its 55.0 to the score, and one
+channel's error would push every such study further up the queue. Taking the
+maximum means an error in a finding that is not the driver changes nothing.
+
+It does not protect the driver itself: if the enhancing tumour were wrong,
+the lane would be wrong. That is what the segmentation check
+(`core/mask_check.py`) and abstention are for.
+
 ## Moving from local to AWS
 
 Today the switch is one variable, and the AWS side is not built:
@@ -158,6 +210,13 @@ fixture row carries a `source` field saying where its numbers came from
 (`scores.json`, or Shaurya's recorded brain metrics) and what was assigned
 rather than computed (arrival time, pseudonymous ID); the worklist shows it as
 a tag. `scripts/make_fixtures.py` rebuilds the file.
+
+Brain candidates pass `scripts/validate_corpus.py` first. It checks their
+reference labels (label convention, shape, size against declared dimensions,
+and whether the same label sits on another study) and prints a verdict for
+every study. A refused study never becomes a row; its reason is written to
+`fixtures/worklist.meta.json`. This is a gate on demo data only: reference
+labels do not exist at inference time, so the pipeline never looks at them.
 
 ## Access control
 

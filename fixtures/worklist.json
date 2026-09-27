@@ -56,12 +56,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -95,7 +95,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -139,7 +139,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -205,7 +205,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -322,8 +322,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-042 (00001373_052.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:24:00+00:00",
-  "patient_id": "FIXTURE-0009",
+  "created_at": "2026-09-25T08:36:00+00:00",
+  "patient_id": "FIXTURE-0013",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -385,12 +385,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -424,7 +424,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -468,7 +468,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -534,7 +534,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -651,8 +651,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-050 (00001558_018.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:45:00+00:00",
-  "patient_id": "FIXTURE-0016",
+  "created_at": "2026-09-25T08:33:00+00:00",
+  "patient_id": "FIXTURE-0012",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -714,12 +714,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -753,7 +753,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -797,7 +797,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -863,7 +863,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -1043,12 +1043,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -1082,7 +1082,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -1126,7 +1126,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -1192,7 +1192,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -1309,8 +1309,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-001 (00000013_005.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:21:00+00:00",
-  "patient_id": "FIXTURE-0008",
+  "created_at": "2026-09-25T08:00:00+00:00",
+  "patient_id": "FIXTURE-0001",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -1372,12 +1372,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -1411,7 +1411,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -1455,7 +1455,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -1521,7 +1521,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -1638,8 +1638,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-016 (00000468_007.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:51:00+00:00",
-  "patient_id": "FIXTURE-0018",
+  "created_at": "2026-09-25T08:45:00+00:00",
+  "patient_id": "FIXTURE-0016",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -1701,12 +1701,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -1740,7 +1740,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -1784,7 +1784,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -1850,7 +1850,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -1967,8 +1967,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-052 (00001582_004.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:30:00+00:00",
-  "patient_id": "FIXTURE-0011",
+  "created_at": "2026-09-25T08:24:00+00:00",
+  "patient_id": "FIXTURE-0009",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -2030,12 +2030,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -2069,7 +2069,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -2113,7 +2113,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -2179,7 +2179,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -2296,8 +2296,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-002 (00000032_001.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:15:00+00:00",
-  "patient_id": "FIXTURE-0006",
+  "created_at": "2026-09-25T08:42:00+00:00",
+  "patient_id": "FIXTURE-0015",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -2359,12 +2359,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -2398,7 +2398,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -2442,7 +2442,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -2508,7 +2508,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -2688,12 +2688,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -2727,7 +2727,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -2771,7 +2771,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -2837,7 +2837,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -2954,8 +2954,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-028 (00000997_000.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:36:00+00:00",
-  "patient_id": "FIXTURE-0013",
+  "created_at": "2026-09-25T08:30:00+00:00",
+  "patient_id": "FIXTURE-0011",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -3017,12 +3017,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -3056,7 +3056,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -3100,7 +3100,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -3166,7 +3166,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -3283,8 +3283,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-004 (00000116_019.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:27:00+00:00",
-  "patient_id": "FIXTURE-0010",
+  "created_at": "2026-09-25T08:15:00+00:00",
+  "patient_id": "FIXTURE-0006",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -3346,12 +3346,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -3385,7 +3385,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -3429,7 +3429,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -3495,7 +3495,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -3612,8 +3612,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-006 (00000231_005.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:54:00+00:00",
-  "patient_id": "FIXTURE-0019",
+  "created_at": "2026-09-25T08:48:00+00:00",
+  "patient_id": "FIXTURE-0017",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -3675,12 +3675,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -3714,7 +3714,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -3758,7 +3758,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -3824,7 +3824,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -3941,8 +3941,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-008 (00000246_016.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:00:00+00:00",
-  "patient_id": "FIXTURE-0001",
+  "created_at": "2026-09-25T08:27:00+00:00",
+  "patient_id": "FIXTURE-0010",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -4004,12 +4004,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -4043,7 +4043,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -4087,7 +4087,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -4153,7 +4153,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -4270,8 +4270,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-003 (00000083_000.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:48:00+00:00",
-  "patient_id": "FIXTURE-0017",
+  "created_at": "2026-09-25T08:21:00+00:00",
+  "patient_id": "FIXTURE-0008",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -4333,12 +4333,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -4372,7 +4372,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -4416,7 +4416,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -4482,7 +4482,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -4599,8 +4599,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-007 (00000239_003.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:39:00+00:00",
-  "patient_id": "FIXTURE-0014",
+  "created_at": "2026-09-25T08:06:00+00:00",
+  "patient_id": "FIXTURE-0003",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -4662,12 +4662,12 @@
   "error": null,
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ],
     "frame_url": "/fixtures/frames/sample-cr.frame1.raw",
     "metadata": [
@@ -4701,7 +4701,7 @@
       "0020000D": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+        "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
        ]
       },
       "00080020": {
@@ -4745,7 +4745,7 @@
       "0020000E": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+        "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
        ]
       },
       "00200011": {
@@ -4811,7 +4811,7 @@
       "00080018": {
        "vr": "UI",
        "Value": [
-        "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+        "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
        ]
       },
       "00200013": {
@@ -4928,172 +4928,8 @@
    }
   ],
   "source": "Fixture. Numbers: scores.json ST-010 (00000272_003.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:33:00+00:00",
-  "patient_id": "FIXTURE-0012",
-  "run_id": "fixture",
-  "datastore_id": "fixture",
-  "study_date": "20260925"
- },
- {
-  "study": "fixture-mr-00000057",
-  "modality": "MR",
-  "model_id": "brain-brats-monai-v0.5.4",
-  "status": "SCORED",
-  "lane": "URGENT",
-  "triage": {
-   "acuity": 72.1,
-   "lane": "URGENT",
-   "sla": "< 1 hr",
-   "sla_minutes": 60,
-   "abstained": false,
-   "driver": "enhancing_tumor",
-   "confidence": null,
-   "signal": 0.759,
-   "raw": null,
-   "top_findings": [
-    {
-     "name": "enhancing_tumor",
-     "confidence": null,
-     "signal": 0.759,
-     "urgency": 0.95
-    },
-    {
-     "name": "tumor_burden",
-     "confidence": null,
-     "signal": 0.399,
-     "urgency": 0.6
-    },
-    {
-     "name": "mass_effect",
-     "confidence": null,
-     "signal": 0.233,
-     "urgency": 1.0
-    }
-   ]
-  },
-  "findings": {
-   "mass_effect": 0.23308789138314956,
-   "enhancing_tumor": 0.7587341772151899,
-   "tumor_burden": 0.39909462746633306,
-   "edema_volume": 0.15757894736842112
-  },
-  "evidence": {},
-  "error": null,
-  "series": [
-   {
-    "series_uid": "fixture-mr-00000057-1",
-    "number": 1,
-    "description": "T1C",
-    "instance_count": 0,
-    "instance_uids": []
-   },
-   {
-    "series_uid": "fixture-mr-00000057-2",
-    "number": 2,
-    "description": "T1",
-    "instance_count": 0,
-    "instance_uids": []
-   },
-   {
-    "series_uid": "fixture-mr-00000057-3",
-    "number": 3,
-    "description": "T2",
-    "instance_count": 0,
-    "instance_uids": []
-   },
-   {
-    "series_uid": "fixture-mr-00000057-4",
-    "number": 4,
-    "description": "FLAIR",
-    "instance_count": 0,
-    "instance_uids": []
-   }
-  ],
-  "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case 00000057 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:42:00+00:00",
-  "patient_id": "FIXTURE-0015",
-  "run_id": "fixture",
-  "datastore_id": "fixture",
-  "study_date": "20260925"
- },
- {
-  "study": "fixture-mr-MRI-1790025179",
-  "modality": "MR",
-  "model_id": "brain-brats-monai-v0.5.4",
-  "status": "SCORED",
-  "lane": "URGENT",
-  "triage": {
-   "acuity": 55.0,
-   "lane": "URGENT",
-   "sla": "< 1 hr",
-   "sla_minutes": 60,
-   "abstained": false,
-   "driver": "edema_volume",
-   "confidence": null,
-   "signal": 1.0,
-   "raw": null,
-   "top_findings": [
-    {
-     "name": "edema_volume",
-     "confidence": null,
-     "signal": 1.0,
-     "urgency": 0.55
-    },
-    {
-     "name": "tumor_burden",
-     "confidence": null,
-     "signal": 0.859,
-     "urgency": 0.6
-    },
-    {
-     "name": "mass_effect",
-     "confidence": null,
-     "signal": 0.509,
-     "urgency": 1.0
-    }
-   ]
-  },
-  "findings": {
-   "mass_effect": 0.5092290406227824,
-   "enhancing_tumor": 0.22658227848101264,
-   "tumor_burden": 0.8590354238382498,
-   "edema_volume": 1.0
-  },
-  "evidence": {},
-  "error": null,
-  "series": [
-   {
-    "series_uid": "fixture-mr-MRI-1790025179-1",
-    "number": 1,
-    "description": "T1C",
-    "instance_count": 0,
-    "instance_uids": []
-   },
-   {
-    "series_uid": "fixture-mr-MRI-1790025179-2",
-    "number": 2,
-    "description": "T1",
-    "instance_count": 0,
-    "instance_uids": []
-   },
-   {
-    "series_uid": "fixture-mr-MRI-1790025179-3",
-    "number": 3,
-    "description": "T2",
-    "instance_count": 0,
-    "instance_uids": []
-   },
-   {
-    "series_uid": "fixture-mr-MRI-1790025179-4",
-    "number": 4,
-    "description": "FLAIR",
-    "instance_count": 0,
-    "instance_uids": []
-   }
-  ],
-  "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case MRI-1790025179 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:18:00+00:00",
-  "patient_id": "FIXTURE-0007",
+  "created_at": "2026-09-25T08:09:00+00:00",
+  "patient_id": "FIXTURE-0004",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -5174,8 +5010,8 @@
    }
   ],
   "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case MRI-1790070297 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:09:00+00:00",
-  "patient_id": "FIXTURE-0004",
+  "created_at": "2026-09-25T08:18:00+00:00",
+  "patient_id": "FIXTURE-0007",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
@@ -5256,8 +5092,8 @@
    }
   ],
   "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case MRI-1790081977 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py.",
-  "created_at": "2026-09-25T08:06:00+00:00",
-  "patient_id": "FIXTURE-0003",
+  "created_at": "2026-09-25T08:39:00+00:00",
+  "patient_id": "FIXTURE-0014",
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"

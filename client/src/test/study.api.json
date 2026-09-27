@@ -3,11 +3,12 @@
   "disclaimer": "NON-DIAGNOSTIC; DECISION SUPPORT ONLY",
   "study": {
    "study": "fixture-cr-ST-028",
-   "patient_id": "FIXTURE-0013",
+   "patient_id": "FIXTURE-0011",
    "exam": "CR Chest",
    "modality": "CR",
+   "pool": "Chest",
    "model_id": "cxr-densenet-v1",
-   "arrived": "2026-09-25T08:36:00+00:00",
+   "arrived": "2026-09-25T08:30:00+00:00",
    "lane": "ABSTAIN",
    "lane_label": "NEEDS HUMAN TRIAGE",
    "clock": "a human picks the lane",
@@ -16,6 +17,7 @@
    "driver": "Nodule",
    "driver_label": "Nodule",
    "confidence": 0.552,
+   "abstain_reason": null,
    "status": "SCORED",
    "verdict": null,
    "error": null,
@@ -79,22 +81,22 @@
   },
   "series": [
    {
-    "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+    "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
     "number": 1,
     "description": "PA",
     "instance_count": 1,
     "instance_uids": [
-     "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+     "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
     ]
    }
   ],
   "draft": "NON-DIAGNOSTIC; DECISION SUPPORT ONLY\nStudy: fixture-cr-ST-028\nModel: cxr-densenet-v1\nQueue lane: ABSTAIN (a human picks the lane)\nModel abstained: no lane assigned, a human picks the lane.\nSignals (0 to 1, relative to the model's operating point, not a probability of disease):\n  Nodule: 0.351\n  Mass: 0.094\n  Fibrosis: 0.086\nImpression: to be written by the reading radiologist."
  },
  "series": {
-  "series_uid": "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455",
+  "series_uid": "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697",
   "instances": [
    {
-    "sop": "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788",
+    "sop": "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247",
     "metadata": {
      "00100010": {
       "vr": "PN",
@@ -125,7 +127,7 @@
      "0020000D": {
       "vr": "UI",
       "Value": [
-       "1.2.826.0.1.3680043.10.1421.317965850987707924637076243639318429"
+       "1.2.826.0.1.3680043.10.1421.385006076023918193592530901495925095"
       ]
      },
      "00080020": {
@@ -169,7 +171,7 @@
      "0020000E": {
       "vr": "UI",
       "Value": [
-       "1.2.826.0.1.3680043.10.1421.444256330486494360045381912534982455"
+       "1.2.826.0.1.3680043.10.1421.321337044573459372172507388080251697"
       ]
      },
      "00200011": {
@@ -235,7 +237,7 @@
      "00080018": {
       "vr": "UI",
       "Value": [
-       "1.2.826.0.1.3680043.10.1421.259303636719068476402908683601018788"
+       "1.2.826.0.1.3680043.10.1421.79849886014883065760790482619599247"
       ]
      },
      "00200013": {

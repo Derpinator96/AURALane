@@ -232,6 +232,9 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
                 if not isinstance(findings, Findings):
                     raise TypeError(f"{entry['adapter']}.adapt returned {type(findings).__name__}")
                 d.update(findings=len(findings.findings), evidence=sorted(findings.evidence))
+                if "mask_check" in findings.meta:            # brain Check A, core/mask_check.py
+                    d.update(mask_check_passed=findings.meta["mask_check"]["passed"],
+                             mask_check_failed=findings.meta["mask_check"]["failed"])
 
             with run.step("triage") as d:
                 if findings.findings:

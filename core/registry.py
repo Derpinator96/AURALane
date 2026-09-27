@@ -18,13 +18,13 @@ PATH = Path(__file__).resolve().parents[1] / "models" / "registry.json"
 
 # Required keys and their types, then extra keys per output_type.
 SCHEMA = {
-    "id": str, "modality": str, "input": dict, "runtime": str,
+    "id": str, "modality": str, "reading_pool": str, "input": dict, "runtime": str,
     "output_type": str, "adapter": str, "urgency": dict,
 }
 BY_OUTPUT = {
     "multilabel": {"reference": str, "z_anchor": list},
     "segmentation-probability": {"output_channels": list, "anchors": dict,
-                                 "min_tumor_ml": (int, float)},
+                                 "min_tumor_ml": (int, float), "mask_check": dict},
 }
 RUNTIMES = {"lambda", "sagemaker-async", "in-process"}
 
@@ -48,6 +48,11 @@ def _check(entry: dict, i: int) -> None:
     for name, w in entry["urgency"].items():
         if not isinstance(w, (int, float)) or not 0 <= w <= 1:
             raise RegistryError(f"{where}: urgency {name!r} = {w!r}, expected 0 to 1")
+    mc = entry.get("mask_check")
+    if mc is not None:
+        need = {"inside_brain_min", "flair_edema_z_min", "t1c_et_z_min", "largest_component_min"}
+        if set(mc) != need or not all(isinstance(v, (int, float)) for v in mc.values()):
+            raise RegistryError(f"{where}: mask_check needs numeric {sorted(need)}")
     for name, pair in entry.get("anchors", {}).items():
         if not (isinstance(pair, list) and len(pair) == 2 and pair[0] < pair[1]):
             raise RegistryError(f"{where}: anchor {name!r} must be [floor, ceiling], floor < ceiling")

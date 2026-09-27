@@ -6,6 +6,11 @@
 //
 // Pinned sections (NEEDS HUMAN TRIAGE, PIPELINE FAILED) ignore every filter.
 // A study the model refused to place must never be something a user can hide.
+//
+// Rows are grouped by reading pool first (Neuro for MR, Chest for CR), then by
+// lane inside each pool. Ranking never crosses pools. Pinned sections are per
+// pool: a brain MRI the model could not place still needs a neuroradiologist to
+// place it, and a failed chest study goes back to the chest reader.
 
 export const SORTS = {
   priority: "Priority",
@@ -65,6 +70,18 @@ export function arrange(studies, lanes, { sort = "priority", lane = "ALL", read 
   const flat = { lane: "BY_ARRIVAL", label: "All other lanes, by arrival", clock: null,
                  pinned: false, rows: rest };
   return [...pinned, ...(rest.length ? [flat] : [])];
+}
+
+/**
+ * -> [{ pool, label, sections }] in the API's pool order, each pool arranged by
+ * arrange() over its own rows only. Every pool the API lists is shown, so each
+ * pool's NEEDS HUMAN TRIAGE section is always there.
+ */
+export function arrangePools(studies, pools, lanes, opts = {}) {
+  return pools.map((p) => ({
+    ...p,
+    sections: arrange(studies.filter((r) => r.pool === p.pool), lanes, opts),
+  }));
 }
 
 export function timeUTC(iso) {

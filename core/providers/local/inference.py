@@ -129,6 +129,29 @@ def crop_box(rows: int, cols: int) -> list[int]:
     return [cols // 2 - size // 2, rows // 2 - size // 2, size]
 
 
+class MissingDependency(RuntimeError):
+    """A package the requested model needs is not importable."""
+
+
+def require_monai() -> None:
+    """Precondition for the brain path, checked on our side of the boundary.
+
+    _external/brainmri/backend/services/mri_pipeline.py (read only, not ours)
+    wraps its monai import in a bare except and sets monai, SegResNet and
+    SlidingWindowInferer to None. Without monai the pipeline would carry on
+    with a null model class and fail later, or quietly. Import the same names
+    here first so a missing monai stops the study immediately, by name.
+    """
+    try:
+        from monai.inferers import SlidingWindowInferer   # noqa: F401
+        from monai.networks.nets import SegResNet         # noqa: F401
+    except ImportError as e:
+        raise MissingDependency(
+            f"monai is not installed or not importable ({e}). The brain model "
+            f"(MONAI SegResNet) cannot run without it; install monai. Refusing "
+            f"rather than degrading.") from e
+
+
 class InProcessInference(InferencePort):
     def __init__(self, blob=None):
         """blob: a BlobPort for the Grad-CAM overlay. Without one, chest
@@ -195,10 +218,16 @@ class InProcessInference(InferencePort):
         raises instead, which is what we want.
         """
         if self._brain is None:
+            require_monai()
             if str(BRAINMRI) not in sys.path:
                 sys.path.insert(0, str(BRAINMRI))
-            from backend.services.mri_pipeline import MRIPipeline
-            self._brain = MRIPipeline()
+            from backend.services import mri_pipeline
+            if mri_pipeline.SegResNet is None or mri_pipeline.SlidingWindowInferer is None:
+                raise MissingDependency(
+                    "monai: _external/brainmri's mri_pipeline could not import SegResNet or "
+                    "SlidingWindowInferer, so the brain model cannot run. Refusing rather "
+                    "than running with a null model class.")
+            self._brain = mri_pipeline.MRIPipeline()
             if not self._brain.load_model():
                 raise RuntimeError("brain model checkpoint or MONAI unavailable")
         out = Path(tempfile.mkdtemp(prefix="auralane-seg-")) / "prediction.nii.gz"

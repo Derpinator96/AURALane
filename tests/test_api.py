@@ -38,6 +38,7 @@ def client(tmp_path):
                       "datastore": FixtureDatastore(table), "auth": DevAuth(password=PASSWORD),
                       "llm": TemplateLLM()})
     c = TestClient(app)
+    c.app_table = table
 
     def login(user):
         r = c.post("/api/auth/login", json={"username": user, "password": PASSWORD})
@@ -95,6 +96,25 @@ def test_worklist_is_in_lane_order_with_values_copied_from_rows(client):
     assert [l["lane"] for l in lanes] == ["CRITICAL", "URGENT", "ABSTAIN", "FAILED",
                                            "EXPEDITED", "ROUTINE"]
     assert [l["lane"] for l in lanes if l["pinned"]] == ["ABSTAIN", "FAILED"]
+
+
+def test_worklist_names_each_study_s_reading_pool(client):
+    body = client.get("/api/worklist", headers=client.radiologist).json()
+    assert [p["pool"] for p in body["pools"]] == ["Chest", "Neuro"]
+    pool = {"CR": "Chest", "MR": "Neuro"}
+    assert all(r["pool"] == pool[r["modality"]] for r in body["studies"])
+
+
+def test_a_study_without_a_model_takes_its_modality_s_pool(client):
+    table = client.app_table
+    table.put_item("worklist", {"study": "no-model-mr", "modality": "MR", "lane": "FAILED",
+                                "status": "FAILED", "error": "boom", "model_id": None})
+    table.put_item("worklist", {"study": "no-model-xa", "modality": "XA", "lane": "FAILED",
+                                "status": "FAILED", "error": "boom", "model_id": None})
+    body = client.get("/api/worklist", headers=client.radiologist).json()
+    by = {r["study"]: r["pool"] for r in body["studies"]}
+    assert by["no-model-mr"] == "Neuro" and by["no-model-xa"] == "Unassigned"
+    assert [p["pool"] for p in body["pools"]] == ["Chest", "Neuro", "Unassigned"]
 
 
 def test_study_detail(client):

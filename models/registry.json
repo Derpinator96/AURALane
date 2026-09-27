@@ -4,6 +4,7 @@
       "id": "cxr-densenet-v1",
       "modality": "CR",
       "body_part": "Chest",
+      "reading_pool": "Chest",
       "input": {
         "format": "dicom",
         "dims": 2,
@@ -42,6 +43,7 @@
       "id": "brain-brats-monai-v0.5.4",
       "modality": "MR",
       "body_part": "Brain",
+      "reading_pool": "Neuro",
       "input": {
         "format": "nifti",
         "dims": 3,
@@ -75,6 +77,12 @@
         ]
       },
       "min_tumor_ml": 1.0,
+      "mask_check": {
+        "inside_brain_min": 0.99,
+        "flair_edema_z_min": 0.0,
+        "t1c_et_z_min": 0.0,
+        "largest_component_min": 0.5
+      },
       "urgency": {
         "mass_effect": 1.0,
         "enhancing_tumor": 0.95,
