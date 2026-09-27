@@ -75,6 +75,20 @@ def test_reason_says_not_verified_never_broken():
     assert "broken" not in text.lower() and "wrong" not in text.lower()
 
 
+def test_reason_names_slices_deidentification_blanked():
+    """A box blanked inside the brain reads as outside it. The reason lists the
+    blanked input slices beside the failure (BraTS 00621: inside_brain 0.9783)."""
+    pred, t1c, flair = _volumes()
+    t1c[18:36, 18:36, 25] = 0                              # OCR box across the lesion
+    r = mask_check.check(pred, t1c, flair, LIMITS)
+    assert r["failed"] == ["inside_brain"]
+    text = mask_check.reason(r, {"T1c": [25], "FLAIR": [3, 40]})
+    assert text == (mask_check.reason(r) + "; de-identification blanked regions it read "
+                    "as text in the model input (T1c axial 25; FLAIR axial 3, 40)")
+    assert mask_check.reason(r, {}) == mask_check.reason(r)
+    assert "broken" not in text.lower() and "wrong" not in text.lower()
+
+
 @pytest.mark.local_data
 @pytest.mark.parametrize("case", RECORDED)
 def test_recorded_cases_pass(case):

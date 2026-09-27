@@ -44,7 +44,7 @@ import pydicom
 from core.ports import BlobPort, DatastorePort, InferencePort, TablePort
 from core.registry import Registry, rank
 from core.types import AuditEvent, Findings, StudyMeta, Verdict
-from core.volumes import series_to_nifti
+from core.volumes import series_to_nifti, sort_slices
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTOR = "pipeline"
@@ -173,6 +173,36 @@ def _model_inputs(entry: dict, adapter, cleaned: list, meta: StudyMeta,
     raise ValueError(f"no input builder for format {fmt!r}")
 
 
+def _masked_input_slices(entry: dict, adapter, cleaned: list, reports: list,
+                         meta: StudyMeta) -> dict[str, list[int]]:
+    """{model channel: axial indices} of the input slices where de-identification
+    blanked regions it read as text. Indices are voxel k in the volume
+    series_to_nifti builds. Empty when nothing was blanked, and for non-volume
+    inputs.
+
+    The OCR pass can read anatomy as text: on BraTS 2021 case 00621 it blanked
+    8 of 620 slices, none of which carry burned-in text. A blanked box inside
+    the brain changes the model's input and reads as outside the brain to
+    core/mask_check.py, so the adapter names these slices when a check fails.
+    """
+    if entry["input"]["format"] != "nifti":
+        return {}
+    masked = {str(ds.SOPInstanceUID) for ds, r in zip(cleaned, reports)
+              if r["text_regions_masked"]}
+    if not masked:
+        return {}
+    by_series = defaultdict(list)
+    for ds in cleaned:
+        by_series[str(ds.SeriesInstanceUID)].append(ds)
+    out = {}
+    for channel, series in adapter.resolve_channels(meta.series, entry).items():
+        ks = [k for k, ds in enumerate(sort_slices(by_series[series.series_uid]))
+              if str(ds.SOPInstanceUID) in masked]
+        if ks:
+            out[channel] = ks
+    return out
+
+
 def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
            table: TablePort, inference: InferencePort, registry: Registry,
            identity, ocr_workers: int | None = None) -> Verdict:
@@ -221,6 +251,10 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
                 entry = registry.for_modality(meta.modality)
                 d.update(model_id=entry["id"], format=entry["input"]["format"])
                 inputs = _model_inputs(entry, registry.adapter(entry), cleaned, meta, work)
+                deid_masked = _masked_input_slices(entry, registry.adapter(entry), cleaned,
+                                                   reports, meta)
+                if deid_masked:
+                    d["deid_masked_slices"] = deid_masked
 
             with run.step("infer", model_id=entry["id"], runtime=entry["runtime"]):
                 raw = inference.score(ref, entry, **inputs)
@@ -228,13 +262,16 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
             with run.step("adapt", model_id=entry["id"]) as d:
                 findings = registry.adapter(entry).adapt(raw, {
                     "entry": entry, "study": run.study, "blob": blob,
-                    "inputs": inputs, "model_output": raw})
+                    "inputs": inputs, "model_output": raw, "deid_masked": deid_masked})
                 if not isinstance(findings, Findings):
                     raise TypeError(f"{entry['adapter']}.adapt returned {type(findings).__name__}")
                 d.update(findings=len(findings.findings), evidence=sorted(findings.evidence))
                 if "mask_check" in findings.meta:            # brain Check A, core/mask_check.py
-                    d.update(mask_check_passed=findings.meta["mask_check"]["passed"],
-                             mask_check_failed=findings.meta["mask_check"]["failed"])
+                    mc = findings.meta["mask_check"]
+                    # Every criterion's measured value and limit, not only the names
+                    # that failed, so the audit shows by how much.
+                    d.update(mask_check_passed=mc["passed"], mask_check_failed=mc["failed"],
+                             mask_check=mc["criteria"])
 
             with run.step("triage") as d:
                 if findings.findings:

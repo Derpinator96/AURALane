@@ -105,6 +105,16 @@ unranked study a human places is safer than a confidently ranked study we
 could not check. If it fires on real data, it is the first criterion to
 loosen.
 
+De-identification can trip the inside-the-brain criterion. Its OCR pass
+sometimes reads anatomy as text and blanks a box, and a blanked box inside
+the brain reads as outside it. On BraTS 2021 case 00621 it blanked 8 of 620
+slices, none with burned-in text; the predicted tumour measured 97.83% inside
+the brain against the blanked T1c and 100% against the original. When that
+happens the reason on screen lists the blanked slices, the `prepare_inputs`
+audit event records them as `deid_masked_slices`, and the `adapt` event
+records every criterion's measured value and limit. The study still gets no
+lane: the model ran on altered images.
+
 ## Triage (`triage.py`)
 
 Takes the findings and decides the lane. Each signal is multiplied by how fast

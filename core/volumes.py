@@ -19,6 +19,13 @@ from pydicom.pixels import apply_modality_lut
 LPS_TO_RAS = np.diag([-1.0, -1.0, 1.0, 1.0])
 
 
+def sort_slices(datasets) -> list:
+    """Instances of one axial series in voxel k order: position along the slice normal."""
+    iop = np.array(datasets[0].ImageOrientationPatient, dtype=float)
+    normal = np.cross(iop[:3], iop[3:])
+    return sorted(datasets, key=lambda d: float(np.dot(normal, d.ImagePositionPatient)))
+
+
 def series_to_nifti(datasets) -> nib.Nifti1Image:
     """datasets: every instance of one axial series, any order."""
     if not datasets:
@@ -27,7 +34,7 @@ def series_to_nifti(datasets) -> nib.Nifti1Image:
     row_dir, col_dir = iop[:3], iop[3:]
     normal = np.cross(row_dir, col_dir)
 
-    slices = sorted(datasets, key=lambda d: float(np.dot(normal, d.ImagePositionPatient)))
+    slices = sort_slices(datasets)
     pos = np.array([d.ImagePositionPatient for d in slices], dtype=float)
     if len(slices) > 1:
         steps = np.diff(pos, axis=0)
