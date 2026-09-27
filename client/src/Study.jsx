@@ -95,6 +95,9 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = false }) {
       </dl>
       {rationaleOn && detail.evidence_urls?.overlay_png && <SegmentationRationale detail={detail} />}
       {s.lane === "FAILED" && <p className="error">Processing failed: {s.error}</p>}
+      {s.abstain_reason && (
+        <p className="note" data-testid="abstain-reason">No lane assigned. {s.abstain_reason}. A radiologist places this study.</p>
+      )}
       <h3>Findings</h3>
       {detail.findings.length === 0 ? (
         <p className="note" data-testid="no-findings">

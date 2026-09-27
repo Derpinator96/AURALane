@@ -9,6 +9,7 @@ pydicom>=3.0
 pynetdicom
 nibabel
 numpy>=1.24
+scipy               # connected components for the brain segmentation check
 pillow
 scikit-image>=0.20
 pytesseract

@@ -1,7 +1,7 @@
 # Manual steps: only you can do these
 
-Ordered by urgency. **Steps 1–4 involve waiting on someone else, so start them
-today, in this order,** and do the rest while you wait. After each step, re-run:
+Ordered by urgency. **Steps 1, 3 and 4 involve waiting on someone else, so start
+them today, in this order,** and do the rest while you wait. After each step, re-run:
 
 ```
 .venv\Scripts\python scripts\doctor.py
@@ -9,8 +9,7 @@ today, in this order,** and do the rest while you wait. After each step, re-run:
 
 | # | step | waiting period | hands-on | turns green in doctor |
 |---|---|---|---|---|
-| 1 | AWS account | activation: minutes, up to 24 h | 15 min |: (enables 2, 3, 5) |
-| 2 | Bedrock model access, us-east-1 | approval: minutes to days | 5 min |: |
+| 1 | AWS account | activation: minutes, up to 24 h | 15 min |: (enables 3, 5) |
 | 3 | Lambda + SageMaker quotas | increase requests: hours to days | 10 min |: |
 | 4 | BraTS cases | registration + large download | 15–60 min | `brats` |
 | 5 | AWS CLI, IAM user, `aws configure` | none | 15 min | `aws` |
@@ -27,7 +26,7 @@ Node v24, WSL2 with Ubuntu.
 
 1. https://aws.amazon.com → **Create an AWS Account**. Needs a card and phone
    verification. Pick the **Basic (free)** support plan.
-2. Activation is usually minutes but can take up to 24 h. Steps 2 and 3 need it.
+2. Activation is usually minutes but can take up to 24 h. Step 3 needs it.
 3. As soon as you can sign in, do these two (5 min, and they protect you):
    - **MFA on the root user**: IAM → *Root user* → *Assign MFA device*.
    - **A budget alert**: Billing → *Budgets* → *Create budget* → *Monthly cost
@@ -36,24 +35,17 @@ Node v24, WSL2 with Ubuntu.
 
 Never create access keys for the root user. Step 5 makes a separate user for that.
 
-## 2. Bedrock model access in us-east-1: start as soon as step 1 activates
+## 2. Bedrock: decided, no action
 
-Approval is not instant, so submit this before anything else.
+Not an open step. Bedrock is blocked at the account level: every model tested,
+Anthropic, Amazon Nova and Mistral alike, fails with `ValidationException:
+Operation not allowed`, and only an AWS support case can lift that.
 
-1. Console, region selector (top right) → **US East (N. Virginia) us-east-1**.
-   Access is per region; granting it in Mumbai does nothing here.
-2. Amazon Bedrock → **Model access** (left nav) → *Modify model access* → tick the
-   models the PoC will call → *Next* → *Submit*.
-3. For **Anthropic** models you'll be asked for use-case details once. This is
-   the slow part. Submit it even if you're unsure which Claude model you'll use; it
-   covers all Anthropic models.
-4. Done when each model shows **Access granted**. The surest test is one message in
-   Bedrock → *Playground → Chat* with that model selected.
-
-*Caveat:* AWS has been changing this flow. If your console has no *Model access*
-page, models are enabled on first use instead, but the Anthropic use-case form
-still appears the first time you use one in the Playground. Do that now for the
-same reason.
+Decided 2026-09-25: drafting ships on `TemplateLLM`, and no support case will
+be opened before the 1 October presentation. `BedrockLLM` stays written behind
+`LLMPort`, so switching to Bedrock later is a configuration change. The
+reasoning and the framing for the jury are in the Bedrock entry under *Known
+soft spots* in `CLAUDE.md` (a local file, not published with this repository).
 
 ## 3. Lambda and SageMaker quotas: check now, increases take hours to days
 

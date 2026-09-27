@@ -134,6 +134,21 @@ export function Thresholds({ load }) {
               {m.anchors && Object.keys(m.urgency).filter((k) => !(k in m.anchors)).map((k) => (
                 <p key={k}><span className="mono">{k}</span> has no anchor of its own: {m.adapter} derives it from the anchored findings.</p>
               ))}
+              {m.mask_check && (
+                <>
+                  <p>Segmentation check, run before scoring. Failing any row sends the study to a radiologist as not automatically verified.</p>
+                  <table className="admin" data-testid="mask-check">
+                    <thead><tr><th>Criterion</th><th>Must be</th></tr></thead>
+                    <tbody>
+                      <tr><td>Share of predicted tumour inside the brain</td><td className="mono num">at least {m.mask_check.inside_brain_min}</td></tr>
+                      <tr><td>Predicted edema on FLAIR, z against the rest of the brain</td><td className="mono num">above {m.mask_check.flair_edema_z_min}</td></tr>
+                      <tr><td>Predicted enhancing tumour on T1c, z against the rest of the brain</td><td className="mono num">above {m.mask_check.t1c_et_z_min}</td></tr>
+                      <tr><td>Largest connected piece, share of the whole tumour</td><td className="mono num">at least {m.mask_check.largest_component_min}</td></tr>
+                    </tbody>
+                  </table>
+                  <p className="note">The largest-piece criterion is expected to misfire on multifocal disease (metastases, multifocal glioma); it abstains rather than ranks, and is the first to loosen if it fires on real data.</p>
+                </>
+              )}
               {m.min_tumor_ml != null && (
                 <p>Whole tumour below <span className="mono">{m.min_tumor_ml}</span> ml abstains: the model was trained only on scans with tumours.</p>
               )}
@@ -157,6 +172,7 @@ export function Registry({ load }) {
               <h2 className="mono">{m.id}</h2>
               <dl>
                 <dt>Modality</dt><dd>{m.modality} {m.body_part}</dd>
+                <dt>Read by</dt><dd>{m.reading_pool} reading pool</dd>
                 <dt>Runs on</dt><dd className="mono">{m.runtime}</dd>
                 <dt>Input</dt><dd className="mono">{m.input.format}, {m.input.dims}D{m.input.channels ? `, ${m.input.channels.join(" ")}` : ""}</dd>
                 <dt>Output</dt><dd className="mono">{m.output_type}</dd>

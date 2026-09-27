@@ -42,6 +42,7 @@ from typing import Any
 import nibabel as nib
 import numpy as np
 
+from core import mask_check
 from core.types import Findings
 
 FINDINGS = ("mass_effect", "enhancing_tumor", "tumor_burden", "edema_volume")
@@ -226,7 +227,8 @@ def adapt(model_output: dict[str, Any], context: dict[str, Any]) -> Findings:
     """model_output: metrics.json as a dict.
 
     context: entry (registry entry), study (StudyInstanceUID), structural (T1c,
-    nibabel image), prediction (his label-map NIfTI, nibabel image), blob (a
+    nibabel image), prediction (his label-map NIfTI, nibabel image), flair
+    (FLAIR, nibabel image, for the mask check), blob (a
     BlobPort, receives the overlay PNG). brain_volume_cm3 may be supplied to
     skip the count. From the pipeline, structural and prediction are absent and
     are loaded from inputs["nifti"]["T1c"] and model_output["_prediction_path"].
@@ -252,6 +254,20 @@ def adapt(model_output: dict[str, Any], context: dict[str, Any]) -> Findings:
         context["structural"] = nib.load(context["inputs"]["nifti"]["T1c"])
     if context.get("prediction") is None:
         context["prediction"] = nib.load(m["_prediction_path"])
+    if context.get("flair") is None:
+        if "inputs" not in context:
+            raise ValueError("the mask check needs the FLAIR volume; none in context")
+        context["flair"] = nib.load(context["inputs"]["nifti"]["FLAIR"])
+
+    # Check A, before anything is scored. No ground truth involved, so it runs
+    # the same in the demo and in production. See core/mask_check.py.
+    result = mask_check.check(np.asarray(context["prediction"].dataobj),
+                              np.asarray(context["structural"].dataobj),
+                              np.asarray(context["flair"].dataobj), entry["mask_check"])
+    meta["mask_check"] = result
+    if not result["passed"]:
+        meta["abstain_reason"] = mask_check.reason(result)
+        return Findings(findings={}, evidence={}, meta=meta)
 
     brain = context.get("brain_volume_cm3") or brain_volume_cm3(study, context["structural"])
     lr = _axis(m["orientation"], "LR")
