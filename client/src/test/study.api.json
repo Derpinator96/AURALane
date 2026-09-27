@@ -17,6 +17,7 @@
    "driver": "Nodule",
    "driver_label": "Nodule",
    "confidence": 0.552,
+   "abstain_reason": null,
    "status": "SCORED",
    "verdict": null,
    "error": null,

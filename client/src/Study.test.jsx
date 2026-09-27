@@ -115,4 +115,22 @@ describe("Study, brain and failed rows", () => {
     expect(screen.getByTestId("no-findings")).toHaveTextContent("did not reach the model output");
     expect(screen.getByTestId("rationale-toggle")).toBeDisabled();
   });
+
+  it("a study that fails the segmentation check says not verified, never broken", async () => {
+    const reason = "Segmentation could not be automatically verified (failed: largest_component)";
+    const unverified = { ...detail, findings: [], evidence: {}, evidence_urls: {},
+                         study: { ...detail.study, modality: "MR", lane: "ABSTAIN", driver: null,
+                                  driver_label: null, lane_label: "NEEDS HUMAN TRIAGE",
+                                  abstain_reason: reason } };
+    render(
+      <MemoryRouter initialEntries={["/studies/x"]}>
+        <Routes><Route path="/studies/:id" element={
+          <Study load={() => Promise.resolve(unverified)} loadSeries={() => Promise.resolve(series)}
+                 sendVerdict={vi.fn()} />} /></Routes>
+      </MemoryRouter>);
+    await screen.findByTestId("viewer-stub");
+    const note = screen.getByTestId("abstain-reason");
+    expect(note).toHaveTextContent("could not be automatically verified");
+    expect(note.textContent.toLowerCase()).not.toMatch(/broken|wrong|invalid/);
+  });
 });

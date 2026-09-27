@@ -78,6 +78,33 @@ a signal between 0 and 1 for each finding.
   volume) and `mass_effect`. It also draws the tumour outline over the slice
   where it is largest and stores that picture as the evidence.
 
+## The segmentation check (`core/mask_check.py`, brain only)
+
+Before a brain study is scored, its predicted tumour outline is checked
+against the study's own images. No ground truth is involved, so the check
+runs the same in the demo and in production. Four criteria, thresholds in
+the registry entry's `mask_check`:
+
+- at least 99% of the predicted tumour lies inside the brain
+- predicted edema is brighter on FLAIR than the rest of the brain
+- predicted enhancing tumour is brighter on T1c than the rest of the brain
+- the largest connected piece is at least half of the whole tumour
+
+Fail any one and the study gets no lane: it goes to NEEDS HUMAN TRIAGE with
+the criterion named. The screen says the segmentation "could not be
+automatically verified", never that it is broken, because failing a
+plausibility check is not proof the outline is wrong. The thresholds are
+floors for "consistent at all", not fitted to our cases; all four recorded
+model outputs pass.
+
+The largest-piece criterion is the one expected to misfire. Genuinely
+multifocal disease (metastases, multifocal glioma) produces a correct outline
+in several separate pieces, and this criterion will send such a study to a
+radiologist instead of ranking it. That is the chosen direction: an
+unranked study a human places is safer than a confidently ranked study we
+could not check. If it fires on real data, it is the first criterion to
+loosen.
+
 ## Triage (`triage.py`)
 
 Takes the findings and decides the lane. Each signal is multiplied by how fast

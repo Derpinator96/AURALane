@@ -20,7 +20,7 @@ function Row({ row }) {
         <span className="mono id">{row.patient_id || row.study}</span>
         <span className="exam">{row.exam}</span>
         <span className="mono time">{timeUTC(row.arrived)}</span>
-        <span className="driver">{row.lane === "FAILED" ? row.error : row.driver_label || "--"}</span>
+        <span className="driver">{row.lane === "FAILED" ? row.error : row.driver_label || row.abstain_reason || "--"}</span>
         <span className="mono acuity"><Acuity row={row} /></span>
         <span className={`read ${isUnread(row) ? "unread" : ""}`}>{verdict}</span>
         {row.source && (

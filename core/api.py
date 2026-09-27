@@ -138,6 +138,7 @@ def create_app(p: dict, registry: Registry | None = None) -> FastAPI:
             "driver": driver,
             "driver_label": _label(driver),
             "confidence": t.get("confidence"),
+            "abstain_reason": t.get("reason") if lane == "ABSTAIN" else None,
             "status": row.get("status"),
             "verdict": row.get("verdict"),
             "error": row.get("error"),

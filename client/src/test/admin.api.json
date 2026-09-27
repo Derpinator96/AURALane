@@ -122,6 +122,12 @@
      ]
     },
     "min_tumor_ml": 1.0,
+    "mask_check": {
+     "inside_brain_min": 0.99,
+     "flair_edema_z_min": 0.0,
+     "t1c_et_z_min": 0.0,
+     "largest_component_min": 0.5
+    },
     "urgency": {
      "mass_effect": 1.0,
      "enhancing_tumor": 0.95,

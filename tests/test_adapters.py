@@ -35,14 +35,20 @@ def case():
             nib.load(CASE / "output" / "prediction.nii.gz"))
 
 
-def _ctx(tmp_path, structural, prediction, study="1.2.3", **extra):
+@pytest.fixture(scope="module")
+def flair():
+    return nib.load(CASE / "input" / "flair.nii")
+
+
+def _ctx(tmp_path, structural, prediction, study="1.2.3", flair=None, **extra):
     return {"entry": BRAIN, "study": study, "structural": structural,
-            "prediction": prediction, "blob": FileBlob(tmp_path), **extra}
+            "prediction": prediction, "flair": flair, "blob": FileBlob(tmp_path), **extra}
 
 
-def test_brats_findings_from_real_metrics(case, tmp_path):
+def test_brats_findings_from_real_metrics(case, flair, tmp_path):
     m, t1c, pred = case
-    f = brats.adapt(m, _ctx(tmp_path, t1c, pred, study="case-57"))
+    f = brats.adapt(m, _ctx(tmp_path, t1c, pred, study="case-57", flair=flair))
+    assert f.meta["mask_check"]["passed"]
 
     brain = float((np.asarray(t1c.dataobj) > 0).sum()) / 1000       # 1 mm isotropic
     burden = (m["wt_volume_cm3"] / brain - 0.005) / (0.10 - 0.005)
@@ -60,9 +66,9 @@ def test_brats_findings_from_real_metrics(case, tmp_path):
     assert t["confidence"] is None and t["raw"] is None      # no fabricated confidence
 
 
-def test_brats_overlay_png(case, tmp_path):
+def test_brats_overlay_png(case, flair, tmp_path):
     m, t1c, pred = case
-    ctx = _ctx(tmp_path, t1c, pred, study="case-57")
+    ctx = _ctx(tmp_path, t1c, pred, study="case-57", flair=flair)
     f = brats.adapt(m, ctx)
     png = Image.open(io.BytesIO(ctx["blob"].get(f.evidence["overlay_png"])))
     assert png.size == (240, 240 + brats.CAPTION_PX)
@@ -106,12 +112,14 @@ def test_midline_axis_follows_orientation(tmp_path):
     shape = (100, 200, 20)
     seg = np.zeros(shape, np.uint8)
     seg[40:60, 150:170, 5:15] = 4
-    img = nib.Nifti1Image(np.ones(shape, np.int16), np.eye(4))
+    vol = np.random.default_rng(0).integers(90, 110, shape).astype(np.int16)
+    vol[seg > 0] = 200                # the lesion enhances, so the mask check passes
+    img = nib.Nifti1Image(vol, np.eye(4))
     m = {"wt_volume_cm3": 50.0, "tc_volume_cm3": 30.0, "et_volume_cm3": 10.0,
          "orientation": ["P", "L", "S"], "centroid_voxel": [50.0, 160.0, 10.0],
          "slice_range": [5, 14], "dice_validation": None}
     f = brats.adapt(m, _ctx(tmp_path, img, nib.Nifti1Image(seg, np.eye(4)),
-                            brain_volume_cm3=1000.0))
+                            flair=img, brain_volume_cm3=1000.0))
     assert f.meta["lr_axis"] == 1
     assert f.meta["eccentricity"] == pytest.approx(60 / 100)   # |160 - 100| / 100, not |50 - 50| / 50
 
