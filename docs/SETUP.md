@@ -37,8 +37,10 @@ Commands run from the repo root in PowerShell unless noted.
 17. `docker compose -f docker-compose.local.yml up -d`
     Orthanc on 8042, DynamoDB Local on 8001. Port 8000 stays free for the demo.
 
-    Both services restart by themselves (`restart: unless-stopped`) and keep
-    their data until the containers are removed.
+    Both services restart by themselves (`restart: unless-stopped`). Orthanc
+    keeps its data until the container is removed. DynamoDB Local runs
+    `-inMemory` and loses the worklist and audit log whenever its container
+    restarts, so ingest again after any restart (docs/RUN.md).
 
 **Reset Orthanc after any change to de-identification.** Orthanc does not
 overwrite an instance it already holds, and the identity map gives a
