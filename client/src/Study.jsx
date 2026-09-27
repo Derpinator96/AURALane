@@ -189,6 +189,11 @@ export default function Study({ load, loadSeries, sendVerdict }) {
           )}
           <Rationale detail={detail} on={rationale} onToggle={() => setRationale((v) => !v)} />
         </div>
+        {detail.datastore_note && (
+          <p className="note datastore-note" role="note" data-testid="datastore-note">
+            {detail.datastore_note}
+          </p>
+        )}
         {!current || current.instance_count === 0 ? (
           <p className="note viewer-empty">No images are available for this series from this datastore.</p>
         ) : !instances ? (

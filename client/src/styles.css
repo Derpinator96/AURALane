@@ -187,3 +187,6 @@ tr.lane-FAILED .bar { background: var(--failed); }
   color: var(--faint); font-size: 12px;
 }
 .foot a { color: var(--soft); text-decoration: underline; }
+
+/* Fixture preview: the datastore says it is not a real one. Readable, not an alarm. */
+.datastore-note { color: var(--soft); border-left: 3px solid var(--soft); padding: 4px 10px; margin: 8px 0; }
