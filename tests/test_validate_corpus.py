@@ -1,0 +1,90 @@
+"""scripts/validate_corpus.py on synthetic studies built in tmp_path."""
+import gzip
+import importlib.util
+import json
+import shutil
+from pathlib import Path
+
+import nibabel as nib
+import numpy as np
+
+ROOT = Path(__file__).resolve().parents[1]
+spec = importlib.util.spec_from_file_location("validate_corpus", ROOT / "scripts" / "validate_corpus.py")
+vc = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(vc)
+
+SHAPE = (8, 8, 6)
+
+
+def _study(root, name, label=None, modality="MRI", label_name="ground_truth.nii", seed=0):
+    d = root / name / "input"
+    d.mkdir(parents=True)
+    (root / name / "metadata.json").write_text(json.dumps({"modality": modality}))
+    scan = np.random.default_rng(seed).integers(1, 100, SHAPE).astype(np.int16)
+    nib.save(nib.Nifti1Image(scan, np.eye(4)), d / "t1ce.nii")
+    if label is not None:
+        nib.save(nib.Nifti1Image(label, np.eye(4)), d / label_name)
+    return d
+
+
+def _label(et=4, seed=0):
+    a = np.zeros(SHAPE, np.uint8)
+    a[2:5, 2:5, 1:4] = 2
+    a[3, 3, 2] = et
+    a[2, 2, 1 + seed % 3] = 1
+    return a
+
+
+def _verdicts(root):
+    return {r["study"]: r for r in vc.validate(root)}
+
+
+def test_both_et_conventions_are_accepted(tmp_path):
+    _study(tmp_path, "a", _label(et=4, seed=0), seed=0)
+    _study(tmp_path, "b", _label(et=3, seed=1), seed=1)
+    v = _verdicts(tmp_path)
+    assert v["a"]["verdict"] == v["b"]["verdict"] == "ACCEPT"
+    assert v["a"]["convention"].startswith("ET=4") and v["b"]["convention"].startswith("ET=3")
+
+
+def test_mixed_or_unknown_label_values_are_refused(tmp_path):
+    bad = _label(et=4)
+    bad[0, 0, 0] = 3                                  # 3 and 4 together
+    _study(tmp_path, "mixed", bad)
+    assert _verdicts(tmp_path)["mixed"]["verdict"] == "REFUSE"
+
+
+def test_a_shared_label_refuses_every_study_that_carries_it(tmp_path):
+    shared = _label()
+    _study(tmp_path, "orig", shared, seed=0)
+    _study(tmp_path, "copy", shared, seed=1)          # different scans, same label file
+    d = _study(tmp_path, "gz", None, seed=2)          # same voxels, compressed
+    nib.save(nib.Nifti1Image(shared, np.eye(4)), d / "ground_truth.nii.gz")
+    _study(tmp_path, "own", _label(seed=1), seed=3)
+    v = _verdicts(tmp_path)
+    assert [v[s]["verdict"] for s in ("orig", "copy", "gz", "own")] == ["REFUSE"] * 3 + ["ACCEPT"]
+    assert v["gz"]["file_sha1"] != v["orig"]["file_sha1"]      # caught by content, not file
+    assert "byte-identical file on copy" in v["orig"]["reason"]
+
+
+def test_label_too_small_for_its_dimensions_is_refused(tmp_path):
+    d = _study(tmp_path, "trunc", _label())
+    raw = (d / "ground_truth.nii").read_bytes()
+    (d / "ground_truth.nii").write_bytes(raw[:-40])            # truncated voxel data
+    v = _verdicts(tmp_path)["trunc"]
+    assert v["verdict"] == "REFUSE" and "data bytes" in v["reason"]
+
+
+def test_label_shape_must_match_the_scans(tmp_path):
+    _study(tmp_path, "flat", np.zeros(SHAPE[:2], np.float32))
+    v = _verdicts(tmp_path)["flat"]
+    assert v["verdict"] == "REFUSE" and "does not match" in v["reason"]
+
+
+def test_every_study_is_reported_nothing_dropped(tmp_path):
+    _study(tmp_path, "nolabel")
+    _study(tmp_path, "xray", modality="CXR")
+    rows = vc.validate(tmp_path)
+    assert [(r["study"], r["verdict"]) for r in rows] == [("nolabel", "ACCEPT"), ("xray", "SKIP")]
+    text = vc.table(rows)
+    assert "nolabel" in text and "xray" in text and "2 studies: 1 accept, 0 refuse, 1 skip" in text

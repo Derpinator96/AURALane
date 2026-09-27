@@ -15,8 +15,12 @@ it came from in its "source" field:
           ChestX-ray14 images, scored by triage.py. scores.json keeps only the
           top three signals per study, so findings holds those three.
   brain   the four distinct real metrics.json cases from Shaurya's MONAI
-          pipeline (_external/brainmri), through adapters.brats and triage.
-          Brain volume is counted from each case's own T1c input.
+          pipeline (_external/brainmri), through the segmentation check
+          (core/mask_check.py), adapters.brats and triage, as the pipeline
+          would. Brain volume is counted from each case's own T1c input.
+          Candidates first pass scripts/validate_corpus.py: a refused case
+          never becomes a row, and each refusal and its reason is written to
+          fixtures/worklist.meta.json.
 
 Assigned here, not computed, and labelled as such in each row: the arrival
 time (one every 3 minutes from 08:00 UTC, in a fixed shuffled order) and the
@@ -49,13 +53,17 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "sim" / "generator"))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 from adapters import brats                  # noqa: E402
+from core import mask_check                 # noqa: E402
 from core.registry import Registry, rank    # noqa: E402
 from core.types import Findings             # noqa: E402
 import make_dicom                           # noqa: E402
+import validate_corpus                      # noqa: E402
 
 OUT = ROOT / "fixtures" / "worklist.json"
+META = ROOT / "fixtures" / "worklist.meta.json"
 FRAME = ROOT / "client" / "public" / "fixtures" / "frames" / "sample-cr.frame1.raw"
 FRAME_URL = "/fixtures/frames/sample-cr.frame1.raw"
 BLOB = ROOT / "fixtures" / "blob"
@@ -134,17 +142,29 @@ def chest_rows(series) -> list[dict]:
     return rows
 
 
-def brain_rows() -> list[dict]:
+def brain_rows(gate: dict[str, dict]) -> list[dict]:
+    """gate: validate_corpus verdicts by study. Refused candidates are skipped."""
     entry = Registry().get("brain-brats-monai-v0.5.4")
     rows = []
     for case in BRAIN_CASES:
+        if gate[case]["verdict"] != "ACCEPT":
+            continue
         m = json.loads((BRAIN / case / "output" / "metrics.json").read_text())
         t1c = nib.load(next((BRAIN / case / "input").glob("t1ce.nii*")))
+        flair = nib.load(next((BRAIN / case / "input").glob("flair.nii*")))
+        pred = nib.load(BRAIN / case / "output" / "prediction.nii.gz")
+        check = mask_check.check(np.asarray(pred.dataobj), np.asarray(t1c.dataobj),
+                                 np.asarray(flair.dataobj), entry["mask_check"])
         brain_cm3 = (float((np.asarray(t1c.dataobj) > 0).sum())
                      * float(np.prod(t1c.header.get_zooms()[:3])) / 1000)
         lr = [i for i, c in enumerate(m["orientation"]) if c in "LR"][0]
-        findings, _ = brats.findings_from_metrics(m, entry, brain_cm3, t1c.shape[lr])
-        t = rank(Findings(findings), entry)
+        if check["passed"]:
+            findings, _ = brats.findings_from_metrics(m, entry, brain_cm3, t1c.shape[lr])
+            t = rank(Findings(findings), entry)
+        else:
+            findings = {}
+            t = {"lane": "ABSTAIN", "abstained": True, "sla": "a human picks the lane",
+                 "reason": mask_check.reason(check)}
         rows.append({
             "study": f"fixture-mr-{case}", "modality": "MR", "model_id": entry["id"],
             "status": "SCORED", "lane": t["lane"], "triage": t, "findings": findings,
@@ -166,7 +186,10 @@ def main() -> int:
     cams = gradcam_for(ds, {r["triage"]["driver"] for r in chest})
     for r in chest:
         r["evidence"] = cams[r["triage"]["driver"]]
-    rows = chest + brain_rows()
+    verdicts = validate_corpus.validate(BRAIN)
+    gate = {v["study"]: v for v in verdicts}
+    print(validate_corpus.table([gate[c] for c in BRAIN_CASES]))
+    rows = chest + brain_rows(gate)
     order = list(range(len(rows)))
     random.Random(7).shuffle(order)
     start = datetime.datetime(2026, 9, 25, 8, 0, 0, tzinfo=datetime.timezone.utc)
@@ -178,6 +201,12 @@ def main() -> int:
         rows[i]["study_date"] = "20260925"
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(json.dumps(rows, indent=1) + "\n")
+    META.write_text(json.dumps({
+        "brain_candidates": BRAIN_CASES,
+        "refused": [{"study": c, "reason": gate[c]["reason"]}
+                    for c in BRAIN_CASES if gate[c]["verdict"] != "ACCEPT"],
+        "gate": "scripts/validate_corpus.py over " + str(BRAIN.relative_to(ROOT)),
+    }, indent=1) + "\n")
     lanes = {}
     for r in rows:
         lanes[r["lane"]] = lanes.get(r["lane"], 0) + 1

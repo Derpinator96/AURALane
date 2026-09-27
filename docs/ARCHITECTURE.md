@@ -188,6 +188,13 @@ fixture row carries a `source` field saying where its numbers came from
 rather than computed (arrival time, pseudonymous ID); the worklist shows it as
 a tag. `scripts/make_fixtures.py` rebuilds the file.
 
+Brain candidates pass `scripts/validate_corpus.py` first. It checks their
+reference labels (label convention, shape, size against declared dimensions,
+and whether the same label sits on another study) and prints a verdict for
+every study. A refused study never becomes a row; its reason is written to
+`fixtures/worklist.meta.json`. This is a gate on demo data only: reference
+labels do not exist at inference time, so the pipeline never looks at them.
+
 ## Access control
 
 Enforced by the API on every route, not by the client:

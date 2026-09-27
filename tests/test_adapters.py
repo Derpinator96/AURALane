@@ -2,7 +2,9 @@
 (_external/brainmri/data/studies/00000057: metrics.json, prediction.nii.gz and
 the T1c input). Its Dice is not 1.0 on every channel, so the metrics are the
 model's own output rather than the ground-truth substitute. No Dice figure is
-quoted here: MRI-1790025179 records WT Dice 0.0 and is unexplained.
+quoted here: several studies in that repository carry 00000057's reference
+label, and two use a label convention the recorded Dice did not handle (see
+scripts/validate_corpus.py).
 """
 import copy
 import io
