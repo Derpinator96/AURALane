@@ -123,6 +123,29 @@ each study actually needed a neuroradiologist, and then checked on studies
 held out from that fit. Until then they are not tuned, including to make a
 demonstration case land in a particular lane.
 
+## Why acuity is the maximum, not the sum: a recorded case
+
+Acuity is the largest signal x urgency over a study's findings, not their
+sum. One recorded brain case shows what that protects against.
+
+MRI-1790081977 (Shaurya's recorded MONAI output, against its own reference
+label, BraTS 2023 convention): of the 130.8 mL the label marks as necrotic
+core, the model labelled 119.6 mL as edema. Edema is whole tumour minus
+tumour core, so the model's edema is 129.3 mL against the label's 28.9 mL.
+The edema signal saturates at 1.000 (ceiling 100 mL), weighted 55.0; with the
+label's volumes it would be 0.252, weighted 13.9.
+
+The lane does not move. Enhancing tumour, which the model gets right (ET Dice
+0.872, recomputed with the correct label convention), scores 0.925 x 0.95 =
+87.9 and sets the lane, CRITICAL, because 87.9 is larger than 55.0. Under a
+sum, the mislabelled volume would add its 55.0 to the score, and one
+channel's error would push every such study further up the queue. Taking the
+maximum means an error in a finding that is not the driver changes nothing.
+
+It does not protect the driver itself: if the enhancing tumour were wrong,
+the lane would be wrong. That is what the segmentation check
+(`core/mask_check.py`) and abstention are for.
+
 ## Moving from local to AWS
 
 Today the switch is one variable, and the AWS side is not built:
