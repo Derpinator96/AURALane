@@ -14,7 +14,7 @@ test("radiologist sees the worklist in lane order with the abstention group", as
   const lanes = await page.getByTestId(/^section-/).evaluateAll(
     (els) => els.map((e) => e.dataset.testid.replace("section-", "")));
   expect(lanes).toEqual(["Chest-CRITICAL", "Chest-URGENT", "Chest-ABSTAIN", "Chest-EXPEDITED",
-                         "Chest-ROUTINE", "Neuro-CRITICAL", "Neuro-ABSTAIN"]);
+                         "Chest-ROUTINE", "Neuro-CRITICAL", "Neuro-URGENT", "Neuro-ABSTAIN"]);
   await expect(page.getByTestId("section-Neuro-ABSTAIN").getByRole("heading"))
     .toContainText("NEEDS HUMAN TRIAGE");
   await expect(page.getByRole("note", { name: "Non-diagnostic notice" })).toBeVisible();

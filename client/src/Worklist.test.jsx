@@ -24,7 +24,7 @@ describe("Worklist", () => {
       .toEqual(fixture.pools.map((p) => `pool-${p.pool}`));
     expect(sectionLanes("Chest")).toEqual(["CRITICAL", "URGENT", "ABSTAIN", "EXPEDITED", "ROUTINE"]);
     // Neuro has no abstention in the fixture; its section is still there.
-    expect(sectionLanes("Neuro")).toEqual(["CRITICAL", "ABSTAIN"]);
+    expect(sectionLanes("Neuro")).toEqual(["CRITICAL", "URGENT", "ABSTAIN"]);
     // Within each pool, rows keep the API's order; no row sits in the wrong pool.
     const expected = fixture.pools.flatMap((p) => inPool(p.pool).map((r) => r.study));
     expect(rowIds()).toEqual(expected);

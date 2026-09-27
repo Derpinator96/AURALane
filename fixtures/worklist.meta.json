@@ -7,12 +7,8 @@
  ],
  "refused": [
   {
-   "study": "00000057",
-   "reason": "label voxels identical to 7 other studies: MRI-1790022660, MRI-1790022667, MRI-1790022740, MRI-1790024012, MRI-1790024066, MRI-1790024115, MRI-1790025179; byte-identical file on MRI-1790022660, MRI-1790022667, MRI-1790022740, MRI-1790025179"
-  },
-  {
    "study": "MRI-1790025179",
-   "reason": "label voxels identical to 7 other studies: 00000057, MRI-1790022660, MRI-1790022667, MRI-1790022740, MRI-1790024012, MRI-1790024066, MRI-1790024115; byte-identical file on 00000057, MRI-1790022660, MRI-1790022667, MRI-1790022740"
+   "reason": "label belongs to source case raw/BraTS2021_00057, whose scans are not this study's; kept on 00000057"
   }
  ],
  "gate": "scripts/validate_corpus.py over _external/brainmri/data/studies"
