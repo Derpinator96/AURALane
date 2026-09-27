@@ -21,7 +21,7 @@ from pydicom.uid import (ComputedRadiographyImageStorage as CRImageStorage,
                          ExplicitVRLittleEndian, MRImageStorage, generate_uid)
 
 from adapters import brats
-from core.pipeline import _model_inputs
+from core.pipeline import _masked_input_slices, _model_inputs
 from core.registry import Registry
 from core.types import SeriesMeta, StudyMeta, StudyRef
 
@@ -98,6 +98,28 @@ def test_shuffled_series_numbers_still_resolve_by_sequence(tmp_path):
         data = np.asarray(nib.load(path).dataobj)
         assert data.shape == (2, 2, 2)
         assert (data == VALUE[channel]).all(), f"{channel} got pixels {np.unique(data)}"
+
+
+def test_masked_slices_are_named_by_channel_and_voxel_index(tmp_path):
+    """De-identification blanked the second FLAIR slice. It is reported as
+    FLAIR axial 1, the same index as in the volume the model receives,
+    whatever order the instances arrive in."""
+    cleaned = _study([(1, "T1C", VALUE["T1c"]), (2, "T1", VALUE["T1"]),
+                      (3, "T2", VALUE["T2"]), (4, "FLAIR", VALUE["FLAIR"])], tmp_path)
+    target = next(ds for ds in cleaned
+                  if ds.SeriesDescription == "FLAIR" and ds.ImagePositionPatient[2] == 1)
+    target.PixelData = np.zeros((2, 2), np.uint16).tobytes()      # what mask_pixels leaves
+    cleaned = cleaned[::-1]
+    reports = [{"text_regions_masked": int(ds is target)} for ds in cleaned]
+
+    got = _masked_input_slices(ENTRY, brats, cleaned, reports, _meta(cleaned))
+    assert got == {"FLAIR": [1]}
+    flair = np.asarray(nib.load(_model_inputs(ENTRY, brats, cleaned, _meta(cleaned),
+                                              tmp_path)["nifti"]["FLAIR"]).dataobj)
+    assert (flair[:, :, 1] == 0).all() and (flair[:, :, 0] == VALUE["FLAIR"]).all()
+
+    none = [{"text_regions_masked": 0} for _ in cleaned]
+    assert _masked_input_slices(ENTRY, brats, cleaned, none, _meta(cleaned)) == {}
 
 
 def test_unrecognised_descriptions_raise_naming_what_is_unresolved(tmp_path):

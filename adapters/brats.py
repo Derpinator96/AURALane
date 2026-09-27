@@ -229,7 +229,9 @@ def adapt(model_output: dict[str, Any], context: dict[str, Any]) -> Findings:
     context: entry (registry entry), study (StudyInstanceUID), structural (T1c,
     nibabel image), prediction (his label-map NIfTI, nibabel image), flair
     (FLAIR, nibabel image, for the mask check), blob (a
-    BlobPort, receives the overlay PNG). brain_volume_cm3 may be supplied to
+    BlobPort, receives the overlay PNG), deid_masked (optional, {channel: axial
+    indices} blanked by de-identification, named in the reason if the mask
+    check fails). brain_volume_cm3 may be supplied to
     skip the count. From the pipeline, structural and prediction are absent and
     are loaded from inputs["nifti"]["T1c"] and model_output["_prediction_path"].
     A scored brain study always carries its overlay.
@@ -266,7 +268,7 @@ def adapt(model_output: dict[str, Any], context: dict[str, Any]) -> Findings:
                               np.asarray(context["flair"].dataobj), entry["mask_check"])
     meta["mask_check"] = result
     if not result["passed"]:
-        meta["abstain_reason"] = mask_check.reason(result)
+        meta["abstain_reason"] = mask_check.reason(result, context.get("deid_masked"))
         return Findings(findings={}, evidence={}, meta=meta)
 
     brain = context.get("brain_volume_cm3") or brain_volume_cm3(study, context["structural"])

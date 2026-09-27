@@ -13,7 +13,10 @@ Criteria, thresholds from the registry entry's mask_check block:
   inside_brain      share of predicted whole tumour inside the brain mask,
                     at least inside_brain_min. The brain mask is T1c > 0, which
                     assumes skull-stripped input (true for BraTS, as for
-                    brain_volume_cm3 in adapters/brats.py).
+                    brain_volume_cm3 in adapters/brats.py), and a T1c
+                    that de-identification left intact. A box its OCR pass
+                    blanked inside the brain reads as outside it; reason()
+                    names those slices.
   edema_flair       predicted edema (label 2) brighter on FLAIR than the rest
                     of the brain: z above flair_edema_z_min. Skipped when the
                     prediction has no edema voxels.
@@ -95,6 +98,18 @@ def check(prediction: np.ndarray, t1c: np.ndarray, flair: np.ndarray,
     return {"passed": not failed, "failed": failed, "criteria": crit}
 
 
-def reason(result: dict[str, Any]) -> str:
-    """The abstention reason shown on screen and in the audit trail."""
-    return f"{FAILED_MESSAGE} (failed: {', '.join(result['failed'])})"
+def reason(result: dict[str, Any], deid_masked: dict[str, list[int]] | None = None) -> str:
+    """The abstention reason shown on screen and in the audit trail.
+
+    deid_masked: {channel: axial indices} of model input slices where
+    de-identification blanked regions it read as text. Listed next to the
+    failure as a fact about the input, not asserted as its cause. On BraTS 2021
+    case 00621 a blanked box on T1c axial 24 put inside_brain at 0.9783; against
+    the unmasked T1c the same prediction measures 1.0.
+    """
+    text = f"{FAILED_MESSAGE} (failed: {', '.join(result['failed'])})"
+    if deid_masked:
+        where = "; ".join(f"{c} axial {', '.join(str(k) for k in ks)}"
+                          for c, ks in deid_masked.items())
+        text += f"; de-identification blanked regions it read as text in the model input ({where})"
+    return text

@@ -273,3 +273,36 @@ def test_empty_findings_abstain_rather_than_score(ports, monkeypatch, tmp_path):
     v = ingest(files, inference=Fixed(), **ports)
     assert v.status == "SCORED" and v.lane == "ABSTAIN"
     assert v.triage["reason"] == "below volume gate"
+
+
+@pytest.mark.skipif(not TESSERACT, reason=(
+    "needs Tesseract: de-identification masks pixels before the step under test. "
+    "NOT VERIFIED: that the adapt audit event records every mask check value"))
+def test_adapt_audit_records_every_mask_check_value(ports, monkeypatch, tmp_path):
+    """The failing criterion's measured value and limit reach the audit, not only
+    its name. BraTS 00621 abstained with inside_brain 0.9783 and the event said
+    only ["inside_brain"]."""
+    reg = ports["registry"]
+    entry = reg.for_modality("CR")
+    criteria = {"inside_brain": {"value": 0.9783, "limit": 0.99, "passed": False},
+                "largest_component": {"value": 0.5339, "components": 8, "limit": 0.5,
+                                      "passed": True}}
+
+    class Failing:
+        @staticmethod
+        def adapt(raw, ctx):
+            return Findings({}, meta={"abstain_reason": "not verified", "mask_check": {
+                "passed": False, "failed": ["inside_brain"], "criteria": criteria}})
+    monkeypatch.setitem(reg.adapters, entry["id"], Failing)
+
+    class Fixed:
+        def score(self, *a, **k):
+            return {}
+
+    files, _ = _synthetic_chest(tmp_path)
+    v = ingest(files, inference=Fixed(), **ports)
+    assert v.lane == "ABSTAIN"
+    _, rows = _audit(ports["table"], v.ref.study_uid)
+    adapt = next(r["detail"] for r in rows if r["action"] == "adapt")
+    assert adapt["mask_check_failed"] == ["inside_brain"]
+    assert adapt["mask_check"] == criteria
