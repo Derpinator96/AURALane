@@ -45,9 +45,15 @@ def parse_multipart(content_type: str, body: bytes) -> list[bytes]:
 
 
 class OrthancDatastore(DatastorePort):
-    def __init__(self, base: str = "http://localhost:8042", timeout: float = 60):
+    def __init__(self, base: str = "http://localhost:8042", timeout: float = 60,
+                 public_web: str | None = None):
+        """public_web: the DICOMweb root as the browser reaches it, for
+        frame_url. Orthanc sends no CORS headers, so a browser page served
+        elsewhere reaches it through its own web server's proxy (the Vite
+        config maps /dicom-web to Orthanc). Defaults to the direct URL."""
         self.base = base.rstrip("/")
         self.web = f"{self.base}/dicom-web"
+        self.public_web = (public_web or self.web).rstrip("/")
         self.http = httpx.Client(timeout=timeout)
 
     # -- write ---------------------------------------------------------------
@@ -143,11 +149,21 @@ class OrthancDatastore(DatastorePort):
         """The WADO-RS frame URL itself. Orthanc URLs do not expire; ttl is
         accepted for interface parity and ignored. Fetch it with Accept set to
         FRAME_ACCEPT."""
-        return (f"{self.web}/studies/{ref.study_uid}/series/{series_uid}"
+        return (f"{self.public_web}/studies/{ref.study_uid}/series/{series_uid}"
                 f"/instances/{instance_uid}/frames/{frame}")
 
+    def series_metadata(self, ref, series_uid) -> list[dict]:
+        items = self._qido(f"/studies/{ref.study_uid}/series/{series_uid}/metadata")
+        for item in items:
+            for tag in [t for t, v in item.items()
+                        if "BulkDataURI" in v or "InlineBinary" in v]:
+                del item[tag]
+        items.sort(key=lambda i: int(_v(i, "instance_no", 0)))
+        return items
+
     def get_frame(self, ref, series_uid, instance_uid, frame=1) -> bytes:
-        r = self.http.get(self.frame_url(ref, series_uid, instance_uid, frame),
+        r = self.http.get(f"{self.web}/studies/{ref.study_uid}/series/{series_uid}"
+                          f"/instances/{instance_uid}/frames/{frame}",
                           headers={"Accept": FRAME_ACCEPT})
         r.raise_for_status()
         parts = parse_multipart(r.headers["content-type"], r.content)

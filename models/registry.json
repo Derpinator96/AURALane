@@ -3,6 +3,7 @@
     {
       "id": "cxr-densenet-v1",
       "modality": "CR",
+      "body_part": "Chest",
       "input": {
         "format": "dicom",
         "dims": 2,
@@ -40,6 +41,7 @@
     {
       "id": "brain-brats-monai-v0.5.4",
       "modality": "MR",
+      "body_part": "Brain",
       "input": {
         "format": "nifti",
         "dims": 3,

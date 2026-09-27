@@ -21,6 +21,7 @@ class HealthImagingDatastore(DatastorePort):
     get_metadata = _todo("AWS HealthImaging GetImageSetMetadata")
     get_frame = _todo("AWS HealthImaging GetImageFrame")
     frame_url = _todo("AWS HealthImaging DICOMweb frame URL")
+    series_metadata = _todo("AWS HealthImaging GetImageSetMetadata")
 
 
 class S3Blob(BlobPort):
@@ -39,6 +40,7 @@ class DynamoTable(TablePort):
 
 
 class CognitoAuth(AuthPort):
+    login = _todo("Amazon Cognito InitiateAuth")
     verify = _todo("Amazon Cognito JWT verification")
 
 

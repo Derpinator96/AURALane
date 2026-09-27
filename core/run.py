@@ -1,13 +1,15 @@
-"""Runner. The only place that chooses between local and AWS providers.
+"""Runner. The only place that chooses a provider set.
 
-    AURALANE_RUNTIME=local python -m core.run ingest data/chest/studies/<study>
-    AURALANE_RUNTIME=local python -m core.run serve            # API on :8080
-    AURALANE_RUNTIME=local python -m core.run token radiologist  # dev token
+    AURALANE_RUNTIME=local   python -m core.run ingest data/chest/studies/<study>
+    AURALANE_RUNTIME=local   python -m core.run serve     # API on :8100
+    AURALANE_RUNTIME=fixture python -m core.run serve     # same API on the fixture rows
+    AURALANE_RUNTIME=local   python -m core.run token radiologist
 
-AURALANE_RUNTIME is read once, in providers() below. Nothing else in the
-codebase branches on runtime. It defaults to local.
+AURALANE_RUNTIME is read once, in providers() below: local (Orthanc, DynamoDB
+Local, files), fixture (fixtures/worklist.json in memory, no Docker) or aws.
+Nothing else in the codebase branches on runtime. It defaults to local.
 
-serve listens on 8080 because 8000 belongs to the round-2 demo (server.py),
+serve listens on 8100 because 8000 belongs to the round-2 demo (server.py),
 which has to start while this is running.
 """
 from __future__ import annotations
@@ -21,24 +23,34 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_DB = ROOT / "data" / "identity" / "identity.db"
 DEV_KEY = ROOT / "data" / "dev" / "devauth.key"
+DEV_PASSWORD_FILE = ROOT / "data" / "dev" / "devauth.password"   # unless AURALANE_DEV_PASSWORD
+BLOB_URL = "/api/blob"        # served by core.api from a FileBlob's signed URLs
 DISCLAIMER = "NON-DIAGNOSTIC; DECISION SUPPORT ONLY"
-LANE_ORDER = {"CRITICAL": 0, "URGENT": 1, "ABSTAIN": 2, "FAILED": 2, "EXPEDITED": 3,
-              "ROUTINE": 4}
-
 
 def providers() -> dict:
     runtime = os.environ.get("AURALANE_RUNTIME", "local")
     if runtime == "local":
         from core.providers import local as p
-        return {"runtime": runtime, "blob": p.FileBlob(), "datastore": p.OrthancDatastore(),
-                "table": p.DynamoLocalTable(), "inference": p.InProcessInference(),
-                "auth": p.DevAuth(key_file=DEV_KEY), "llm": p.TemplateLLM()}
+        blob = p.FileBlob(url_base=BLOB_URL)
+        # The browser reaches Orthanc through the web server's /dicom-web proxy
+        # (client/vite.config.js); Orthanc itself sends no CORS headers.
+        return {"runtime": runtime, "blob": blob,
+                "datastore": p.OrthancDatastore(public_web="/dicom-web"),
+                "table": p.DynamoLocalTable(), "inference": p.InProcessInference(blob=blob),
+                "auth": p.DevAuth(key_file=DEV_KEY, password_file=DEV_PASSWORD_FILE), "llm": p.TemplateLLM()}
+    if runtime == "fixture":
+        from core.providers import fixture as f
+        from core.providers import local as p
+        table = f.FixtureTable()
+        return {"runtime": runtime, "blob": p.FileBlob(f.BLOB, url_base=BLOB_URL),
+                "datastore": f.FixtureDatastore(table), "table": table, "inference": None,
+                "auth": p.DevAuth(key_file=DEV_KEY, password_file=DEV_PASSWORD_FILE), "llm": p.TemplateLLM()}
     if runtime == "aws":
         from core.providers import aws as p
         return {"runtime": runtime, "blob": p.S3Blob(), "datastore": p.HealthImagingDatastore(),
                 "table": p.DynamoTable(), "inference": p.LambdaSageMakerInference(),
                 "auth": p.CognitoAuth(), "llm": p.BedrockLLM()}
-    sys.exit(f"AURALANE_RUNTIME must be local or aws, got {runtime!r}")
+    sys.exit(f"AURALANE_RUNTIME must be local, fixture or aws, got {runtime!r}")
 
 
 def _identity():
@@ -75,72 +87,13 @@ def cmd_ingest(args) -> int:
     return 0 if v.status == "SCORED" else 1
 
 
-def create_app(p: dict | None = None):
-    """FastAPI app over the ports. Bearer token on every route except health."""
-    from fastapi import Depends, FastAPI, Header, HTTPException
-
-    from core.registry import Registry
-    from core.types import StudyRef
-
-    p = p or providers()
-    app = FastAPI(title="AURALane API")
-    Registry()                                   # startup error on a bad registry
-
-    def principal(authorization: str = Header(default="")):
-        if not authorization.startswith("Bearer "):
-            raise HTTPException(401, "bearer token required")
-        try:
-            who = p["auth"].verify(authorization.removeprefix("Bearer "))
-        except Exception as e:
-            raise HTTPException(401, f"invalid token: {e}")
-        if not {"radiologist", "admin"} & set(who.groups):
-            raise HTTPException(403, "radiologist or admin group required")
-        return who
-
-    def row_or_404(study):
-        row = p["table"].get_item("worklist", {"study": study})
-        if row is None:
-            raise HTTPException(404, "no such study")
-        return row
-
-    @app.get("/api/health")
-    def health():
-        return {"ok": True, "runtime": p["runtime"], "disclaimer": DISCLAIMER}
-
-    @app.get("/api/worklist")
-    def worklist(who=Depends(principal)):
-        rows = p["table"].scan("worklist")
-        rows.sort(key=lambda r: (LANE_ORDER.get(r["lane"], 9),
-                                 -((r.get("triage") or {}).get("acuity") or 0),
-                                 r["created_at"]))
-        return {"disclaimer": DISCLAIMER, "studies": rows}
-
-    @app.get("/api/studies/{study}")
-    def study(study: str, who=Depends(principal)):
-        row = row_or_404(study)
-        audit = sorted(p["table"].query("audit", study=study), key=lambda r: r["event_id"])
-        draft = p["llm"].draft({"study": study, "model_id": row["model_id"],
-                                "lane": row["lane"], "triage": row.get("triage") or {},
-                                "findings": row.get("findings") or {}})
-        evidence = {k: p["blob"].presigned_url(v) for k, v in (row.get("evidence") or {}).items()
-                    if k.endswith("_png")}
-        return {"disclaimer": DISCLAIMER, "study": row, "audit": audit, "draft": draft,
-                "evidence_urls": evidence}
-
-    @app.get("/api/studies/{study}/frame_url")
-    def frame_url(study: str, series: str, instance: str, frame: int = 1,
-                  who=Depends(principal)):
-        """A URL the browser fetches pixels from directly. The API never proxies them."""
-        row = row_or_404(study)
-        ref = StudyRef(study, row["datastore_id"])
-        return {"url": p["datastore"].frame_url(ref, series, instance, frame)}
-
-    return app
-
-
 def cmd_serve(args) -> int:
     import uvicorn
-    uvicorn.run(create_app(), host=args.host, port=args.port)
+    from core.api import create_app
+    prov = providers()
+    if prov["runtime"] != "aws" and not os.environ.get("AURALANE_DEV_PASSWORD"):
+        print(f"dev sign-in password: {DEV_PASSWORD_FILE.relative_to(ROOT)}")
+    uvicorn.run(create_app(prov), host=args.host, port=args.port)
     return 0
 
 
@@ -161,7 +114,7 @@ def main(argv=None) -> int:
                    help="threads for de-identification OCR (default: CPU count)")
     s = sub.add_parser("serve", help="the worklist API")
     s.add_argument("--host", default="127.0.0.1")
-    s.add_argument("--port", type=int, default=8080)
+    s.add_argument("--port", type=int, default=8100)
     t = sub.add_parser("token", help="a development bearer token (local runtime only)")
     t.add_argument("user", choices=["radiologist", "admin"])
     args = ap.parse_args(argv)

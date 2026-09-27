@@ -88,12 +88,62 @@ decides. Otherwise acuity sets the lane: Critical (under 15 min), Urgent (under
 1 hr), Expedited (under 4 hr), Routine. Every model's findings go through the
 same arithmetic.
 
-## The API (`python -m core.run serve`)
+## The API (`python -m core.run serve`, port 8100)
 
-Worklist sorted Critical, Urgent, Abstain and Failed, Expedited, Routine, and by
-acuity within a lane. Study detail with the audit trail and a drafted note.
-Frame URLs for the viewer. Every route except health needs a bearer token; in
-development `python -m core.run token radiologist` prints one.
+The worklist comes back already in priority order: Critical, Urgent, then the
+studies a human must place (abstained or failed), then Expedited, Routine; by
+acuity within a lane. Study detail gives the findings, the series list and a
+drafted note. Frame URLs let the viewer fetch pixels from the datastore
+directly; the API never sends pixels. Agree or disagree with a lane is written
+to the audit trail and shown on the row.
+
+Radiologists can read studies and cannot see admin screens. Admins can see the
+audit log, the lane mix and the model registry, and cannot open a study. The
+API refuses both with 403; hiding a button is not access control.
+
+## The web app (`client/`)
+
+One ordered list, dark and dense for a reading room. Lane names are always
+written out, not left to colour. The "needs human triage" group is always shown
+and no filter can hide it. Every number on screen is the API's; the browser
+computes none. The non-diagnostic banner is on every screen, login included,
+and every screen links the privacy and terms pages, which are readable
+without signing in. The app makes no request outside its own origin.
+
+## The admin screens
+
+Four screens for the admin group: the audit log (append only, newest first),
+the lane mix (counted by the API from the worklist rows when asked; in fixture
+mode it says the rows were picked three per lane, so it is not a population
+mix), the thresholds, and the model registry. Thresholds are shown, not edited:
+lane floors and the abstention band live in `triage.py` and operating points in
+`models/registry.json`, and changing one re-lanes every study, so it is a
+reviewed code change. Study IDs in the audit log are plain text; admins cannot
+open a study, and the API refuses them if they try.
+
+## The viewer (study detail)
+
+Cornerstone3D, inside the app rather than linked out. The browser fetches each
+frame straight from the datastore using the URL the API returned. Chest: one
+image with window and level, zoom, pan, invert and reset. Brain: the four
+series by sequence name (T1C, T1, T2, FLAIR), and the mouse wheel scrolls
+slices. The right panel shows the lane and its clock, the driving finding, the
+confidence and what it means, every finding's signal and urgency, and Agree or
+Disagree, which is written to the audit trail and shown on the worklist row.
+
+"Triage rationale" is off when a study opens. For chest it lays the Grad-CAM
+heat over the image, pinned to the square the model saw, and it follows zoom
+and pan; if Grad-CAM found no region above the display threshold the caption
+says so instead of showing an empty layer. For brain it shows the tumour
+outline on the slice with the largest tumour area, beside the viewer.
+
+## Grad-CAM (chest only)
+
+For a chest study, the same forward pass that scores the image also produces a
+Grad-CAM heatmap for the finding that set the lane, stored as the study's
+evidence. It is a sanity check on why the study was placed where it was, not a
+localisation claim, and the viewer shows it only on request. Brain studies do
+not get one: the tumour outline is its own, better explanation.
 
 ## The drafted note (`TemplateLLM`)
 

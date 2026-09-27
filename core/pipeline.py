@@ -94,6 +94,19 @@ def _workers(n: int | None) -> int:
     return max(1, n or os.cpu_count() or 1)
 
 
+@contextmanager
+def _omp_limit(active: bool):
+    """OMP_THREAD_LIMIT=1 for the duration, then the environment as it was."""
+    if not active or "OMP_THREAD_LIMIT" in os.environ:
+        yield
+        return
+    os.environ["OMP_THREAD_LIMIT"] = "1"
+    try:
+        yield
+    finally:
+        os.environ.pop("OMP_THREAD_LIMIT", None)
+
+
 def deidentify_all(paths: Iterable[Path], identity, workers: int | None = None):
     """De-identify every instance, OCR included, on a thread pool.
 
@@ -118,16 +131,17 @@ def deidentify_all(paths: Iterable[Path], identity, workers: int | None = None):
     # Measured on the 4-core build container, 16 synthetic 320 px images:
     #   OMP_THREAD_LIMIT unset: 1 worker 5.2 s, 2 workers 91.6 s, 4 workers 299.2 s
     #   OMP_THREAD_LIMIT=1:     1 worker 5.1 s, 2 workers  2.5 s, 4 workers   1.3 s
-    # pytesseract passes os.environ to the subprocess, so the limit is set here.
+    # pytesseract hands os.environ to the subprocess, so the limit has to be in
+    # os.environ, but only while OCR runs. Left set, torch (imported later for
+    # inference) inherits it: its OpenMP runtime starts capped at one thread
+    # while torch asks for one per core, and the chest Grad-CAM backward pass
+    # did not finish in 120 s instead of taking 4.5 s. So it is restored after.
     # An explicit OMP_THREAD_LIMIT from the operator is left alone.
-    if workers > 1:
-        os.environ.setdefault("OMP_THREAD_LIMIT", "1")
-
     def one(p):
         ds = pydicom.dcmread(p)
         return ds, deid.deidentify(ds, identity)
 
-    with ThreadPoolExecutor(max_workers=workers) as pool:
+    with _omp_limit(workers > 1), ThreadPoolExecutor(max_workers=workers) as pool:
         done = list(pool.map(one, paths))
     return [ds for ds, _ in done], [r for _, r in done]
 

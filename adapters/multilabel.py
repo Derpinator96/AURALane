@@ -29,8 +29,14 @@ def finding_names(entry: dict) -> list[str]:
     return list(_reference(entry))
 
 
-def adapt(model_output: dict[str, float], context: dict[str, Any]) -> Findings:
+def adapt(model_output: dict[str, Any], context: dict[str, Any]) -> Findings:
+    """model_output: {pathology: raw sigmoid}, or InProcessInference's
+    {"preds": {...}, "evidence": {...}} with the Grad-CAM overlay key."""
     entry = context["entry"]
+    evidence = {}
+    if isinstance(model_output.get("preds"), dict):
+        evidence = dict(model_output.get("evidence") or {})
+        model_output = model_output["preds"]
     ref = context.get("reference") or _reference(entry)
     floor, ceil = entry["z_anchor"]
 
@@ -43,7 +49,7 @@ def adapt(model_output: dict[str, float], context: dict[str, Any]) -> Findings:
 
     return Findings(
         findings=signals,
-        evidence={},        # Grad-CAM is detail view only, off by default
+        evidence=evidence,  # Grad-CAM: detail view only, off by default in the UI
         meta={"model_id": entry["id"],
               "raw": dict(model_output),
               "confidence": {k: triage.calibrate(v) for k, v in model_output.items()},

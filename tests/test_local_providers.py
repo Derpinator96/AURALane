@@ -2,6 +2,7 @@
 
     docker compose -f docker-compose.local.yml up -d
 """
+import secrets
 import uuid
 
 import jwt
@@ -34,6 +35,20 @@ def test_devauth_issues_and_verifies_seeded_users():
         DevAuth().verify(a.issue("admin"))            # different key
     with pytest.raises(jwt.ExpiredSignatureError):
         a.verify(a.issue("admin", ttl=-10))
+
+
+def test_devauth_password_has_no_default(tmp_path, monkeypatch):
+    monkeypatch.delenv("AURALANE_DEV_PASSWORD", raising=False)
+    with pytest.raises(PermissionError):
+        DevAuth().login("radiologist", "")
+    f = tmp_path / "dev" / "devauth.password"
+    a = DevAuth(password_file=f)
+    assert f.stat().st_mode & 0o777 == 0o600
+    assert a.verify(a.login("radiologist", f.read_text())).groups == ("radiologist",)
+    assert DevAuth(password_file=f)._password == a._password          # stable across processes
+    env = secrets.token_hex(8)
+    monkeypatch.setenv("AURALANE_DEV_PASSWORD", env)
+    assert DevAuth(password_file=f).login("admin@dev.auralane.local", env)
 
 
 @pytest.fixture
@@ -93,3 +108,21 @@ def test_template_llm_leaves_impression_to_radiologist():
 def test_aws_stubs_name_their_service(cls, call):
     with pytest.raises(NotImplementedError, match="Prompt 3"):
         call(cls())
+
+
+def test_fileblob_signed_urls_expire_and_resist_tampering(tmp_path):
+    from urllib.parse import parse_qs, urlsplit
+    b = FileBlob(tmp_path, url_base="/api/blob")
+    b.put("evidence/x.png", b"png")
+    u = urlsplit(b.presigned_url("evidence/x.png", ttl=60))
+    q = {k: v[0] for k, v in parse_qs(u.query).items()}
+    assert u.path == "/api/blob/evidence/x.png"
+    assert b.open_signed("evidence/x.png", int(q["expires"]), q["sig"]).read_bytes() == b"png"
+    with pytest.raises(PermissionError):
+        b.open_signed("evidence/y.png", int(q["expires"]), q["sig"])        # other key
+    with pytest.raises(PermissionError):
+        b.open_signed("evidence/x.png", int(q["expires"]) + 1, q["sig"])    # longer expiry
+    u = urlsplit(b.presigned_url("evidence/x.png", ttl=-5))
+    q = {k: v[0] for k, v in parse_qs(u.query).items()}
+    with pytest.raises(PermissionError, match="expired"):
+        b.open_signed("evidence/x.png", int(q["expires"]), q["sig"])
