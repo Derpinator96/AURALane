@@ -27,15 +27,59 @@ STUDY_ROUTES = [("get", "/api/worklist"), ("get", f"/api/studies/{CHEST['study']
                 ("get", f"/api/studies/{CHEST['study']}/series/{CHEST['series'][0]['series_uid']}"),
                 ("post", f"/api/studies/{CHEST['study']}/verdict")]
 
-PASSWORD = secrets.token_hex(8)    # no password is written in the repository
+# No password is written in the repository. The fixed suffix satisfies
+# Cognito's default password policy, which moto enforces.
+PASSWORD = secrets.token_hex(8) + "Aa1!"
+
+
+def _cognito_auth():
+    """CognitoAuth against moto's Cognito: a pool with the stack's two groups and
+    one user per group. moto signs with the key in its bundled JWKS, which is
+    passed in so verify() makes no network call."""
+    import gzip
+    import json
+    import os
+
+    import boto3
+    import moto
+    from core.providers.aws import CognitoAuth
+    idp = boto3.client("cognito-idp", region_name="us-east-1")
+    pool = idp.create_user_pool(PoolName="auralane-test")["UserPool"]["Id"]
+    client_id = idp.create_user_pool_client(
+        UserPoolId=pool, ClientName="web",
+        ExplicitAuthFlows=["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"])["UserPoolClient"]["ClientId"]
+    for group in ("radiologist", "admin"):
+        idp.create_group(UserPoolId=pool, GroupName=group)
+        idp.admin_create_user(UserPoolId=pool, Username=group, MessageAction="SUPPRESS",
+                              UserAttributes=[{"Name": "email", "Value": f"{group}@test.auralane.local"}])
+        idp.admin_set_user_password(UserPoolId=pool, Username=group, Password=PASSWORD, Permanent=True)
+        idp.admin_add_user_to_group(UserPoolId=pool, Username=group, GroupName=group)
+    jwks = json.loads(gzip.decompress(open(os.path.join(
+        os.path.dirname(moto.__file__), "cognitoidp", "resources", "jwks-public.json.gz"), "rb").read()))
+    return CognitoAuth(pool, client_id, jwks=jwks, client=idp)
+
+
+@pytest.fixture(params=["devauth", "cognito"])
+def auth(request, monkeypatch):
+    """The API's 403s must hold identically whichever AuthPort answers."""
+    if request.param == "devauth":
+        yield DevAuth(password=PASSWORD)
+        return
+    for var in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN", "AWS_PROFILE"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "testing")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "testing")
+    from moto import mock_aws
+    with mock_aws():
+        yield _cognito_auth()
 
 
 @pytest.fixture
-def client(tmp_path):
+def client(tmp_path, auth):
     table = FixtureTable()
     app = create_app({"runtime": "fixture", "blob": FileBlob(BLOB, url_base="/api/blob"),
                       "table": table,
-                      "datastore": FixtureDatastore(table), "auth": DevAuth(password=PASSWORD),
+                      "datastore": FixtureDatastore(table), "auth": auth,
                       "llm": TemplateLLM()})
     c = TestClient(app)
     c.app_table = table
@@ -46,6 +90,7 @@ def client(tmp_path):
         return {"Authorization": f"Bearer {r.json()['token']}"}
 
     c.radiologist, c.admin = login("radiologist"), login("admin")
+    c.radiologist_email = c.get("/api/me", headers=c.radiologist).json()["email"]
     return c
 
 
@@ -144,11 +189,11 @@ def test_verdict_writes_audit_and_updates_the_row(client):
     assert r.json()["study"]["verdict"]["value"] == "disagree"
     row = next(x for x in client.get("/api/worklist", headers=client.radiologist).json()["studies"]
                if x["study"] == CHEST["study"])
-    assert row["verdict"]["by"] == "radiologist@dev.auralane.local"
+    assert row["verdict"]["by"] == client.radiologist_email
     events = client.get("/api/admin/audit", headers=client.admin).json()["events"]
     assert [(e["action"], e["study"], e["detail"]["verdict"]) for e in events] == [
         ("verdict", CHEST["study"], "disagree")]
-    assert events[0]["actor"] == "radiologist@dev.auralane.local"
+    assert events[0]["actor"] == client.radiologist_email
 
 
 def test_lane_mix_counts_real_rows(client):
