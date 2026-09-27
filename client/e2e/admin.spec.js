@@ -5,6 +5,9 @@ async function signIn(page, user) {
   await page.getByLabel("User").fill(user);
   await page.getByLabel("Password").fill(process.env.AURALANE_DEV_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
+  // The session is stored when the login response arrives. A goto() before
+  // then reloads the app signed out and lands back on /login.
+  await expect(page).not.toHaveURL(/\/login$/);
 }
 
 test("a radiologist's verdict appears in the admin audit log; admins cannot open it", async ({ browser }) => {
