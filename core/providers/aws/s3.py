@@ -36,6 +36,7 @@ def _clean(key: str) -> str:
 
 
 class S3Blob(BlobPort):
+    service = "Amazon S3"
     def __init__(self, bucket: str, client=None, region: str = REGION):
         self.bucket = bucket
         # SigV4 presigned URLs. Without this, botocore can still sign S3 URLs with

@@ -56,7 +56,7 @@ _spec.loader.exec_module(n2d)
 pytestmark = pytest.mark.privacy
 TESSERACT = shutil.which("tesseract") is not None
 STEPS = ["deidentify", "blob_put", "import", "prepare_inputs", "infer", "adapt", "triage",
-         "persist", "blob_delete"]
+         "evidence", "persist", "blob_delete"]
 CASE57 = ROOT / "_external" / "brainmri" / "data" / "studies" / "00000057"
 
 
@@ -203,7 +203,8 @@ def test_brain_mask_from_another_case_abstains(ports):
     assert v.findings.findings == {} and "overlay_png" not in v.findings.evidence
 
     row = ports["table"].get_item("worklist", {"study": v.ref.study_uid})
-    assert row["lane"] == "ABSTAIN" and row["evidence"] == {}
+    # The inputs are kept for the reader who picks the lane; the rejected mask is not.
+    assert row["lane"] == "ABSTAIN" and set(row["evidence"]) == {"volumes"}
     steps, rows = _audit(ports["table"], v.ref.study_uid)
     assert steps == [(s, "ok") for s in STEPS]
     adapt = next(r for r in rows if r["action"] == "adapt")["detail"]

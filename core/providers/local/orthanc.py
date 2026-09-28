@@ -45,6 +45,7 @@ def parse_multipart(content_type: str, body: bytes) -> list[bytes]:
 
 
 class OrthancDatastore(DatastorePort):
+    service = "Orthanc (DICOMweb)"
     def __init__(self, base: str = "http://localhost:8042", timeout: float = 60,
                  public_web: str | None = None):
         """public_web: the DICOMweb root as the browser reaches it, for

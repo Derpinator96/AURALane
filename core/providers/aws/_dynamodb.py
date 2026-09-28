@@ -58,16 +58,24 @@ class DynamoDBTable(TablePort):
         return self.ddb.Table(full)
 
     def _ensure(self, full, pk, sk):
-        existing = self.ddb.meta.client.list_tables()["TableNames"]
-        if full in existing:
+        client = self.ddb.meta.client
+        try:
+            client.describe_table(TableName=full)
             return
+        except client.exceptions.ResourceNotFoundException:
+            pass
+        # (list_tables answers 100 names a page; DynamoDB Local fills up with
+        # test tables, so a first-page check missed tables that existed.)
         keys = [{"AttributeName": pk, "KeyType": "HASH"}]
         attrs = [{"AttributeName": pk, "AttributeType": "S"}]
         if sk:
             keys.append({"AttributeName": sk, "KeyType": "RANGE"})
             attrs.append({"AttributeName": sk, "AttributeType": "S"})
-        self.ddb.create_table(TableName=full, KeySchema=keys, AttributeDefinitions=attrs,
-                              BillingMode="PAY_PER_REQUEST")
+        try:
+            self.ddb.create_table(TableName=full, KeySchema=keys, AttributeDefinitions=attrs,
+                                  BillingMode="PAY_PER_REQUEST")
+        except client.exceptions.ResourceInUseException:
+            pass                                 # created meanwhile by another process
         self.ddb.meta.client.get_waiter("table_exists").wait(TableName=full)
 
     def put_item(self, table: str, item: dict[str, Any]) -> None:

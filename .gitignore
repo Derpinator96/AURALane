@@ -45,3 +45,5 @@ data/dev/
 
 # CQ500 head CT studies (CC BY-NC-SA 4.0), downloaded by hand; see data/ct/SOURCE.md
 data/ct/raw/
+# De-identified pool for simulated ingest (scripts/stage_pool.py --local)
+data/pool/

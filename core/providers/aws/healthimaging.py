@@ -76,6 +76,7 @@ def _instance_number(item: dict) -> int:
 
 
 class HealthImagingDatastore(DatastorePort):
+    service = "AWS HealthImaging"
     def __init__(self, bucket: str, import_role_arn: str,
                  datastore_id: str = EXISTING_DATASTORE_ID, region: str = REGION,
                  client=None, s3=None, session=None, dicomweb: str | None = None,

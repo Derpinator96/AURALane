@@ -281,5 +281,8 @@ def adapt(model_output: dict[str, Any], context: dict[str, Any]) -> Findings:
     key = f"evidence/{study}/segmentation_overlay.png"
     context["blob"].put(key, png)
     evidence = {"overlay_png": key, "axial_index": z,
-                "channels": {"edema": "yellow", "tc": "orange", "et": "red"}}
+                "channels": {"edema": "yellow", "tc": "orange", "et": "red"},
+                # From the model's own metrics.json; the 3D viewer shows these.
+                "volumes_cm3": {"whole_tumour": wt, "tumour_core": tc, "enhancing": et,
+                                "edema": round(wt - tc, 2)}}
     return Findings(findings=findings, evidence=evidence, meta=meta)

@@ -67,6 +67,11 @@ def _split(uri: str) -> tuple[str, str]:
 
 
 class LambdaSageMakerInference(InferencePort):
+    @staticmethod
+    def service(entry: dict | None) -> str:
+        return {"lambda": "AWS Lambda", "sagemaker-async": "SageMaker async endpoint"}.get(
+            (entry or {}).get("runtime"), "AWS")
+
     def __init__(self, bucket: str, chest_function: str, brain_endpoint: str | None,
                  region: str = REGION, lambda_client=None, sagemaker_runtime=None, s3=None,
                  poll_seconds: float = 5.0, brain_timeout: float = 1800.0,

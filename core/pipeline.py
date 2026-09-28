@@ -10,8 +10,22 @@
     6b regional_prior  chest only: a bounded nudge from the site's state
                     (core/regional.py), after the z-score, before the lane
     7 triage        triage.rank -> lane, or abstention
-    8 persist       worklist row
-    9 blob_delete   the transient copy, always, even after a failure
+    8 evidence      derived artefacts in blob storage under evidence/<study>/: the
+                    Grad-CAM or overlay the model step wrote, and for volume
+                    models the input NIfTI and the segmentation, which the 3D
+                    viewer loads through presigned URLs
+    9 persist       worklist row
+   10 blob_delete   the transient copy, always, even after a failure
+
+Studies staged by scripts/stage_pool.py were de-identified at the edge before
+upload. ingest(edge_reports=...) takes them as they are: step 1 then checks
+every instance carries the de-identification marks and records where the work
+was done, instead of doing it twice. An instance without the marks fails the
+study; it is never cleaned here as a fallback.
+
+Each step's audit detail names the service that ran it (the provider's
+.service), so the pipeline view shows HealthImaging or Orthanc from the run
+itself, not from a guess about the runtime.
 
 prepare_inputs and infer are separate steps so the audit, and the latency
 table built from it, never counts pipeline overhead as model time.
@@ -52,6 +66,7 @@ from core.volumes import series_to_nifti, sort_slices
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTOR = "pipeline"
+HERE = "the pipeline process"      # steps that run where ingest() runs
 
 
 def _load_deid():
@@ -71,9 +86,9 @@ def _now() -> str:
 class _Run:
     """Holds per-run state and writes one audit event per step."""
 
-    def __init__(self, table: TablePort):
+    def __init__(self, table: TablePort, run_id: str | None = None):
         self.table = table
-        self.id = uuid.uuid4().hex[:12]
+        self.id = run_id or uuid.uuid4().hex[:12]
         self.study: str | None = None          # pseudonymous StudyInstanceUID, once known
 
     @contextmanager
@@ -217,11 +232,63 @@ def _masked_input_slices(entry: dict, adapter, cleaned: list, reports: list,
     return out
 
 
+def service(provider, entry: dict | None = None) -> str:
+    """The name a provider gives itself, for the audit (pipeline view)."""
+    name = getattr(provider, "service", None)
+    if callable(name):
+        return name(entry)
+    return name or type(provider).__name__
+
+
+def check_edge_deid(cleaned: list) -> None:
+    """Studies de-identified at the edge must say so on every instance
+    (PS3.15: PatientIdentityRemoved YES, a DeidentificationMethod)."""
+    bad = [str(ds.get("SOPInstanceUID", "?")) for ds in cleaned
+           if str(ds.get("PatientIdentityRemoved", "")).upper() != "YES"
+           or not ds.get("DeidentificationMethod")]
+    if bad:
+        raise ValueError(f"{len(bad)} of {len(cleaned)} instances are not marked de-identified "
+                         f"(first {bad[0]}); refusing to store them")
+
+
+def _evidence(entry: dict, study: str, findings: Findings, inputs: dict, raw: Any,
+              blob: BlobPort, d: dict) -> Findings:
+    """Volume models: the model's NIfTI inputs and its segmentation, to
+    evidence/<study>/ for the 3D viewer. Every model: record what evidence the
+    row points at."""
+    evidence = dict(findings.evidence)
+    # Kept for abstained studies too: that is when a radiologist most needs
+    # to look, to pick the lane the model would not.
+    if entry["input"]["format"] == "nifti":
+        volumes = {}
+        for channel, path in inputs["nifti"].items():
+            volumes[channel] = blob.put(f"evidence/{study}/{channel.lower()}.nii.gz",
+                                        Path(path).read_bytes())
+        evidence["volumes"] = volumes
+        # The segmentation only when the study scored: an abstained study's mask
+        # failed the check (core/mask_check.py) or was below the volume gate,
+        # and must not be drawn as if it were the model's finding.
+        pred = raw.get("_prediction_path") if isinstance(raw, dict) else None
+        if findings.findings and pred and Path(pred).exists():
+            evidence["segmentation"] = blob.put(f"evidence/{study}/segmentation.nii.gz",
+                                                Path(pred).read_bytes())
+    d["keys"] = sorted(k for k, v in evidence.items() if isinstance(v, (str, dict))
+                       and k not in ("regional", "ct", "channels"))
+    return Findings(findings=findings.findings, meta=findings.meta, evidence=evidence)
+
+
 def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
            table: TablePort, inference: InferencePort, registry: Registry,
            identity, ocr_workers: int | None = None,
-           regional: RegionalSetting | None = None) -> Verdict:
-    run = _Run(table)
+           regional: RegionalSetting | None = None,
+           edge_reports: dict[str, int] | None = None,
+           run_id: str | None = None, model_id: str | None = None) -> Verdict:
+    """edge_reports: for studies de-identified at the edge (stage_pool.py),
+    {SOPInstanceUID: text regions masked there}; the study is checked, not
+    cleaned again. run_id: to join events the caller wrote before this run.
+    model_id: the registry entry to use, when the caller knows it (simulated
+    ingest); otherwise the one registered for the study's modality."""
+    run = _Run(table, run_id)
     paths = sorted(Path(p) for p in paths)
     keys: list[str] = []
     ref = entry = findings = None
@@ -234,16 +301,25 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
             with run.step("deidentify", instances=len(paths)) as d:
                 if not paths:
                     raise ValueError("no DICOM files to ingest")
-                cleaned, reports = deidentify_all(paths, identity, ocr_workers)
+                if edge_reports is not None:
+                    cleaned = [pydicom.dcmread(p) for p in paths]
+                    check_edge_deid(cleaned)
+                    reports = [{"text_regions_masked": int(edge_reports.get(
+                        str(ds.SOPInstanceUID), 0))} for ds in cleaned]
+                    d["where"] = "edge, before upload (scripts/stage_pool.py); checked here"
+                    d["service"] = "edge de-identifier (sim/edge/deid.py)"
+                else:
+                    cleaned, reports = deidentify_all(paths, identity, ocr_workers)
+                    d["ocr_workers"] = _workers(ocr_workers)
+                    d["service"] = "sim/edge/deid.py, in this process"
                 masked = sum(r["text_regions_masked"] for r in reports)
-                d["ocr_workers"] = _workers(ocr_workers)
                 uids = {str(ds.StudyInstanceUID) for ds in cleaned}
                 if len(uids) != 1:
                     raise ValueError(f"files span {len(uids)} studies; ingest one at a time")
                 run.study = uids.pop()
                 d["text_regions_masked"] = masked
 
-            with run.step("blob_put") as d:
+            with run.step("blob_put", service=service(blob)) as d:
                 files, items = [], []
                 for ds in cleaned:
                     buf = io.BytesIO()
@@ -258,14 +334,18 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
                     keys.extend(pool.map(lambda kv: blob.put(*kv), items))
                 d["objects"] = len(keys)
 
-            with run.step("import") as d:
+            with run.step("import", service=service(datastore)) as d:
                 ref = datastore.import_study(files)
                 meta = datastore.get_metadata(ref)
                 d.update(datastore_id=ref.datastore_id, modality=meta.modality,
                          series=len(meta.series))
 
-            with run.step("prepare_inputs") as d:
-                entry = registry.for_modality(meta.modality)
+            with run.step("prepare_inputs", service=HERE) as d:
+                entry = (registry.entries[model_id] if model_id
+                         else registry.for_modality(meta.modality))
+                if entry["modality"] != meta.modality:
+                    raise ValueError(f"{entry['id']} reads {entry['modality']}, the study is "
+                                     f"{meta.modality}")
                 d.update(model_id=entry["id"], format=entry["input"]["format"])
                 inputs = _model_inputs(entry, registry.adapter(entry), cleaned, meta, work)
                 deid_masked = _masked_input_slices(entry, registry.adapter(entry), cleaned,
@@ -273,10 +353,11 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
                 if deid_masked:
                     d["deid_masked_slices"] = deid_masked
 
-            with run.step("infer", model_id=entry["id"], runtime=entry["runtime"]):
+            with run.step("infer", model_id=entry["id"], runtime=entry["runtime"],
+                          service=service(inference, entry)):
                 raw = inference.score(ref, entry, **inputs)
 
-            with run.step("adapt", model_id=entry["id"]) as d:
+            with run.step("adapt", model_id=entry["id"], service=HERE) as d:
                 findings = registry.adapter(entry).adapt(raw, {
                     "entry": entry, "study": run.study, "blob": blob,
                     "inputs": inputs, "model_output": raw, "deid_masked": deid_masked})
@@ -291,10 +372,10 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
                              mask_check=mc["criteria"])
 
             if entry.get("regional_prior") and regional is not None:
-                with run.step("regional_prior") as d:
+                with run.step("regional_prior", service=HERE) as d:
                     findings = _regional(findings, regional, d)
 
-            with run.step("triage") as d:
+            with run.step("triage", service=HERE) as d:
                 if findings.findings:
                     t = rank(findings, entry)
                 else:
@@ -304,7 +385,11 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
             verdict = Verdict(ref=ref, model_id=entry["id"], status="SCORED",
                               lane=t["lane"], triage=t, findings=findings, run_id=run.id)
 
-            with run.step("persist", table="worklist"):
+            with run.step("evidence", service=service(blob)) as d:
+                findings = _evidence(entry, run.study, findings, inputs, raw, blob, d)
+                verdict.findings = findings
+
+            with run.step("persist", table="worklist", service=service(table)):
                 table.put_item("worklist", _row(run, verdict, meta))
     except Exception as e:
         verdict = Verdict(ref=ref, model_id=entry["id"] if entry else None, status="FAILED",
@@ -355,7 +440,8 @@ def _row(run: _Run, v: Verdict, meta: StudyMeta | None) -> dict[str, Any]:
 def _persist_failure(run: _Run, v: Verdict, meta, tb: str) -> None:
     """Best effort: a failure to record a failure must not hide the first one."""
     try:
-        with run.step("persist", table="worklist", status="FAILED"):
+        with run.step("persist", table="worklist", status="FAILED",
+                      service=service(run.table)):
             run.table.put_item("worklist", _row(run, v, meta))
     except Exception:
         v.error = f"{v.error}; and the FAILED row could not be written"
@@ -363,7 +449,7 @@ def _persist_failure(run: _Run, v: Verdict, meta, tb: str) -> None:
 
 def _delete_transient(run: _Run, blob: BlobPort, keys: list[str]) -> None:
     try:
-        with run.step("blob_delete", objects=len(keys)):
+        with run.step("blob_delete", objects=len(keys), service=service(blob)):
             with ThreadPoolExecutor(16) as pool:
                 list(pool.map(blob.delete, keys))
     except Exception:

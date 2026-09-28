@@ -10,6 +10,7 @@ method either way and does not know which it got.
 from __future__ import annotations
 
 import hashlib
+import os
 import hmac
 import secrets
 import time
@@ -22,6 +23,7 @@ DEFAULT_ROOT = Path(__file__).resolve().parents[3] / "data" / "blob"
 
 
 class FileBlob(BlobPort):
+    service = "local filesystem"
     def __init__(self, root: Path | str = DEFAULT_ROOT, url_base: str | None = None,
                  secret: bytes | None = None):
         self.root = Path(root).resolve()
@@ -30,7 +32,10 @@ class FileBlob(BlobPort):
         self._secret = secret or secrets.token_bytes(32)
 
     def _path(self, key: str) -> Path:
-        p = (self.root / key).resolve()
+        # abspath, not resolve: it normalises ".." without touching the disk.
+        # resolve() on Windows raced with sibling mkdir calls when 620 brain
+        # slices were written on 16 threads, and returned paths outside root.
+        p = Path(os.path.abspath(self.root / key))
         if self.root not in p.parents:
             raise ValueError(f"blob key escapes the store: {key!r}")
         return p
