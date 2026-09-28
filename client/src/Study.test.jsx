@@ -3,7 +3,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import fixture from "./test/study.api.json";
-import Study from "./Study.jsx";
+import Study, { RegionalContext } from "./Study.jsx";
 
 // Cornerstone needs WebGL and workers, which jsdom lacks; the viewer is
 // exercised end to end by Playwright. Here a stub records what it is given.
@@ -148,5 +148,20 @@ describe("Study, brain and failed rows", () => {
     const note = screen.getByTestId("abstain-reason");
     expect(note).toHaveTextContent("could not be automatically verified");
     expect(note.textContent.toLowerCase()).not.toMatch(/broken|wrong|invalid/);
+  });
+});
+
+describe("RegionalContext", () => {
+  it("shows the state and the factor applied to the driving finding", () => {
+    const regional = { state: "Kerala", applied: true,
+                       factors: { Pneumonia: { factor: 1.1565 } } };
+    render(<RegionalContext regional={regional} driver="Pneumonia" driverLabel="Pneumonia" />);
+    expect(screen.getByTestId("regional-context")).toHaveTextContent("Regional context: Kerala, x1.16");
+    cleanup();
+    render(<RegionalContext regional={regional} driver="Edema" driverLabel="Edema" />);
+    expect(screen.getByTestId("regional-context")).toHaveTextContent("x1.00 (no regional prior for Edema)");
+    cleanup();
+    render(<RegionalContext regional={{ state: "Kerala", applied: false, reason: "off" }} driver="Edema" />);
+    expect(screen.getByTestId("regional-context")).toHaveTextContent("Regional context: off");
   });
 });

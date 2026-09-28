@@ -1,0 +1,224 @@
+{
+ "source": "IHME Global Burden of Disease 2023, measure Prevalence, metric Percent (a proportion), Both, All ages, 2023. Ported from github.com/AnishJaiswal01/region-wise-pcc-1 (IHME-GBD_2023_DATA-44b96e82-1.csv, state_disease_priors.json); values cross-checked equal.",
+ "national": "India",
+ "weight": 0.5,
+ "bounds": [
+  0.8,
+  1.25
+ ],
+ "causes": {
+  "Chronic respiratory diseases": [
+   "Emphysema",
+   "Fibrosis",
+   "Pleural_Thickening"
+  ],
+  "Lower respiratory infections": [
+   "Pneumonia",
+   "Consolidation",
+   "Infiltration"
+  ],
+  "Cardiovascular diseases": [
+   "Cardiomegaly",
+   "Enlarged Cardiomediastinum"
+  ],
+  "Tracheal, bronchus, and lung cancer": [
+   "Mass",
+   "Nodule",
+   "Lung Lesion"
+  ]
+ },
+ "prevalence": {
+  "Andhra Pradesh": {
+   "Chronic respiratory diseases": 0.0555424853268695,
+   "Lower respiratory infections": 0.000664739388181,
+   "Cardiovascular diseases": 0.0680235218784753,
+   "Tracheal, bronchus, and lung cancer": 6.35451529517e-05
+  },
+  "Arunachal Pradesh": {
+   "Lower respiratory infections": 0.000493590995825,
+   "Tracheal, bronchus, and lung cancer": 6.50384829834e-05,
+   "Cardiovascular diseases": 0.0369127607641554,
+   "Chronic respiratory diseases": 0.0413427237094995
+  },
+  "Assam": {
+   "Cardiovascular diseases": 0.0466274798345667,
+   "Chronic respiratory diseases": 0.0444022615608659,
+   "Lower respiratory infections": 0.0008787571749503,
+   "Tracheal, bronchus, and lung cancer": 0.0001226005376273
+  },
+  "Bihar": {
+   "Cardiovascular diseases": 0.0408558058214682,
+   "Chronic respiratory diseases": 0.0415030526499001,
+   "Lower respiratory infections": 0.0008208175512309,
+   "Tracheal, bronchus, and lung cancer": 1.97680311201e-05
+  },
+  "Chhattisgarh": {
+   "Tracheal, bronchus, and lung cancer": 5.35954270712e-05,
+   "Chronic respiratory diseases": 0.0392762418818401,
+   "Lower respiratory infections": 0.0008219489268211,
+   "Cardiovascular diseases": 0.0473143996383493
+  },
+  "Delhi": {
+   "Chronic respiratory diseases": 0.0452667356048618,
+   "Lower respiratory infections": 0.0009327794237787,
+   "Cardiovascular diseases": 0.0566881920261731,
+   "Tracheal, bronchus, and lung cancer": 9.24390081165e-05
+  },
+  "Goa": {
+   "Tracheal, bronchus, and lung cancer": 8.98265480275e-05,
+   "Chronic respiratory diseases": 0.0566443382428152,
+   "Lower respiratory infections": 0.0012733306159162,
+   "Cardiovascular diseases": 0.0799462142706607
+  },
+  "Gujarat": {
+   "Chronic respiratory diseases": 0.0495788044224341,
+   "Lower respiratory infections": 0.0010345103710722,
+   "Cardiovascular diseases": 0.0563176956679251,
+   "Tracheal, bronchus, and lung cancer": 0.0001049714178754
+  },
+  "Haryana": {
+   "Lower respiratory infections": 0.0008602524696938,
+   "Tracheal, bronchus, and lung cancer": 0.0001276863228177,
+   "Cardiovascular diseases": 0.0566600532450828,
+   "Chronic respiratory diseases": 0.0546722542775104
+  },
+  "Himachal Pradesh": {
+   "Cardiovascular diseases": 0.0697889924356628,
+   "Chronic respiratory diseases": 0.0579560208554342,
+   "Lower respiratory infections": 0.0009662952765947,
+   "Tracheal, bronchus, and lung cancer": 9.08387738224e-05
+  },
+  "India": {
+   "Tracheal, bronchus, and lung cancer": 8.21869766675e-05,
+   "Lower respiratory infections": 0.000961968150502,
+   "Cardiovascular diseases": 0.0550512388541754,
+   "Chronic respiratory diseases": 0.0487818161280343
+  },
+  "Jammu & Kashmir and Ladakh": {
+   "Tracheal, bronchus, and lung cancer": 0.000125331074551,
+   "Lower respiratory infections": 0.0010071052438769,
+   "Cardiovascular diseases": 0.0543608742466704,
+   "Chronic respiratory diseases": 0.0491684939259018
+  },
+  "Jharkhand": {
+   "Cardiovascular diseases": 0.0422477295626298,
+   "Chronic respiratory diseases": 0.040869776105379,
+   "Tracheal, bronchus, and lung cancer": 7.81860554171e-05,
+   "Lower respiratory infections": 0.0008075808619857
+  },
+  "Karnataka": {
+   "Tracheal, bronchus, and lung cancer": 6.54139092236e-05,
+   "Lower respiratory infections": 0.0008501546273907,
+   "Cardiovascular diseases": 0.058538319576899,
+   "Chronic respiratory diseases": 0.0499894169827959
+  },
+  "Kerala": {
+   "Chronic respiratory diseases": 0.0713491991241434,
+   "Tracheal, bronchus, and lung cancer": 0.0001587036999658,
+   "Lower respiratory infections": 0.0012866381612702,
+   "Cardiovascular diseases": 0.0874133105741376
+  },
+  "Madhya Pradesh": {
+   "Cardiovascular diseases": 0.0495930467752541,
+   "Tracheal, bronchus, and lung cancer": 6.6363319309e-05,
+   "Lower respiratory infections": 0.0010492033524969,
+   "Chronic respiratory diseases": 0.0451008600993793
+  },
+  "Maharashtra": {
+   "Chronic respiratory diseases": 0.0538556069388141,
+   "Lower respiratory infections": 0.0011738303506801,
+   "Tracheal, bronchus, and lung cancer": 5.09223853598e-05,
+   "Cardiovascular diseases": 0.0599225635436476
+  },
+  "Manipur": {
+   "Cardiovascular diseases": 0.0524229372715241,
+   "Lower respiratory infections": 0.0010028933147773,
+   "Tracheal, bronchus, and lung cancer": 0.0001549860322295,
+   "Chronic respiratory diseases": 0.046799407130228
+  },
+  "Meghalaya": {
+   "Lower respiratory infections": 0.0007674712104909,
+   "Tracheal, bronchus, and lung cancer": 9.35134069666e-05,
+   "Cardiovascular diseases": 0.0394052158478004,
+   "Chronic respiratory diseases": 0.0545007013679538
+  },
+  "Mizoram": {
+   "Cardiovascular diseases": 0.0498620059569717,
+   "Chronic respiratory diseases": 0.0541941693068507,
+   "Lower respiratory infections": 0.0012532575538289,
+   "Tracheal, bronchus, and lung cancer": 0.0002528832216401
+  },
+  "Nagaland": {
+   "Tracheal, bronchus, and lung cancer": 6.29039348422e-05,
+   "Lower respiratory infections": 0.0008844682526353,
+   "Cardiovascular diseases": 0.048042558359302,
+   "Chronic respiratory diseases": 0.0482119129895341
+  },
+  "Odisha": {
+   "Lower respiratory infections": 0.0011691084288527,
+   "Cardiovascular diseases": 0.0580393517810822,
+   "Chronic respiratory diseases": 0.0544816514821124,
+   "Tracheal, bronchus, and lung cancer": 0.0001016840986421
+  },
+  "Other Union Territories": {
+   "Tracheal, bronchus, and lung cancer": 8.85907738517e-05,
+   "Chronic respiratory diseases": 0.044926053501858,
+   "Lower respiratory infections": 0.0009182834039009,
+   "Cardiovascular diseases": 0.0576387863794648
+  },
+  "Punjab": {
+   "Tracheal, bronchus, and lung cancer": 7.63433834053e-05,
+   "Lower respiratory infections": 0.0008451503579915,
+   "Cardiovascular diseases": 0.0684963369358325,
+   "Chronic respiratory diseases": 0.0463850551978476
+  },
+  "Rajasthan": {
+   "Lower respiratory infections": 0.0010265734420285,
+   "Cardiovascular diseases": 0.0517276414033991,
+   "Chronic respiratory diseases": 0.0503319997367775,
+   "Tracheal, bronchus, and lung cancer": 4.78754247536e-05
+  },
+  "Sikkim": {
+   "Lower respiratory infections": 0.001255072530014,
+   "Tracheal, bronchus, and lung cancer": 7.26051031038e-05,
+   "Cardiovascular diseases": 0.0531661408072414,
+   "Chronic respiratory diseases": 0.0541165352394062
+  },
+  "Tamil Nadu": {
+   "Cardiovascular diseases": 0.069013813286134,
+   "Chronic respiratory diseases": 0.051686438744101,
+   "Lower respiratory infections": 0.0010289740966796,
+   "Tracheal, bronchus, and lung cancer": 0.0001104367542402
+  },
+  "Telangana": {
+   "Lower respiratory infections": 0.0006365436193408,
+   "Tracheal, bronchus, and lung cancer": 9.82835252645e-05,
+   "Cardiovascular diseases": 0.0572783756335861,
+   "Chronic respiratory diseases": 0.0452867371523682
+  },
+  "Tripura": {
+   "Cardiovascular diseases": 0.0595667936960429,
+   "Chronic respiratory diseases": 0.063857895882219,
+   "Tracheal, bronchus, and lung cancer": 0.000129806711354,
+   "Lower respiratory infections": 0.0012747160357333
+  },
+  "Uttar Pradesh": {
+   "Tracheal, bronchus, and lung cancer": 8.87882392293e-05,
+   "Lower respiratory infections": 0.0009667993329485,
+   "Cardiovascular diseases": 0.0472409433895904,
+   "Chronic respiratory diseases": 0.04232462494761
+  },
+  "Uttarakhand": {
+   "Chronic respiratory diseases": 0.0478677856704995,
+   "Tracheal, bronchus, and lung cancer": 0.0001568305108875,
+   "Lower respiratory infections": 0.0012603342931961,
+   "Cardiovascular diseases": 0.0573257201683805
+  },
+  "West Bengal": {
+   "Tracheal, bronchus, and lung cancer": 0.0001274110209798,
+   "Lower respiratory infections": 0.0009284390786391,
+   "Cardiovascular diseases": 0.0649534043334215,
+   "Chronic respiratory diseases": 0.0600501214454768
+  }
+ }
+}

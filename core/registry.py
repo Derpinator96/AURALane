@@ -25,6 +25,7 @@ BY_OUTPUT = {
     "multilabel": {"reference": str, "z_anchor": list},
     "segmentation-probability": {"output_channels": list, "anchors": dict,
                                  "min_tumor_ml": (int, float), "mask_check": dict},
+    "ct-hemorrhage": {"anchors": dict, "hf_model": str},
 }
 RUNTIMES = {"lambda", "sagemaker-async", "in-process"}
 

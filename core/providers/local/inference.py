@@ -36,6 +36,7 @@ from core.types import StudyRef
 
 ROOT = Path(__file__).resolve().parents[3]
 BRAINMRI = ROOT / "_external" / "brainmri"
+TRIAGELANE_CT = ROOT / "_external" / "triagelane-ct"      # read-only clone, used as a library
 
 
 def _png_bytes(pixels: np.ndarray) -> bytes:
@@ -159,9 +160,11 @@ class InProcessInference(InferencePort):
         self.blob = blob
         self._chest = None
         self._brain = None
+        self._ct = None
         self.handlers = {
             "multilabel": self._multilabel,
             "segmentation-probability": self._segmentation,
+            "ct-hemorrhage": self._ct_hemorrhage,
         }
 
     def score(self, ref: StudyRef, model_cfg: dict[str, Any], **inputs) -> Any:
@@ -236,3 +239,39 @@ class InProcessInference(InferencePort):
             flair_path=nifti["FLAIR"], output_seg_path=out, gt_path=None)
         metrics["_prediction_path"] = str(out)
         return metrics
+
+    def _ct_hemorrhage(self, model_cfg, *, slices: list, **_) -> dict[str, Any]:
+        """slices: [(pixel_array, rescale_slope, rescale_intercept)] in position
+        order. Mehak's pipeline, unchanged: her three-window preprocessing, her
+        ViT (weights from Hugging Face, model_cfg["hf_model"]), her per-slice
+        temperature calibration and her top-k aggregation. Her lanes.py is not
+        called; adapters/ct_hemorrhage.py converts and our triage assigns the lane.
+
+        Per-subtype study scores reuse her aggregate_study_score on that
+        subtype's per-slice probabilities: same k, same self-weighted mean.
+        """
+        if self._ct is None:
+            src = str(TRIAGELANE_CT / "src")
+            if src not in sys.path:
+                sys.path.insert(0, src)
+            from triagelane_ct import aggregation, model   # torch, transformers, pyyaml
+            if model.MODEL_NAME != model_cfg["hf_model"]:
+                raise RuntimeError(f"triagelane-ct is configured for {model.MODEL_NAME}, "
+                                   f"the registry names {model_cfg['hf_model']}")
+            self._ct = (model, aggregation)
+        model, aggregation = self._ct
+        if not slices:
+            raise ValueError("no CT slices to score")
+        results = [model.predict_slice(px, slope, icpt) for px, slope, icpt in slices]
+        study, raw, k = aggregation.aggregate_study_score(results)
+        subtypes = results[0]["subtype_probs"].keys()
+        subtype_scores = {
+            d: round(aggregation.aggregate_study_score(
+                [{"urgency_weighted_score": r["subtype_probs"][d],
+                  "calibrated_likelihood": r["subtype_probs"][d]} for r in results])[0], 4)
+            for d in subtypes}
+        top = max(range(len(results)), key=lambda i: results[i]["urgency_weighted_score"])
+        return {"raw_score": raw, "study_score": study, "k_used": k, "n_slices": len(results),
+                "dominant_subtype": results[top]["dominant_subtype"], "top_slice_index": top,
+                "subtype_scores": subtype_scores,
+                "slice_likelihood": [round(r["calibrated_likelihood"], 4) for r in results]}

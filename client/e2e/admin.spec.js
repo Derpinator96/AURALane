@@ -35,7 +35,7 @@ test("a radiologist's verdict appears in the admin audit log; admins cannot open
   await expect(page.getByTestId("abstain-band")).toContainText("between 0.35 and 0.6");
   await page.screenshot({ path: "test-results/admin-thresholds.png", fullPage: true });
   await page.getByRole("link", { name: "Model registry" }).click();
-  await expect(page.getByTestId("model")).toHaveCount(2);
+  await expect(page.getByTestId("model")).toHaveCount(3);
   await page.screenshot({ path: "test-results/admin-models.png", fullPage: true });
 
   await page.goto("/studies/fixture-cr-ST-028");

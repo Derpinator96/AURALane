@@ -1,5 +1,6 @@
-"""LambdaSageMakerInference: InferencePort on AWS Lambda (chest) and a SageMaker
-asynchronous endpoint (brain), chosen by the registry entry's runtime.
+"""LambdaSageMakerInference: InferencePort on AWS Lambda (chest) and SageMaker
+asynchronous endpoints (brain MR, head CT), chosen by the registry entry's
+runtime and, for sagemaker-async, its output_type.
 
 Both return exactly what InProcessInference returns, so the adapters and the
 pipeline do not know which ran:
@@ -15,6 +16,10 @@ pipeline do not know which ran:
                    job, so the request is a JSON file in S3 naming the four
                    NIfTI inputs; the endpoint writes its answer to S3 and this
                    provider polls for it.
+  ct-hemorrhage    triagelane-ct's study result as a dict (see
+                   InProcessInference._ct_hemorrhage). The slices go to S3 as
+                   one compressed .npz (pixels, slopes, intercepts); the
+                   endpoint (infra/containers/ct/serve.py) returns the result.
 
 Cold start, stated and not solved: the chest function is a container image
 carrying torch, so an invocation after idle pays tens of seconds of image load,
@@ -60,10 +65,12 @@ def _split(uri: str) -> tuple[str, str]:
 
 
 class LambdaSageMakerInference(InferencePort):
-    def __init__(self, bucket: str, chest_function: str, brain_endpoint: str,
+    def __init__(self, bucket: str, chest_function: str, brain_endpoint: str | None,
                  region: str = REGION, lambda_client=None, sagemaker_runtime=None, s3=None,
-                 poll_seconds: float = 5.0, brain_timeout: float = 1800.0):
+                 poll_seconds: float = 5.0, brain_timeout: float = 1800.0,
+                 ct_endpoint: str | None = None):
         self.bucket, self.chest_function, self.brain_endpoint = bucket, chest_function, brain_endpoint
+        self.ct_endpoint = ct_endpoint
         self.lam = lambda_client or boto3.client("lambda", region_name=region)
         self.smr = sagemaker_runtime or boto3.client("sagemaker-runtime", region_name=region)
         self.s3 = s3 or boto3.client("s3", region_name=region)
@@ -73,6 +80,8 @@ class LambdaSageMakerInference(InferencePort):
         runtime = model_cfg["runtime"]
         if runtime == "lambda":
             return self._chest(ref, model_cfg, **inputs)
+        if runtime == "sagemaker-async" and model_cfg.get("output_type") == "ct-hemorrhage":
+            return self._ct(ref, model_cfg, **inputs)
         if runtime == "sagemaker-async":
             return self._brain(ref, model_cfg, **inputs)
         raise ValueError(f"no AWS handler for runtime {runtime!r}")
@@ -100,6 +109,9 @@ class LambdaSageMakerInference(InferencePort):
 
     # -- brain: SageMaker asynchronous endpoint -------------------------------
     def _brain(self, ref, model_cfg, *, nifti: dict[str, Path], **_) -> dict[str, Any]:
+        if not self.brain_endpoint:
+            raise RuntimeError("AURALANE_BRAIN_ENDPOINT is not set: the stack was deployed "
+                               "with -c brain=false, or its outputs were not copied")
         prefix = f"inference/{ref.study_uid}/{uuid.uuid4().hex}"
         request = {"inputs": {}, "output_prefix": f"s3://{self.bucket}/{prefix}/out/"}
         for channel, path in nifti.items():
@@ -119,6 +131,26 @@ class LambdaSageMakerInference(InferencePort):
         metrics["_prediction_path"] = str(local)
         return metrics
 
+    # -- head CT: SageMaker asynchronous endpoint -----------------------------
+    def _ct(self, ref, model_cfg, *, slices: list, **_) -> dict[str, Any]:
+        if not self.ct_endpoint:
+            raise RuntimeError("AURALANE_CT_ENDPOINT is not set: the stack was deployed "
+                               "with -c ct=false, or its outputs were not copied")
+        prefix = f"inference/{ref.study_uid}/{uuid.uuid4().hex}"
+        buf = io.BytesIO()
+        np.savez_compressed(buf, pixels=np.stack([px for px, _, _ in slices]),
+                            slopes=np.array([s for _, s, _ in slices], dtype=np.float64),
+                            intercepts=np.array([i for _, _, i in slices], dtype=np.float64))
+        self.s3.put_object(Bucket=self.bucket, Key=f"{prefix}/slices.npz", Body=buf.getvalue())
+        self.s3.put_object(Bucket=self.bucket, Key=f"{prefix}/request.json",
+                           Body=json.dumps({"slices": f"s3://{self.bucket}/{prefix}/slices.npz"}).encode())
+        r = self.smr.invoke_endpoint_async(
+            EndpointName=self.ct_endpoint, ContentType="application/json",
+            InputLocation=f"s3://{self.bucket}/{prefix}/request.json",
+            InvocationTimeoutSeconds=900)
+        return json.loads(self._await(r["OutputLocation"], r.get("FailureLocation"),
+                                      self.ct_endpoint))
+
     def _exists(self, uri: str) -> bool:
         b, k = _split(uri)
         try:
@@ -133,16 +165,17 @@ class LambdaSageMakerInference(InferencePort):
         b, k = _split(uri)
         return self.s3.get_object(Bucket=b, Key=k)["Body"].read()
 
-    def _await(self, output: str, failure: str | None) -> bytes:
+    def _await(self, output: str, failure: str | None, endpoint: str | None = None) -> bytes:
+        endpoint = endpoint or self.brain_endpoint
         deadline = time.monotonic() + self.brain_timeout
         while True:
             if self._exists(output):
                 return self._read(output)
             if failure and self._exists(failure):
-                raise RuntimeError(f"brain endpoint {self.brain_endpoint} failed: "
+                raise RuntimeError(f"endpoint {endpoint} failed: "
                                    f"{self._read(failure)[:500]!r}")
             if time.monotonic() > deadline:
-                raise TimeoutError(f"no answer from {self.brain_endpoint} after "
+                raise TimeoutError(f"no answer from {endpoint} after "
                                    f"{self.brain_timeout:.0f} s (an endpoint scaled to zero "
                                    f"first has to start an instance)")
             time.sleep(self.poll_seconds)

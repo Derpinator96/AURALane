@@ -24,6 +24,8 @@ torchvision
 torchxrayvision>=1.5
 grad-cam
 monai>=1.4          # brain model: _external/brainmri imports it, our code does not
+transformers>=4.46  # head CT model: _external/triagelane-ct's ViT (weights from Hugging Face)
+pyyaml              # triagelane-ct reads its config with it
 
 # service
 fastapi>=0.110

@@ -42,3 +42,6 @@ data/blob/
 data/identity/
 # DevAuth signing key for local development tokens.
 data/dev/
+
+# CQ500 head CT studies (CC BY-NC-SA 4.0), downloaded by hand; see data/ct/SOURCE.md
+data/ct/raw/

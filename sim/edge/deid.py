@@ -418,6 +418,11 @@ def deidentify(ds, identity, mask_burned_in=True, allow_unmasked: bool = False):
             arr = ds.pixel_array
             cleaned, masked = mask_pixels(arr)
             if masked:
+                # A compressed source (CQ500 head CT is JPEG lossless) gets the
+                # masked pixels back uncompressed, so the header must say so.
+                # Keep the instance UID: identity.py maps it to its pseudonym.
+                if ds.file_meta.TransferSyntaxUID.is_compressed:
+                    ds.decompress(generate_instance_uid=False)
                 ds.PixelData = cleaned.astype(arr.dtype).tobytes()
         except OCRUnavailable as e:
             if not allow_unmasked:

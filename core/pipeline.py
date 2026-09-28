@@ -7,6 +7,8 @@
                       channels identified and rebuilt as NIfTI)
     5 infer         inference.score, the model alone
     6 adapt         adapter.adapt -> Findings
+    6b regional_prior  chest only: a bounded nudge from the site's state
+                    (core/regional.py), after the z-score, before the lane
     7 triage        triage.rank -> lane, or abstention
     8 persist       worklist row
     9 blob_delete   the transient copy, always, even after a failure
@@ -42,6 +44,8 @@ from typing import Any, Iterable
 import pydicom
 
 from core.ports import BlobPort, DatastorePort, InferencePort, TablePort
+from core.regional import RegionalSetting
+from core.regional import apply as apply_regional
 from core.registry import Registry, rank
 from core.types import AuditEvent, Findings, StudyMeta, Verdict
 from core.volumes import series_to_nifti, sort_slices
@@ -170,6 +174,16 @@ def _model_inputs(entry: dict, adapter, cleaned: list, meta: StudyMeta,
             series_to_nifti(by_series[series.series_uid]).to_filename(path)
             paths[channel] = path
         return {"nifti": paths}
+    if fmt == "dicom-series":
+        # Head CT: one series of slices, each with its own rescale. The series
+        # with the most slices, as triagelane-ct's discover_study_dicom_paths
+        # chooses; ordered by position, not by InstanceNumber.
+        by_series = defaultdict(list)
+        for ds in cleaned:
+            by_series[str(ds.SeriesInstanceUID)].append(ds)
+        chosen = sort_slices(max(by_series.values(), key=len))
+        return {"slices": [(ds.pixel_array, float(ds.get("RescaleSlope", 1) or 1),
+                            float(ds.get("RescaleIntercept", 0) or 0)) for ds in chosen]}
     raise ValueError(f"no input builder for format {fmt!r}")
 
 
@@ -205,7 +219,8 @@ def _masked_input_slices(entry: dict, adapter, cleaned: list, reports: list,
 
 def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
            table: TablePort, inference: InferencePort, registry: Registry,
-           identity, ocr_workers: int | None = None) -> Verdict:
+           identity, ocr_workers: int | None = None,
+           regional: RegionalSetting | None = None) -> Verdict:
     run = _Run(table)
     paths = sorted(Path(p) for p in paths)
     keys: list[str] = []
@@ -273,6 +288,10 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
                     d.update(mask_check_passed=mc["passed"], mask_check_failed=mc["failed"],
                              mask_check=mc["criteria"])
 
+            if entry.get("regional_prior") and regional is not None:
+                with run.step("regional_prior") as d:
+                    findings = _regional(findings, regional, d)
+
             with run.step("triage") as d:
                 if findings.findings:
                     t = rank(findings, entry)
@@ -293,6 +312,23 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
     finally:
         _delete_transient(run, blob, keys)
     return verdict
+
+
+def _regional(findings: Findings, regional: RegionalSetting, d: dict) -> Findings:
+    """Apply the site's regional prior to chest signals, or record why not.
+    The evidence always says which, so the rationale panel never guesses."""
+    if not regional.enabled or regional.state is None:
+        why = "off (AURALANE_REGIONAL_PRIOR=off)" if not regional.enabled else "no site state set"
+        d["applied"] = why
+        return Findings(findings=findings.findings, meta=findings.meta,
+                        evidence={**findings.evidence,
+                                  "regional": {"state": regional.state, "applied": False,
+                                               "reason": why}})
+    adjusted, ev = apply_regional(findings.findings, regional.state)
+    d.update(applied=True, state=regional.state,
+             factors={k: v["factor"] for k, v in ev["factors"].items()})
+    return Findings(findings=adjusted, meta=findings.meta,
+                    evidence={**findings.evidence, "regional": {**ev, "applied": True}})
 
 
 def _row(run: _Run, v: Verdict, meta: StudyMeta | None) -> dict[str, Any]:

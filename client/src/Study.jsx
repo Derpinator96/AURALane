@@ -72,6 +72,30 @@ function SegmentationRationale({ detail }) {
   );
 }
 
+// Chest only: the site's regional prior (core/regional.py), shown for the
+// finding that set the lane. The factor is exactly what multiplied its signal.
+export function RegionalContext({ regional, driver, driverLabel }) {
+  if (!regional) return null;
+  let text;
+  if (!regional.applied) {
+    text = `Regional context: ${regional.reason === "no site state set" ? "no site state set" : "off"}`;
+  } else {
+    const f = regional.factors?.[driver];
+    text = f
+      ? `Regional context: ${regional.state}, x${f.factor.toFixed(2)}`
+      : `Regional context: ${regional.state}, x1.00 (no regional prior for ${driverLabel || "this finding"})`;
+  }
+  return (
+    <p className="note" data-testid="regional-context">
+      {text}
+      {regional.applied && (
+        <span className="regional-basis"> GBD 2023 prevalence in the state against India's, square-rooted
+          and held between x0.80 and x1.25, applied to the signal after the z-score.</span>
+      )}
+    </p>
+  );
+}
+
 export function StudyPanel({ detail, onVerdict, busy, rationaleOn = false }) {
   const s = detail.study;
   const brain = s.modality === "MR";
@@ -93,6 +117,8 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = false }) {
                  : <><span className="mono">{fmt(s.confidence)}</span> <span className="note">temperature-scaled model output for the driving finding</span></>}
         </dd>
       </dl>
+      <RegionalContext regional={detail.evidence?.regional} driver={s.driver}
+                       driverLabel={s.driver_label} />
       {rationaleOn && detail.evidence_urls?.overlay_png && <SegmentationRationale detail={detail} />}
       {s.lane === "FAILED" && <p className="error">Processing failed: {s.error}</p>}
       {s.abstain_reason && (
