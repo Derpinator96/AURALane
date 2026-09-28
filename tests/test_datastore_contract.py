@@ -43,14 +43,16 @@ def _orthanc():
     return ds
 
 
-def _healthimaging():
+def _healthimaging(split_series: bool = False):
     """HealthImagingDatastore against tests/fakes/healthimaging.py: real botocore
-    clients, fake endpoints, dummy credentials. No AWS call is made."""
+    clients, fake endpoints, dummy credentials. No AWS call is made.
+    split_series: one image set per series, as the live service did for a
+    four-series brain MR."""
     import boto3
     from botocore.config import Config
     from core.providers.aws import HealthImagingDatastore
     from tests.fakes.healthimaging import FakeHealthImaging
-    fake = FakeHealthImaging()
+    fake = FakeHealthImaging(split_series=split_series)
     session = boto3.Session(aws_access_key_id="testing", aws_secret_access_key="testing",
                             region_name="us-east-1")
     return HealthImagingDatastore(
@@ -63,7 +65,8 @@ def _healthimaging():
                                         request_checksum_calculation="when_required")))
 
 
-PROVIDERS = {"orthanc": _orthanc, "healthimaging": _healthimaging}
+PROVIDERS = {"orthanc": _orthanc, "healthimaging": _healthimaging,
+             "healthimaging-per-series": lambda: _healthimaging(split_series=True)}
 pytestmark = pytest.mark.local_data
 
 

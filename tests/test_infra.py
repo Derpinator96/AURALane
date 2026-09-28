@@ -46,8 +46,10 @@ def _of(t, kind):
 def test_synthesises_without_credentials_and_never_creates_a_datastore(template):
     types = Counter(r["Type"] for r in template["Resources"].values())
     assert not any(k.startswith("AWS::HealthImaging") for k in types)
-    assert types["AWS::S3::Bucket"] == 1 and types["AWS::DynamoDB::Table"] == 2
-    assert types["AWS::Lambda::Function"] == 1 and types["AWS::SageMaker::Endpoint"] == 2
+    assert types["AWS::S3::Bucket"] == 1 and types["AWS::DynamoDB::Table"] == 3
+    # 2 functions: the chest model, and CDK's handler that turns on the bucket's
+    # EventBridge notifications.
+    assert types["AWS::Lambda::Function"] == 2 and types["AWS::SageMaker::Endpoint"] == 2
     policy = json.dumps(_of(template, "AWS::IAM::ManagedPolicy"))
     assert f"datastore/{KEPT_DATASTORE}" in policy and "us-east-1" in policy
 
@@ -64,7 +66,7 @@ def test_tables_match_what_the_provider_expects(template):
 def test_working_prefixes_expire_and_evidence_is_kept(template):
     (bucket,) = _of(template, "AWS::S3::Bucket")
     rules = {r["Prefix"]: r["ExpirationInDays"] for r in bucket["LifecycleConfiguration"]["Rules"]}
-    assert rules == {"transient/": 1, "import/": 1, "inference/": 1}
+    assert rules == {"transient/": 1, "import/": 1, "inference/": 1, "upload/": 1, "intake/": 7}
     assert bucket["PublicAccessBlockConfiguration"]["BlockPublicPolicy"] is True
 
 
@@ -92,7 +94,7 @@ def test_brain_and_ct_endpoints_are_async_and_scale_to_zero(template):
 def test_chest_lambda_has_no_provisioned_concurrency_by_default(template):
     (alias,) = _of(template, "AWS::Lambda::Alias")         # invoked through "live" always
     assert alias["Name"] == "live" and "ProvisionedConcurrencyConfig" not in alias
-    (fn,) = _of(template, "AWS::Lambda::Function")
+    (fn,) = [f for f in _of(template, "AWS::Lambda::Function") if f.get("PackageType") == "Image"]
     assert fn["MemorySize"] == 3008 and fn["PackageType"] == "Image"
 
 
@@ -129,3 +131,16 @@ def test_teardown_refuses_a_stack_that_holds_the_datastore():
 def test_teardown_never_creates_a_healthimaging_client():
     source = (INFRA / "teardown.py").read_text()
     assert '"medical-imaging"' not in source and "'medical-imaging'" not in source
+
+
+def test_an_upload_manifest_starts_a_fargate_ingest_task_and_the_api_cannot_read_uploads(template):
+    (rule,) = _of(template, "AWS::Events::Rule")
+    assert rule["EventPattern"]["detail"]["object"]["key"] == [{"wildcard": "upload/*/_ready.json"}]
+    assert "EcsParameters" in rule["Targets"][0]
+    (task,) = _of(template, "AWS::ECS::TaskDefinition")
+    assert task["RequiresCompatibilities"] == ["FARGATE"]
+    assert not _of(template, "AWS::EC2::NatGateway")              # no NAT charge
+    denies = [s for p in _of(template, "AWS::IAM::ManagedPolicy")
+              for s in p["PolicyDocument"]["Statement"] if s.get("Effect") == "Deny"]
+    assert len(denies) == 1 and denies[0]["Action"] == "s3:GetObject"
+    assert "upload/*" in json.dumps(denies[0]["Resource"])

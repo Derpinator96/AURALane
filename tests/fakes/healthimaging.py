@@ -46,8 +46,11 @@ DATASTORE = "fakedatastore0000000000000000000"
 
 
 class FakeHealthImaging:
-    def __init__(self, datastore_id: str = DATASTORE):
+    def __init__(self, datastore_id: str = DATASTORE, split_series: bool = False):
+        """split_series: one primary image set per series, as the live service
+        made for a four-series brain MR on 2026-09-28."""
         self.datastore_id = datastore_id
+        self.split_series = split_series
         self.objects: dict[tuple[str, str], bytes] = {}      # (bucket, key) -> bytes
         self.jobs: dict[str, dict] = {}
         self.image_sets: dict[str, dict] = {}                # id -> {"study_uid", "instances"}
@@ -68,11 +71,13 @@ class FakeHealthImaging:
                     for (b, k), data in sorted(self.objects.items())
                     if b == bucket and k.startswith(prefix)]
         for ds in datasets:
-            uid = str(ds.StudyInstanceUID)
-            set_id = next((i for i, s in self.image_sets.items() if s["study_uid"] == uid), None)
+            uid, series = str(ds.StudyInstanceUID), str(ds.SeriesInstanceUID)
+            set_id = next((i for i, s in self.image_sets.items() if s["study_uid"] == uid
+                           and (not self.split_series or s["series_uid"] == series)), None)
             if set_id is None:
                 set_id = uuid.uuid4().hex
-                self.image_sets[set_id] = {"study_uid": uid, "instances": {}, "created": time.time()}
+                self.image_sets[set_id] = {"study_uid": uid, "series_uid": series,
+                                           "instances": {}, "created": time.time()}
             frame_id = uuid.uuid4().hex
             self.frames[frame_id] = bytes(openjpeg.encode(ds.pixel_array, bits_stored=ds.BitsStored,
                                                           use_mct=False))

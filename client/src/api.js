@@ -58,4 +58,6 @@ export const api = {
   audit: (token) => call("/api/admin/audit", { token }),
   laneMix: (token) => call("/api/admin/lane-mix", { token }),
   models: (token) => call("/api/admin/models", { token }),
+  intake: (token) => call("/api/admin/intake", { token }),
+  startIntake: (token, count) => call("/api/admin/intake", { token, method: "POST", body: { count } }),
 };

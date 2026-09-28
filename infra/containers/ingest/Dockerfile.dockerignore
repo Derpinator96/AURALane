@@ -1,0 +1,13 @@
+# Build context for `docker build -f infra/containers/ingest/Dockerfile .`: the same
+# exclude list infra/auralane_stack.py gives cdk deploy. Keep the two in step.
+*
+!core
+!adapters
+!models
+!sim/edge
+!imaging.py
+!triage.py
+!reference.json
+!infra/containers/ingest
+**/__pycache__
+sim/edge/test_*

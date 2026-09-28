@@ -39,7 +39,7 @@ from urllib.parse import quote, urlencode
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 import triage
 from core.registry import Registry
@@ -62,6 +62,10 @@ CLOCK["FAILED"] = "processing did not complete"
 class Login(BaseModel):
     username: str
     password: str
+
+
+class IntakeIn(BaseModel):
+    count: int = Field(30, ge=1, le=60)
 
 
 class VerdictIn(BaseModel):
@@ -360,6 +364,33 @@ def create_app(p: dict, registry: Registry | None = None,
                          + (". Fixture rows were picked three per lane by make_fixtures.py, "
                             "so this is not a population lane mix"
                             if p.get("runtime") == "fixture" else "")}
+
+    # -- simulated intake: real studies from this host's corpus ----------------
+    @app.get("/api/admin/intake")
+    def intake_status(who: Principal = Depends(admin)):
+        sim = p.get("intake")
+        if sim is None:
+            return {"available": False, "reason": "not configured on this API",
+                    "running": False, "catalogue": {}, "runtime": p.get("runtime")}
+        return {**sim.status(), "runtime": p.get("runtime")}
+
+    @app.post("/api/admin/intake", status_code=202)
+    def intake_start(body: IntakeIn, who: Principal = Depends(admin)):
+        """Starts a background run; poll GET /api/admin/intake. Audited."""
+        sim = p.get("intake")
+        if sim is None:
+            raise HTTPException(409, "not configured on this API")
+        start = time.perf_counter()
+        try:
+            state = sim.start(body.count, who.email)
+        except RuntimeError as e:
+            raise HTTPException(409, str(e))
+        p["table"].append_audit(AuditEvent(
+            actor=who.email, action="intake_simulation", study=NO_STUDY, at=_now(), outcome="ok",
+            duration_ms=round((time.perf_counter() - start) * 1000, 3),
+            detail={"requested": body.count, "studies": state.get("total"),
+                    "runtime": p.get("runtime")}))
+        return {**state, "runtime": p.get("runtime")}
 
     @app.get("/api/admin/models")
     def models(who: Principal = Depends(admin)):

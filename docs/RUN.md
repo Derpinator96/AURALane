@@ -102,6 +102,32 @@ floor of 0.99; 1.0 against the raw T1c). The brain corpus has no burned-in
 text, so all 8 are false positives. The check is reporting a real change to the
 model's input. No threshold has been changed. BraTS2021_00495 passes (0.9999).
 
+## Simulated intake: 30 studies from the admin screen
+
+Admin, "Simulated intake", "Ingest 30 studies". It ingests real studies from
+this machine's corpus through the full pipeline in a shuffled arrival order:
+every brain MR and head CT study on disk (2 and 2 today), chest X-rays to make
+up 30. The lanes are pipeline results; only the order is simulated. Each
+finished study appears on the worklist; the tab shows per-study progress and
+the run is audited (`intake_simulation`).
+
+It runs where the studies are, in the process serving the API, so start the
+API on this machine:
+
+- local stack: `python -m core.run serve` as in step 2 (one study at a time,
+  the models share the process).
+- AWS, from the deployed site or `python -m core.run serve --stack Auralane`:
+  cloud-native. The button copies 30 corpus studies into S3 `upload/`
+  server-side, and each one starts its own Fargate ingest task
+  (docs/DEPLOY.md step 7), so the studies never pass through the API host.
+  Needs the corpus in S3 once (`python -m core.run upload-corpus --stack
+  Auralane`). Sign in as a Cognito `admin` user. Cost: a Fargate task, a
+  HealthImaging import and a model call per study, plus one wake of each
+  SageMaker endpoint (docs/AWS-COSTS.md).
+
+On the Render API and the fixture runtime the tab says why it is unavailable:
+no corpus on that host, or no pipeline.
+
 ## Reset after any change to de-identification
 
     docker compose -f docker-compose.local.yml down

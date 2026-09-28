@@ -52,10 +52,10 @@ services:
         sync: false
       - key: AURALANE_CT_ENDPOINT
         sync: false
-      # proxy: the API streams decoded frames. presigned: the browser fetches
-      # from HealthImaging directly, once scripts/smoke_aws.py shows it can.
+      # presigned: the browser fetches frames from HealthImaging directly
+      # (CORS checked live 2026-09-28). proxy: the API streams them, the fallback.
       - key: AURALANE_FRAME_MODE
-        value: proxy
+        value: presigned
       # This service's own URL; frame and evidence links are built from it.
       # If Render assigns a different URL on recreation, change it here.
       - key: AURALANE_PUBLIC_URL

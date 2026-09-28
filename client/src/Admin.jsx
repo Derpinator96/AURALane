@@ -194,9 +194,96 @@ export function Registry({ load }) {
   );
 }
 
-const TABS = [["audit", "Audit log"], ["lanes", "Lane mix"], ["thresholds", "Thresholds"], ["models", "Model registry"]];
+// Simulated intake: real studies from the API host's own corpus, ingested
+// through the full pipeline in a shuffled arrival order. Every lane shown is a
+// pipeline result; the only simulated thing is the order.
+const INTAKE_COUNT = 30;
 
-export default function Admin({ loadAudit, loadLaneMix, loadModels }) {
+export function Intake({ load, start }) {
+  const [state, setState] = useState(null);
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    let timer;
+    const poll = () => load().then((d) => {
+      if (!live) return;
+      setState(d);
+      setError(null);
+      if (d.running) timer = setTimeout(poll, 3000);
+    }, (e) => live && setError(e));
+    poll();
+    return () => { live = false; clearTimeout(timer); };
+  }, [load, busy]);
+
+  async function onStart() {
+    setBusy(true);
+    try {
+      setState(await start(INTAKE_COUNT));
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (error && !state) return <p className="error" role="alert">Could not load the intake: {String(error.message)}</p>;
+  if (!state) return <p>Loading the intake.</p>;
+  const c = state.catalogue || {};
+  const items = state.items || [];
+  return (
+    <section data-testid="intake">
+      <p className="note">
+        {state.runtime === "aws"
+          ? "Copies real studies from the corpus in S3 into the upload area; each one starts its own ingest task in AWS (de-identification, HealthImaging, the model, the worklist)."
+          : "Ingests real studies from this machine's corpus through the full pipeline, in this process."}
+        {" "}Every brain MR and head CT study available, chest X-rays to make up {INTAKE_COUNT}, in a shuffled
+        arrival order. Lanes come from the models; only the arrival order is simulated. New rows appear on
+        the radiologists' worklist as each study finishes.
+      </p>
+      <p className="note">
+        Corpus on this host: {c.CR ?? 0} chest, {c.MR ?? 0} brain MR, {c.CT ?? 0} head CT.
+        Runtime: <span className="mono">{state.runtime}</span>.
+        {state.runtime === "aws" && " Each study is a HealthImaging import and a model call; costs in docs/AWS-COSTS.md."}
+      </p>
+      {!state.available && <p className="error" data-testid="intake-unavailable">Not available on this API: {state.reason}.</p>}
+      <button type="button" onClick={onStart} disabled={!state.available || state.running || busy}
+              data-testid="intake-start">
+        {state.running ? "Intake running" : `Ingest ${INTAKE_COUNT} studies`}
+      </button>
+      {error && <p className="error" role="alert">{String(error.message)}</p>}
+      {state.total != null && (
+        <>
+          <p className="note" data-testid="intake-progress">
+            {state.running ? "Running" : "Finished"}: {state.done} scored, {state.failed} failed, of {state.total}
+            {state.by ? `; started by ${state.by} at ${timeUTC(state.started_at)} UTC` : ""}.
+          </p>
+          <table className="admin">
+            <thead><tr><th>#</th><th>Modality</th><th>Source</th><th>Status</th><th>Lane</th><th className="num">s</th></tr></thead>
+            <tbody>
+              {items.map((it, i) => (
+                <tr key={i} className={it.lane ? `lane-${it.lane}` : ""}>
+                  <td className="mono num">{i + 1}</td>
+                  <td>{it.modality}</td>
+                  <td className="mono detail">{it.source}</td>
+                  <td>{it.status}{it.error ? `: ${it.error}` : ""}</td>
+                  <td className="lanetag">{it.lane || "--"}</td>
+                  <td className="mono num">{it.seconds ?? "--"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+    </section>
+  );
+}
+
+const TABS = [["audit", "Audit log"], ["lanes", "Lane mix"], ["thresholds", "Thresholds"], ["models", "Model registry"],
+              ["intake", "Simulated intake"]];
+
+export default function Admin({ loadAudit, loadLaneMix, loadModels, loadIntake, startIntake }) {
   return (
     <main className="adminpage">
       <nav className="tabs" aria-label="Admin">
@@ -209,6 +296,7 @@ export default function Admin({ loadAudit, loadLaneMix, loadModels }) {
         <Route path="lanes" element={<LaneMix load={loadLaneMix} />} />
         <Route path="thresholds" element={<Thresholds load={loadModels} />} />
         <Route path="models" element={<Registry load={loadModels} />} />
+        <Route path="intake" element={<Intake load={loadIntake} start={startIntake} />} />
         <Route path="*" element={<Navigate to="audit" replace />} />
       </Routes>
     </main>

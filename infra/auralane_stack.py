@@ -38,7 +38,9 @@ from pathlib import Path
 
 from aws_cdk import (CfnOutput, Duration, IgnoreMode, RemovalPolicy, Stack, aws_applicationautoscaling as aas,
                      aws_cloudwatch as cw, aws_cognito as cognito, aws_dynamodb as ddb,
-                     aws_ecr_assets as ecr_assets, aws_iam as iam, aws_lambda as lambda_,
+                     aws_ec2 as ec2, aws_ecr_assets as ecr_assets, aws_ecs as ecs,
+                     aws_events as events, aws_events_targets as targets,
+                     aws_iam as iam, aws_lambda as lambda_,
                      aws_logs as logs,
                      aws_s3 as s3, aws_sagemaker as sm)
 from constructs import Construct
@@ -50,7 +52,9 @@ TABLE_PREFIX = "auralane"
 # CPU: see infra/containers/brain/Dockerfile for why the brain image is CPU.
 BRAIN_INSTANCE = "ml.m5.2xlarge"
 CT_INSTANCE = "ml.m5.xlarge"
-WORKING_PREFIXES = ("transient/", "import/", "inference/")
+WORKING_PREFIXES = ("transient/", "import/", "inference/", "upload/")
+INGEST_CONTEXT = ["*", "!core", "!adapters", "!models", "!sim/edge", "!imaging.py", "!triage.py",
+                  "!reference.json", "!infra/containers/ingest", "**/__pycache__", "sim/edge/test_*"]
 
 # Build contexts are the repository root; these keep them to what the images
 # copy (Docker ignore syntax: exclude everything, then re-include).
@@ -78,8 +82,12 @@ class AuralaneStack(Stack):
             self, "Bucket", encryption=s3.BucketEncryption.S3_MANAGED,
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL, enforce_ssl=True,
             removal_policy=RemovalPolicy.DESTROY,
+            # upload/ holds raw studies until the ingest task deletes them; the
+            # one-day expiry is the backstop. intake/ holds per-arrival results.
             lifecycle_rules=[s3.LifecycleRule(prefix=p, expiration=Duration.days(1))
-                             for p in WORKING_PREFIXES])
+                             for p in WORKING_PREFIXES]
+                            + [s3.LifecycleRule(prefix="intake/", expiration=Duration.days(7))],
+            event_bridge_enabled=True)
 
         # -- DynamoDB: the schema core/providers/aws/_dynamodb.py expects -------
         worklist = ddb.Table(
@@ -90,6 +98,13 @@ class AuralaneStack(Stack):
             self, "Audit", table_name=f"{TABLE_PREFIX}-audit",
             partition_key=ddb.Attribute(name="study", type=ddb.AttributeType.STRING),
             sort_key=ddb.Attribute(name="event_id", type=ddb.AttributeType.STRING),
+            billing_mode=ddb.BillingMode.PAY_PER_REQUEST, removal_policy=RemovalPolicy.DESTROY)
+
+        # The identity map for de-identification in AWS (core/providers/aws/
+        # identity.py). Only the ingest task's role can read it; the API cannot.
+        identity = ddb.Table(
+            self, "Identity", table_name=f"{TABLE_PREFIX}-identity",
+            partition_key=ddb.Attribute(name="k", type=ddb.AttributeType.STRING),
             billing_mode=ddb.BillingMode.PAY_PER_REQUEST, removal_policy=RemovalPolicy.DESTROY)
 
         # -- Cognito -----------------------------------------------------------
@@ -153,7 +168,7 @@ class AuralaneStack(Stack):
                 self.node.try_get_context("ct_instance") or CT_INSTANCE)
 
         # -- What core/ needs, as one policy -----------------------------------
-        app_policy = iam.ManagedPolicy(self, "AppPolicy", statements=[
+        common = [
             iam.PolicyStatement(actions=["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
                                 resources=[bucket.arn_for_objects("*")]),
             iam.PolicyStatement(actions=["s3:ListBucket"], resources=[bucket.bucket_arn]),
@@ -174,7 +189,59 @@ class AuralaneStack(Stack):
         ] + ([iam.PolicyStatement(
             actions=["sagemaker:InvokeEndpointAsync"],
             resources=[f"arn:aws:sagemaker:{REGION}:{self.account}:endpoint/*"])]
-             if endpoints else []))
+             if endpoints else [])
+        # The API may start arrivals (write upload/) but never read a raw upload.
+        app_policy = iam.ManagedPolicy(self, "AppPolicy", statements=common + [
+            iam.PolicyStatement(effect=iam.Effect.DENY, actions=["s3:GetObject"],
+                                resources=[bucket.arn_for_objects("upload/*")])])
+
+        # -- Cloud ingest: an upload manifest starts one Fargate task ------------
+        # upload/<batch>/<item>/_ready.json -> EventBridge -> ECS RunTask. The
+        # task de-identifies, imports, calls the models and writes the worklist
+        # (core/cloud_ingest.py). Public subnets and no NAT gateway: nothing
+        # listens, and there is no NAT charge.
+        vpc = ec2.Vpc(self, "IngestVpc", max_azs=2, nat_gateways=0, subnet_configuration=[
+            ec2.SubnetConfiguration(name="public", subnet_type=ec2.SubnetType.PUBLIC)])
+        cluster = ecs.Cluster(self, "IngestCluster", vpc=vpc)
+        task = ecs.FargateTaskDefinition(self, "IngestTask", cpu=2048, memory_limit_mib=4096)
+        ingest_policy = iam.ManagedPolicy(self, "IngestPolicy", statements=common + [
+            iam.PolicyStatement(actions=["dynamodb:GetItem", "dynamodb:PutItem",
+                                         "dynamodb:UpdateItem", "dynamodb:DescribeTable"],
+                                resources=[identity.table_arn])])
+        task.task_role.add_managed_policy(ingest_policy)
+        env = {"AWS_REGION": REGION, "AURALANE_RUNTIME": "aws",
+               "AURALANE_BUCKET": bucket.bucket_name, "AURALANE_TABLE_PREFIX": TABLE_PREFIX,
+               "AURALANE_DATASTORE_ID": EXISTING_DATASTORE_ID,
+               "AURALANE_IMPORT_ROLE_ARN": import_role.role_arn,
+               "AURALANE_COGNITO_POOL_ID": pool.user_pool_id,
+               "AURALANE_COGNITO_CLIENT_ID": client.user_pool_client_id,
+               "AURALANE_CHEST_FUNCTION": f"{chest.function_name}:live",
+               "AURALANE_IDENTITY_TABLE": identity.table_name,
+               "AURALANE_SITE_STATE": str(self.node.try_get_context("site_state") or ""),
+               **endpoints}
+        task.add_container(
+            "ingest",
+            image=ecs.ContainerImage.from_asset(
+                str(REPO), file="infra/containers/ingest/Dockerfile", exclude=INGEST_CONTEXT,
+                ignore_mode=IgnoreMode.DOCKER, platform=ecr_assets.Platform.LINUX_AMD64),
+            environment=env,
+            logging=ecs.LogDrivers.aws_logs(stream_prefix="ingest", log_group=logs.LogGroup(
+                self, "IngestLogs", retention=logs.RetentionDays.ONE_WEEK,
+                removal_policy=RemovalPolicy.DESTROY)))
+        events.Rule(
+            self, "UploadReady",
+            event_pattern=events.EventPattern(
+                source=["aws.s3"], detail_type=["Object Created"],
+                detail={"bucket": {"name": [bucket.bucket_name]},
+                        "object": {"key": events.Match.wildcard("upload/*/_ready.json")}}),
+            targets=[targets.EcsTask(
+                cluster=cluster, task_definition=task, assign_public_ip=True,
+                subnet_selection=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
+                container_overrides=[targets.ContainerOverride(
+                    container_name="ingest",
+                    environment=[targets.TaskEnvironmentVariable(
+                        name="AURALANE_MANIFEST_KEY",
+                        value=events.EventField.from_path("$.detail.object.key"))])])])
 
         # -- The environment core/run.py reads ----------------------------------
         outputs = {"AURALANE_BUCKET": bucket.bucket_name,
@@ -186,6 +253,8 @@ class AuralaneStack(Stack):
                    "AURALANE_CHEST_FUNCTION": f"{chest.function_name}:live",
                    "AURALANE_APP_POLICY_ARN": app_policy.managed_policy_arn}
         outputs.update(endpoints)
+        outputs["AURALANE_IDENTITY_TABLE"] = identity.table_name
+        outputs["AURALANE_INGEST_CLUSTER"] = cluster.cluster_name
         for name, value in outputs.items():
             CfnOutput(self, name.replace("_", ""), key=name.replace("_", ""), value=value,
                       description=name)

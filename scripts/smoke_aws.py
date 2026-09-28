@@ -8,9 +8,10 @@ needs exporting; your AWS credentials are used for ingest. --api local runs
 the same API code in this process against AWS, before Render is switched over.
 It checks the API's runtime and signs in first, so a wrong password costs nothing.
 
-1. Ingests one chest, one brain MR and one head CT study through the real
-   pipeline with the aws providers: de-identify here, import to HealthImaging,
-   score on Lambda / SageMaker, write DynamoDB.
+1. Uploads one chest, one brain MR and one head CT study to S3, the edge's only
+   step, and waits while ingest tasks in AWS de-identify, import to
+   HealthImaging, score on Lambda / SageMaker and write DynamoDB. --edge runs
+   the same pipeline in this process instead.
 2. Signs in to the deployed API as a radiologist (Cognito) and reads the
    worklist, printing every study with its lane and marking the three ingested.
 3. Fetches one frame through the URL the API hands the viewer, and checks
@@ -54,15 +55,8 @@ _LOCAL = None     # a TestClient on the real API app, for --api local
 
 
 def _load_stack(stack: str) -> None:
-    """Fill every AURALANE_* variable not already set from the stack's outputs
-    (each output's description is the variable name), so the only thing to type
-    is the command."""
-    import boto3
-    os.environ.setdefault("AURALANE_RUNTIME", "aws")
-    os.environ.setdefault("AWS_REGION", "us-east-1")
-    cfn = boto3.client("cloudformation", region_name=os.environ["AWS_REGION"])
-    for o in cfn.describe_stacks(StackName=stack)["Stacks"][0].get("Outputs", []):
-        os.environ.setdefault(o["Description"], o["OutputValue"])
+    import core.run as run
+    run.load_stack(stack)
 
 
 def _http(url: str, *, method="GET", body=None, token=None, origin=None):
@@ -108,6 +102,40 @@ def ingest_three(studies: dict[str, Path], state: str | None) -> dict[str, dict]
     return out
 
 
+def upload_three(studies: dict[str, Path], state: str | None,
+                 timeout: float = 1800) -> dict[str, dict]:
+    """The cloud path: upload each study (the edge's only step), then wait for
+    the ingest tasks in AWS to write their results."""
+    import boto3
+    from core.upload import RESULTS, new_batch, upload_study
+    s3 = boto3.client("s3", region_name=os.environ["AWS_REGION"])
+    bucket, batch = os.environ["AURALANE_BUCKET"], new_batch()
+    pending = {}
+    for i, (kind, path) in enumerate(studies.items()):
+        files = sorted(path.rglob("*.dcm"))
+        upload_study(s3, bucket, files, batch, f"{i:03d}", site_state=state, modality=kind)
+        pending[kind] = f"{RESULTS}{batch}/{i:03d}.json"
+        print(f"[{kind}] uploaded {len(files)} files; the ingest task runs in AWS", flush=True)
+    out, t0 = {}, time.monotonic()
+    while pending and time.monotonic() - t0 < timeout:
+        for kind, key in list(pending.items()):
+            try:
+                r = json.loads(s3.get_object(Bucket=bucket, Key=key)["Body"].read())
+            except s3.exceptions.NoSuchKey:
+                continue
+            out[kind] = r
+            del pending[kind]
+            print(f"[{kind}] {r['status']} {r['lane']} in {r.get('seconds')} s (in AWS)"
+                  + (f": {r['error']}" if r.get("error") else ""), flush=True)
+        if pending:
+            time.sleep(15)
+            print(f"  waiting for {', '.join(pending)}: {int(time.monotonic() - t0)} s", flush=True)
+    for kind in pending:
+        out[kind] = {"status": "FAILED", "lane": "FAILED", "study": None,
+                     "error": f"no result after {timeout:.0f} s; see the ingest task logs"}
+    return out
+
+
 def check_api(api: str, user: str, password: str, ingested: dict[str, dict],
               origin: str) -> bool:
     status, _, body = _http(f"{api}/api/auth/login", method="POST",
@@ -125,7 +153,7 @@ def check_api(api: str, user: str, password: str, ingested: dict[str, dict],
     print(f"\ndeployed worklist, {len(rows)} studies:")
     for r in rows:
         mark = f"  <- {wanted[r['study']]}" if r["study"] in wanted else ""
-        print(f"  {r['lane']:<10} {r.get('modality', ''):<3} {r['study']}{mark}")
+        print(f"  {r['lane']:<10} {(r.get('modality') or ''):<3} {r['study']}{mark}")
     found = {r["study"] for r in rows} & set(wanted)
     missing = [wanted[s] for s in wanted if s not in found]
     if missing:
@@ -165,7 +193,7 @@ def check_presigned(ingested: dict[str, dict], origin: str) -> None:
     print(f"presigned HealthImaging frame: HTTP {status}, {len(data)} bytes, "
           f"CORS allow-origin {cors!r}")
     print("  -> AURALANE_FRAME_MODE=presigned can work from the browser" if status == 200 and cors
-          else "  -> keep AURALANE_FRAME_MODE=proxy")
+          else "  -> set AURALANE_FRAME_MODE=proxy on the API")
 
 
 def main() -> int:
@@ -179,6 +207,8 @@ def main() -> int:
     ap.add_argument("--origin", default="https://aura-lane.vercel.app",
                     help="the browser origin to test CORS for")
     ap.add_argument("--state", default=None, help="site state for the chest regional prior")
+    ap.add_argument("--edge", action="store_true",
+                    help="run ingest in this process instead of uploading to the cloud pipeline")
     for kind, root in DEFAULTS.items():
         ap.add_argument(f"--{kind}", type=Path, default=None,
                         help=f"a {kind} study directory (default: first under {root})")
@@ -207,7 +237,7 @@ def main() -> int:
         sys.exit(f"sign-in as {args.user} failed ({status}): {body[:200]!r}. "
                  f"Check the Cognito user exists (docs/DEPLOY.md step 4).")
     studies = {k: getattr(args, k) or _first_study(root) for k, root in DEFAULTS.items()}
-    ingested = ingest_three(studies, args.state)
+    ingested = ingest_three(studies, args.state) if args.edge else upload_three(studies, args.state)
     ok = check_api(args.api, args.user, args.password, ingested, args.origin)
     check_presigned(ingested, args.origin)
     print("\nSMOKE PASSED: all three studies are on the deployed worklist" if ok

@@ -20,7 +20,10 @@ Cognito user pool (Lite) with groups `radiologist` and `admin`, the
 HealthImaging import role, the chest inference Lambda (container image), two
 SageMaker asynchronous endpoints scaling 0 to 1 (brain MR on ml.m5.2xlarge,
 head CT on ml.m5.xlarge) with their models, roles, scaling policies and
-alarms, and one managed policy holding exactly what `core/` needs.
+alarms, the cloud ingest (an EventBridge rule on `upload/*/_ready.json`
+starting one Fargate task per arrival in a public-subnet VPC with no NAT
+gateway, and the `auralane-identity` table only that task can read), and one
+managed policy for the API, which may write `upload/` but never read it.
 
 Does not create: the HealthImaging datastore. The existing
 `293abea3292b4e888cbdf60e3a9ff283` is referenced by ID, so there is nothing
@@ -61,6 +64,7 @@ before anything is created. Run from the repository root with Docker running.
 docker build --platform linux/amd64 -f infra/lambda/chest/Dockerfile   -t auralane-chest .
 docker build --platform linux/amd64 -f infra/containers/brain/Dockerfile -t auralane-brain .
 docker build --platform linux/amd64 -f infra/containers/ct/Dockerfile    -t auralane-ct .
+docker build --platform linux/amd64 -f infra/containers/ingest/Dockerfile -t auralane-ingest .
 ```
 
 | image | base | notes |
@@ -97,10 +101,12 @@ the smoke-test image set `6f7968d2159b0167b2ba896c78bd0533`; the script does not
 create a HealthImaging client. Image sets the pipeline imported stay too, and
 the script says so.
 
-## Unverified until something is deployed
+## Checked against the deployed stack (2026-09-28)
 
-- Browser frame fetch straight from HealthImaging (`AURALANE_FRAME_MODE=presigned`).
-  The API streams frames by default (`proxy`); `scripts/smoke_aws.py` reports
-  whether the presigned URL answers a browser origin with CORS headers.
-- `GetDICOMSeriesMetadata` has not been called on this account.
-- Cold start and warm cost figures are the estimates in `docs/AWS-COSTS.md`.
+- Browser frame fetch straight from HealthImaging works: a presigned
+  GetDICOMInstanceFrames URL answers the CORS preflight for Cornerstone's
+  Accept header (200, allow-origin `*`, allow-headers `accept`) and returns
+  the frame as multipart/related. `presigned` is the default frame mode.
+- HealthImaging split a four-series brain MR into four primary image sets;
+  the provider now tracks every image set of a study.
+- Still estimates: cold start and warm cost figures in `docs/AWS-COSTS.md`.

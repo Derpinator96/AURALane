@@ -9,6 +9,12 @@ with the import role, waits for it to finish, then finds the image set with
 SearchImageSets by StudyInstanceUID. The staged files are deleted afterwards
 (the stack also expires the import/ prefix after one day).
 
+One study, several image sets. HealthImaging can split a study into more than
+one primary image set: on 2026-09-28 a four-series brain MR came back as four,
+one per series. A StudyRef's datastore_id therefore carries every primary
+image set of the study, comma-separated, and each read finds the image set
+that holds the series it asks for. A study in one image set is unchanged.
+
 Read path. The cloud-native actions (SearchImageSets, GetImageSetMetadata,
 GetImageFrame) through boto3. Pixels come back HTJ2K lossless; the smoke test
 decoded a frame pixel-identical to its source (max absolute difference 0) at
@@ -82,6 +88,7 @@ class HealthImagingDatastore(DatastorePort):
         self.s3 = s3 or self.session.client("s3", region_name=region)
         self.dicomweb = (dicomweb or _dicomweb_host(region)).rstrip("/")
         self.http = http or httpx.Client(timeout=60)
+        self._docs: dict[str, dict] = {}       # image set id -> metadata document
         self.poll_seconds, self.import_timeout = poll_seconds, import_timeout
 
     # -- write ---------------------------------------------------------------
@@ -112,7 +119,7 @@ class HealthImagingDatastore(DatastorePort):
         finally:
             with ThreadPoolExecutor(16) as pool:
                 list(pool.map(lambda k: self.s3.delete_object(Bucket=self.bucket, Key=k), keys))
-        return StudyRef(study_uid=study_uid, datastore_id=self._image_set(study_uid))
+        return StudyRef(study_uid=study_uid, datastore_id=",".join(self._image_sets(study_uid)))
 
     def _wait(self, job_id: str) -> None:
         deadline = time.monotonic() + self.import_timeout
@@ -130,12 +137,27 @@ class HealthImagingDatastore(DatastorePort):
                                    f"{self.import_timeout:.0f} s")
             time.sleep(self.poll_seconds)
 
-    def _image_set(self, study_uid: str) -> str:
-        hits = [s for s in self._summaries(study_uid=study_uid)]
-        if len(hits) != 1:
-            raise LookupError(f"expected one primary image set for study {study_uid}, found "
-                              f"{[s['imageSetId'] for s in hits]}")
-        return hits[0]["imageSetId"]
+    def _image_sets(self, study_uid: str) -> list[str]:
+        """Every primary image set of the study, sorted, so the joined ref is stable."""
+        hits = sorted(s["imageSetId"] for s in self._summaries(study_uid=study_uid))
+        if not hits:
+            raise LookupError(f"no primary image set for study {study_uid}")
+        return hits
+
+    @staticmethod
+    def _ids(ref) -> list[str]:
+        return [i for i in ref.datastore_id.split(",") if i]
+
+    def _set_for(self, ref, series_uid: str) -> str:
+        """The image set holding the series. One image set: no lookup."""
+        ids = self._ids(ref)
+        if len(ids) == 1:
+            return ids[0]
+        for i in ids:
+            if series_uid in self._document(i)["Study"]["Series"]:
+                return i
+        raise LookupError(f"series {series_uid} is in none of study {ref.study_uid}'s "
+                          f"image sets {ids}")
 
     # -- read ----------------------------------------------------------------
     def _summaries(self, **filters) -> list[dict]:
@@ -158,31 +180,45 @@ class HealthImagingDatastore(DatastorePort):
         unknown = set(filters) - FILTERS
         if unknown:
             raise ValueError(f"unsupported search filters: {sorted(unknown)}")
-        out = []
+        by_study: dict[str, list[str]] = {}
         for s in self._summaries(**filters):
-            uid = s["DICOMTags"]["DICOMStudyInstanceUID"]
-            meta = self.get_metadata(StudyRef(uid, s["imageSetId"]))
+            by_study.setdefault(s["DICOMTags"]["DICOMStudyInstanceUID"], []).append(s["imageSetId"])
+        out = []
+        for uid, ids in by_study.items():
+            meta = self.get_metadata(StudyRef(uid, ",".join(sorted(ids))))
             # SearchImageSets has no modality filter; apply it to the metadata.
             if "modality" not in filters or meta.modality == filters["modality"]:
                 out.append(meta)
         return out
 
     def _document(self, image_set_id: str) -> dict:
+        # Cached: the frame stream reads the document for every frame, and a
+        # 620-slice series is 620 requests. An imported image set does not
+        # change under us; the cache is small and per process.
+        if image_set_id in self._docs:
+            return self._docs[image_set_id]
         r = self.mi.get_image_set_metadata(datastoreId=self.datastore_id,
                                            imageSetId=image_set_id)
         raw = r["imageSetMetadataBlob"].read()
         if raw[:2] == b"\x1f\x8b":             # gzip, as documented; not assumed decoded
             raw = gzip.decompress(raw)
-        return json.loads(raw)
+        doc = json.loads(raw)
+        if len(self._docs) >= 32:
+            self._docs.pop(next(iter(self._docs)))
+        self._docs[image_set_id] = doc
+        return doc
 
     def get_metadata(self, ref: StudyRef) -> StudyMeta:
-        doc = self._document(ref.datastore_id)
+        docs = [(i, self._document(i)) for i in self._ids(ref)]
+        for i, d in docs:
+            got = d["Study"]["DICOM"].get("StudyInstanceUID")
+            if got not in (None, ref.study_uid):
+                raise LookupError(f"image set {i} holds study {got}, not {ref.study_uid}")
+        doc = docs[0][1]
         study = doc["Study"]["DICOM"]
-        if study.get("StudyInstanceUID") not in (None, ref.study_uid):
-            raise LookupError(f"image set {ref.datastore_id} holds study "
-                              f"{study.get('StudyInstanceUID')}, not {ref.study_uid}")
         series, modalities = [], set()
-        for s_uid, s in doc["Study"]["Series"].items():
+        all_series = {s_uid: s for _, d in docs for s_uid, s in d["Study"]["Series"].items()}
+        for s_uid, s in all_series.items():
             d = s.get("DICOM", {})
             modalities.add(d.get("Modality"))
             inst = sorted(s.get("Instances", {}).items(),
@@ -204,9 +240,10 @@ class HealthImagingDatastore(DatastorePort):
     def get_frame(self, ref, series_uid, instance_uid, frame=1) -> bytes:
         """The stored frame (HTJ2K) via GetImageFrame. For server-side use; the
         browser uses frame_url."""
-        inst = self._document(ref.datastore_id)["Study"]["Series"][series_uid]["Instances"][instance_uid]
+        set_id = self._set_for(ref, series_uid)
+        inst = self._document(set_id)["Study"]["Series"][series_uid]["Instances"][instance_uid]
         frame_id = inst["ImageFrames"][frame - 1]["ID"]
-        r = self.mi.get_image_frame(datastoreId=self.datastore_id, imageSetId=ref.datastore_id,
+        r = self.mi.get_image_frame(datastoreId=self.datastore_id, imageSetId=set_id,
                                     imageFrameInformation={"imageFrameId": frame_id})
         return r["imageFrameBlob"].read()
 
@@ -218,16 +255,16 @@ class HealthImagingDatastore(DatastorePort):
         from openjpeg import decode       # pylibjpeg-openjpeg
         return decode(self.get_frame(ref, series_uid, instance_uid, frame))
 
-    def _wado(self, ref, path: str) -> str:
+    def _wado(self, ref, series_uid: str, path: str) -> str:
         return (f"{self.dicomweb}/datastore/{self.datastore_id}/studies/{quote(ref.study_uid)}"
-                f"{path}?{urlencode({'imageSetId': ref.datastore_id})}")
+                f"{path}?{urlencode({'imageSetId': self._set_for(ref, series_uid)})}")
 
     def frame_url(self, ref, series_uid, instance_uid, frame=1, ttl=300) -> str:
         """A presigned GetDICOMInstanceFrames URL, valid for ttl seconds. Signing
         is local: no request is made. See the module docstring for what is
         unverified about using it from a browser."""
-        url = self._wado(ref, f"/series/{quote(series_uid)}/instances/{quote(instance_uid)}"
-                              f"/frames/{int(frame)}")
+        url = self._wado(ref, series_uid, f"/series/{quote(series_uid)}/instances/"
+                                          f"{quote(instance_uid)}/frames/{int(frame)}")
         req = AWSRequest(method="GET", url=url)
         SigV4QueryAuth(self.session.get_credentials(), SIGNING_NAME, self.region,
                        expires=ttl).add_auth(req)
@@ -237,7 +274,7 @@ class HealthImagingDatastore(DatastorePort):
         """DICOM JSON for the series via DICOMweb GetDICOMSeriesMetadata, signed
         server side. Headers only: any element carried as bulk data is dropped,
         as the Orthanc provider does."""
-        url = self._wado(ref, f"/series/{quote(series_uid)}/metadata")
+        url = self._wado(ref, series_uid, f"/series/{quote(series_uid)}/metadata")
         req = AWSRequest(method="GET", url=url, headers={"Accept": "application/dicom+json"})
         SigV4Auth(self.session.get_credentials(), SIGNING_NAME, self.region).add_auth(req)
         r = self.http.get(url, headers=dict(req.headers))

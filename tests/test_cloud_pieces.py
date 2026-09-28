@@ -80,7 +80,10 @@ def aws_env(monkeypatch):
 def test_aws_serve_needs_no_model_and_drafts_from_the_template(aws_env):
     p = run.providers()
     assert p["inference"] is None and isinstance(p["llm"], TemplateLLM)
-    assert p["frame_proxy"] == ""                  # proxy by default; relative in development
+    assert p["frame_proxy"] is None                # presigned by default: the API never reads pixels
+    aws_env.setenv("AURALANE_FRAME_MODE", "proxy")
+    assert run.providers()["frame_proxy"] == ""    # the fallback; relative in development
+    aws_env.delenv("AURALANE_FRAME_MODE")
     with pytest.raises(SystemExit, match="AURALANE_CHEST_FUNCTION"):
         run.providers(for_ingest=True)
     aws_env.setenv("AURALANE_CHEST_FUNCTION", "fn:live")
@@ -119,3 +122,121 @@ def test_api_streams_signed_frames_and_refuses_tampered_links():
     assert r.status_code == 200 and r.content == _FrameStore.pixels.tobytes()
     assert r.headers["content-type"] == "application/octet-stream"
     assert c.get(url.replace("sig=", "sig=0")).status_code == 403
+
+
+# -- simulated intake ----------------------------------------------------------
+def test_intake_picks_every_mr_and_ct_then_chest_in_a_shuffled_order(tmp_path):
+    import random
+    from core.intake import pick
+    studies = {"CR": [tmp_path / f"c{i}" for i in range(40)],
+               "MR": [tmp_path / "m1", tmp_path / "m2"], "CT": [tmp_path / "t1", tmp_path / "t2"]}
+    order = pick(studies, 30, random.Random(1))
+    kinds = [m for m, _ in order]
+    assert len(order) == 30 and kinds.count("MR") == 2 and kinds.count("CT") == 2
+    assert len({p for _, p in order}) == 30                     # no study twice
+    assert kinds != sorted(kinds)                               # mixed, not grouped
+
+
+def test_intake_route_runs_real_ingests_is_admin_only_and_audited(tmp_path):
+    import time as _time
+    from types import SimpleNamespace
+    from core.intake import IntakeSimulator
+    seen = []
+
+    def ingest_one(path):
+        seen.append(path.name)
+        return SimpleNamespace(status="SCORED", lane="ROUTINE", error=None,
+                               ref=SimpleNamespace(study_uid=f"uid-{path.name}"))
+
+    sim = IntakeSimulator(ingest_one, {"CR": [tmp_path / "a", tmp_path / "b"], "MR": [], "CT": []})
+    table = FixtureTable()
+    app = create_app({"runtime": "local", "blob": FileBlob(BLOB, url_base="/api/blob"), "table": table,
+                      "datastore": FixtureDatastore(table), "auth": DevAuth(password="pw"),
+                      "llm": TemplateLLM(), "intake": sim})
+    c = TestClient(app)
+    tok = {u: c.post("/api/auth/login", json={"username": u, "password": "pw"}).json()["token"]
+           for u in ("admin", "radiologist")}
+    h = {u: {"Authorization": f"Bearer {t}"} for u, t in tok.items()}
+    assert c.post("/api/admin/intake", json={"count": 2}, headers=h["radiologist"]).status_code == 403
+    r = c.post("/api/admin/intake", json={"count": 2}, headers=h["admin"])
+    assert r.status_code == 202 and r.json()["total"] == 2
+    for _ in range(50):
+        s = c.get("/api/admin/intake", headers=h["admin"]).json()
+        if not s["running"]:
+            break
+        _time.sleep(0.05)
+    assert (s["done"], s["failed"]) == (2, 0) and sorted(seen) == ["a", "b"]
+    assert [i["lane"] for i in s["items"]] == ["ROUTINE", "ROUTINE"]
+    events = c.get("/api/admin/audit", headers=h["admin"]).json()["events"]
+    assert any(e["action"] == "intake_simulation" and e["actor"] == "admin@dev.auralane.local"
+               for e in events)
+
+
+def test_intake_without_a_corpus_says_why():
+    from core.intake import IntakeSimulator
+    s = IntakeSimulator(None, {"CR": [], "MR": [], "CT": []}).status()
+    assert s["available"] is False and s["reason"] == "no study corpus on this host"
+
+
+# -- cloud ingest: identity map, uploader, cloud intake (moto) -------------------
+@pytest.fixture
+def moto_aws(monkeypatch):
+    moto = pytest.importorskip("moto")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+    for k in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"):
+        monkeypatch.setenv(k, "testing")
+    with moto.mock_aws():
+        yield
+
+
+def test_dynamo_identity_map_is_consistent_and_issues_one_pseudonym_per_patient(moto_aws):
+    import boto3
+    from core.providers.aws.identity import DynamoIdentityMap
+    boto3.client("dynamodb", region_name="us-east-1").create_table(
+        TableName="t", KeySchema=[{"AttributeName": "k", "KeyType": "HASH"}],
+        AttributeDefinitions=[{"AttributeName": "k", "AttributeType": "S"}],
+        BillingMode="PAY_PER_REQUEST")
+    a, b = DynamoIdentityMap("t"), DynamoIdentityMap("t")      # two tasks, one table
+    uid = a.map_uid("1.2.3.4")
+    assert uid.startswith("1.2.826.0.1.3680043.10.1422.") and b.map_uid("1.2.3.4") == uid
+    assert a.map_patient("P1", name="SIM^PATIENT^0001") == "AUR-000001" == b.map_patient("P1")
+    assert b.map_patient("P2") == "AUR-000002"
+    assert a.record_study("1.2.3.4", uid, "P1").startswith("ACC")
+
+
+BKT = "auralane-test"
+
+
+def test_upload_writes_the_files_then_the_manifest_and_the_intake_reads_results(moto_aws, tmp_path):
+    import json as _json
+    import time as _time
+    import boto3
+    from core.intake import CloudIntake
+    from core.upload import corpus_catalogue, upload_corpus, upload_study
+    s3 = boto3.client("s3", region_name="us-east-1")
+    s3.create_bucket(Bucket=BKT)
+    study = tmp_path / "study"
+    study.mkdir()
+    for i in range(3):
+        (study / f"{i}.dcm").write_bytes(b"DICM" + bytes([i]))
+    key = upload_study(s3, BKT, sorted(study.glob("*.dcm")), "batch1", "000", site_state="Kerala")
+    manifest = _json.loads(s3.get_object(Bucket=BKT, Key=key)["Body"].read())
+    assert key == "upload/batch1/000/_ready.json" and len(manifest["keys"]) == 3
+    assert manifest["site_state"] == "Kerala"
+
+    assert upload_corpus(s3, BKT, {"CR": [study], "MR": [], "CT": []}) == {"CR": 1, "MR": 0, "CT": 0}
+    assert corpus_catalogue(s3, BKT)["CR"] == ["corpus/CR/000/"]
+    intake = CloudIntake(s3, BKT)
+    state = intake.start(1, "admin@x")
+    for _ in range(100):                                        # the copy runs in a thread
+        if not intake.status().get("uploading"):
+            break
+        _time.sleep(0.05)
+    batch = state["batch"]
+    assert s3.get_object(Bucket=BKT, Key=f"upload/{batch}/000/_ready.json")
+    s3.put_object(Bucket=BKT, Key=f"intake/{batch}/000.json", Body=_json.dumps(
+        {"status": "SCORED", "lane": "ROUTINE", "study": "1.2.826.0.1.3680043.10.1422.9",
+         "seconds": 30.0}).encode())                            # what the ingest task writes
+    s = intake.status()
+    assert (s["done"], s["failed"], s["running"]) == (1, 0, False)
+    assert s["items"][0]["lane"] == "ROUTINE" and s["items"][0]["source"] == "arrival 1"

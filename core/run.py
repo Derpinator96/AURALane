@@ -100,12 +100,13 @@ def providers(for_ingest: bool = False) -> dict:
             sys.exit(f"AURALANE_RUNTIME=aws {'ingest' if for_ingest else 'serve'} needs "
                      f"{', '.join(missing)} (the CDK stack's outputs; see infra/README.md)")
         env = {k: os.environ.get(v) for k, v in ENV.items()}
-        # Frames: "proxy" (default) streams decoded pixels through this API, which
-        # signs its own HealthImaging calls. "presigned" hands the browser a SigV4
-        # DICOMweb URL instead; switch to it once scripts/smoke_aws.py shows
-        # HealthImaging answering a browser origin with CORS headers.
-        # TODO: default to presigned if smoke_aws.py shows HealthImaging sends CORS headers.
-        proxy = os.environ.get("AURALANE_FRAME_MODE", "proxy") == "proxy"
+        # Frames: "presigned" (default) hands the browser a SigV4 DICOMweb URL;
+        # the browser fetches pixels from HealthImaging and the API never reads
+        # them. Checked live on 2026-09-28: the CORS preflight for Cornerstone's
+        # Accept header answers 200 (allow-origin *, allow-headers accept), and
+        # the frame comes back as multipart/related, uncompressed. "proxy"
+        # streams decoded pixels through this API instead: the fallback.
+        proxy = os.environ.get("AURALANE_FRAME_MODE", "presigned") == "proxy"
         return {"runtime": runtime, "blob": p.S3Blob(env["bucket"]),
                 "datastore": p.HealthImagingDatastore(
                     env["bucket"], env["import_role_arn"],
@@ -127,6 +128,18 @@ def _identity():
     import identity
     IDENTITY_DB.parent.mkdir(parents=True, exist_ok=True)
     return identity.IdentityMap(str(IDENTITY_DB))
+
+
+def load_stack(name: str) -> None:
+    """AURALANE_RUNTIME=aws and every stack output not already set, read from the
+    CloudFormation stack (each output's description is the variable name), so
+    `serve --stack Auralane` and `ingest --stack Auralane` need nothing exported."""
+    import boto3
+    os.environ["AURALANE_RUNTIME"] = "aws"
+    os.environ.setdefault("AWS_REGION", "us-east-1")
+    cfn = boto3.client("cloudformation", region_name=os.environ["AWS_REGION"])
+    for o in cfn.describe_stacks(StackName=name)["Stacks"][0].get("Outputs", []):
+        os.environ.setdefault(o["Description"], o["OutputValue"])
 
 
 def regional_setting(state: str | None):
@@ -167,6 +180,48 @@ def cmd_ingest(args) -> int:
     return 0 if v.status == "SCORED" else 1
 
 
+def _intake(runtime: str):
+    """The admin screen's simulated intake: real studies from this machine's
+    corpus, ingested in a shuffled order. Unavailable, with the reason, where
+    there is nothing to ingest or no pipeline to ingest with."""
+    import threading
+    from core.intake import IntakeSimulator, catalogue
+    if runtime == "fixture":
+        return IntakeSimulator(None, {}, unavailable="the fixture runtime has no pipeline")
+    if runtime == "aws":
+        # Cloud-native: arrivals are copied into S3 and ingested by tasks in AWS,
+        # so this works from the hosted API, which holds no studies itself.
+        import boto3
+        from core.intake import CloudIntake
+        from core.providers.aws.config import REGION
+        bucket = os.environ.get("AURALANE_BUCKET")
+        if not bucket:
+            return IntakeSimulator(None, {}, unavailable="AURALANE_BUCKET is not set")
+        return CloudIntake(boto3.client("s3", region_name=REGION), bucket,
+                           site_state=os.environ.get("AURALANE_SITE_STATE") or None)
+    from core.pipeline import ingest
+    from core.regional import setting
+    from core.registry import Registry
+    try:
+        regional = setting()
+    except ValueError as e:
+        return IntakeSimulator(None, {}, unavailable=str(e))
+    local = threading.local()        # boto3 resources and SQLite are per thread
+
+    def ingest_one(study_dir: Path):
+        if not hasattr(local, "p"):
+            local.p, local.identity, local.registry = (providers(for_ingest=True), _identity(),
+                                                       Registry())
+        p = local.p
+        return ingest(sorted(study_dir.rglob("*.dcm")), blob=p["blob"], datastore=p["datastore"],
+                      table=p["table"], inference=p["inference"], registry=local.registry,
+                      identity=local.identity, regional=regional)
+
+    # Local models share this process, so one study at a time; on AWS the
+    # models are remote and three in flight keep the endpoints busy.
+    return IntakeSimulator(ingest_one, catalogue(), workers=3 if runtime == "aws" else 1)
+
+
 def cmd_serve(args) -> int:
     # Checked before providers(): DevAuth would otherwise create a random
     # password file on this host before anyone saw the error.
@@ -179,11 +234,58 @@ def cmd_serve(args) -> int:
     import uvicorn
     from core.api import create_app
     prov = providers()
+    prov["intake"] = _intake(prov["runtime"])
     if prov["runtime"] != "aws" and not os.environ.get("AURALANE_DEV_PASSWORD"):
         print(f"dev sign-in password: {DEV_PASSWORD_FILE.relative_to(ROOT)}")
     origins = cors_origins()
     print(f"CORS origins: {', '.join(origins) if origins else 'development defaults'}")
     uvicorn.run(create_app(prov, cors_origins=origins), host=args.host, port=args.port)
+    return 0
+
+
+def _s3():
+    import boto3
+    from core.providers.aws.config import REGION
+    bucket = os.environ.get("AURALANE_BUCKET")
+    if not bucket:
+        sys.exit("needs AURALANE_BUCKET: pass --stack Auralane")
+    return boto3.client("s3", region_name=REGION), bucket
+
+
+def cmd_upload(args) -> int:
+    """The edge agent: send one study to the cloud pipeline and, with --wait,
+    print the result the ingest task writes."""
+    import time
+    from core.upload import RESULTS, new_batch, upload_study
+    s3, bucket = _s3()
+    target = Path(args.path)
+    files = sorted(target.rglob("*.dcm")) if target.is_dir() else [target]
+    if not files:
+        sys.exit(f"no .dcm files under {target}")
+    batch = new_batch()
+    key = upload_study(s3, bucket, files, batch, "000", site_state=args.state)
+    print(f"uploaded {len(files)} files; manifest s3://{bucket}/{key}")
+    if not args.wait:
+        return 0
+    result = f"{RESULTS}{batch}/000.json"
+    t0 = time.monotonic()
+    while time.monotonic() - t0 < args.wait:
+        try:
+            r = json.loads(s3.get_object(Bucket=bucket, Key=result)["Body"].read())
+            print(json.dumps(r, indent=1))
+            return 0 if r["status"] == "SCORED" else 1
+        except s3.exceptions.NoSuchKey:
+            time.sleep(10)
+            print(f"  waiting for the ingest task: {int(time.monotonic() - t0)} s", flush=True)
+    sys.exit(f"no result after {args.wait} s; see the ingest task's logs")
+
+
+def cmd_upload_corpus(args) -> int:
+    """This machine's study corpus -> S3 corpus/, for the hosted simulated intake."""
+    from core.intake import catalogue
+    from core.upload import upload_corpus
+    s3, bucket = _s3()
+    print(json.dumps(upload_corpus(s3, bucket, catalogue())))
     return 0
 
 
@@ -208,10 +310,23 @@ def main(argv=None) -> int:
     s = sub.add_parser("serve", help="the worklist API")
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--port", type=int, default=8100)
+    for sp in (i, s):
+        sp.add_argument("--stack", default=None,
+                        help="read the aws runtime's settings from this CloudFormation stack's outputs")
     t = sub.add_parser("token", help="a development bearer token (local runtime only)")
     t.add_argument("user", choices=["radiologist", "admin"])
+    u = sub.add_parser("upload", help="send one study to the cloud pipeline (the edge's only step)")
+    u.add_argument("path", help="a study directory or one .dcm file")
+    u.add_argument("--state", default=None, help="the site's state for the chest regional prior")
+    u.add_argument("--wait", type=int, default=0, help="seconds to wait for the result")
+    c = sub.add_parser("upload-corpus", help="put this machine's study corpus in S3, once")
+    for sp in (u, c):
+        sp.add_argument("--stack", default=None, help="read settings from this CloudFormation stack")
     args = ap.parse_args(argv)
-    return {"ingest": cmd_ingest, "serve": cmd_serve, "token": cmd_token}[args.cmd](args)
+    if getattr(args, "stack", None):
+        load_stack(args.stack)
+    return {"ingest": cmd_ingest, "serve": cmd_serve, "token": cmd_token, "upload": cmd_upload,
+            "upload-corpus": cmd_upload_corpus}[args.cmd](args)
 
 
 if __name__ == "__main__":
