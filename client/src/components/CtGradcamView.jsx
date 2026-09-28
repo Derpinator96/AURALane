@@ -16,7 +16,17 @@ export const hasCtGradcam = (urls) => Boolean(urls?.ct_slice_png && (urls?.gradc
 
 const pct = (v, n) => `${(v / n) * 100}%`;
 
-export default function CtGradcamView({ evidence = {}, urls = {}, show = true }) {
+export default function CtGradcamView({
+  evidence = {},
+  urls = {},
+  show = true,
+  annotations = [],
+  selectedAnnotation = null,
+  onSelectAnnotation = null,
+  onRequestNewNote = null,
+  isAddNoteMode = false,
+  onToggleAddNoteMode = null,
+}) {
   const [viewMode, setViewMode] = useState("triview"); // 'triview' | 'dual' | 'single'
   const [showBox, setShowBox] = useState(true);
   const [showCentroid, setShowCentroid] = useState(true);
@@ -32,6 +42,46 @@ export default function CtGradcamView({ evidence = {}, urls = {}, show = true })
   const targetClass = finding.toLowerCase();
   const targetLayer =
     evidence.gradcam_target_layer || "vit backbone, last transformer block, layernorm_before";
+
+  // Handle clicking on CT frame to place pinpoint note
+  const handleFrameClick = (e, panelName) => {
+    if (!isAddNoteMode && e.type !== "contextmenu") return;
+    if (e.type === "contextmenu") e.preventDefault();
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    const normX = Math.max(0, Math.min(1, clickX / rect.width));
+    const normY = Math.max(0, Math.min(1, clickY / rect.height));
+
+    const pixelX = Math.round(normX * cols);
+    const pixelY = Math.round(normY * rows);
+
+    let region = "Head CT Scan";
+    if (box && pixelY >= box.row_min && pixelY <= box.row_max && pixelX >= box.col_min && pixelX <= box.col_max) {
+      region = `Localized ${targetClass} Hemorrhage`;
+    }
+
+    onRequestNewNote?.({
+      modality: "CT",
+      coordinate_space: "IMAGE_NORMALIZED",
+      coordinate_x: normX,
+      coordinate_y: normY,
+      slice_index: evidence.axial_index || 0,
+      segmentation_region: region,
+      viewer_context: {
+        panel: panelName,
+        pixel_coords: { x: pixelX, y: pixelY },
+        dims: { rows, cols },
+      },
+      metadata: {
+        pixel_x: pixelX,
+        pixel_y: pixelY,
+        frame_rows: rows,
+        frame_cols: cols,
+      },
+    });
+  };
 
   // Fallback Jet Heatmap renderer for Panel 2 if urls.gradcam_heatmap_png is not loaded
   useEffect(() => {
@@ -69,8 +119,34 @@ export default function CtGradcamView({ evidence = {}, urls = {}, show = true })
 
   const heatmapSrc = urls.gradcam_heatmap_png || urls.gradcam_layer_png;
 
+  const renderPinMarkers = () => {
+    return annotations.map((ann) => {
+      if (ann.coordinate_x == null || ann.coordinate_y == null) return null;
+      const isSel = ann.id === selectedAnnotation?.id;
+      return (
+        <div
+          key={ann.id || ann.annotation_id}
+          className={`pin-marker-point ${isSel ? "selected" : ""}`}
+          style={{
+            left: `${ann.coordinate_x * 100}%`,
+            top: `${ann.coordinate_y * 100}%`,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectAnnotation?.(ann);
+          }}
+          title={`${ann.note_text} (${ann.created_by || "radiologist"})`}
+        >
+          <span className="pin-dot"></span>
+          <span className="pin-pulse"></span>
+          {isSel && <div className="pin-tooltip-popover">{ann.note_text}</div>}
+        </div>
+      );
+    });
+  };
+
   return (
-    <div className="ct-gradcam-container" data-testid="ct-gradcam-view">
+    <div className={`ct-gradcam-container ${isAddNoteMode ? "pinpoint-active-mode" : ""}`} data-testid="ct-gradcam-view">
       {/* 1. Terminal / Notebook Diagnostic Metadata Header */}
       <div className="ct-diagnostic-header mono" data-testid="ct-diagnostic-header">
         <div className="meta-line">
@@ -129,6 +205,17 @@ export default function CtGradcamView({ evidence = {}, urls = {}, show = true })
         </div>
 
         <div className="ct-controls-group">
+          {onToggleAddNoteMode && (
+            <button
+              type="button"
+              className={`ct-mode-btn btn-pin-mode ${isAddNoteMode ? "active" : ""}`}
+              onClick={onToggleAddNoteMode}
+              title="Click anywhere on the CT slice to drop a note"
+            >
+              📍 {isAddNoteMode ? "Pin Active" : "Add Note"}
+            </button>
+          )}
+
           {/* Opacity Adjustment Slider */}
           {viewMode !== "dual" && (
             <div className="ct-slider-control">
@@ -178,18 +265,31 @@ export default function CtGradcamView({ evidence = {}, urls = {}, show = true })
         </div>
       </div>
 
+      {isAddNoteMode && (
+        <div className="ct-pin-instruction-hud">
+          <span className="pulse-dot"></span>
+          <span><strong>Pinpoint Active:</strong> Click any location on the CT slice image to drop a spatially anchored note.</span>
+        </div>
+      )}
+
       {/* 2. Visualizer Presentation: Tri-View (Default) */}
       {viewMode === "triview" && (
         <div className="ct-triview-grid" data-testid="ct-triview-grid">
           {/* Panel 1: Original slice (brain window) */}
           <div className="ct-panel-col">
             <h4 className="ct-panel-title">Original slice (brain window)</h4>
-            <div className="ct-panel-frame" style={{ aspectRatio: `${cols} / ${rows}` }}>
+            <div
+              className="ct-panel-frame"
+              style={{ aspectRatio: `${cols} / ${rows}` }}
+              onClick={(e) => handleFrameClick(e, "Original")}
+              onContextMenu={(e) => handleFrameClick(e, "Original")}
+            >
               <img
                 src={urls.ct_slice_png}
                 alt="Original slice (brain window)"
                 className="ct-panel-img"
               />
+              {renderPinMarkers()}
               <span className="slice-badge mono">Brain Window (W:80 C:40)</span>
             </div>
           </div>
@@ -197,7 +297,12 @@ export default function CtGradcamView({ evidence = {}, urls = {}, show = true })
           {/* Panel 2: Grad-CAM: {target_class_name} */}
           <div className="ct-panel-col">
             <h4 className="ct-panel-title">Grad-CAM: {targetClass}</h4>
-            <div className="ct-panel-frame jet-bg" style={{ aspectRatio: `${cols} / ${rows}` }}>
+            <div
+              className="ct-panel-frame jet-bg"
+              style={{ aspectRatio: `${cols} / ${rows}` }}
+              onClick={(e) => handleFrameClick(e, "GradCAM")}
+              onContextMenu={(e) => handleFrameClick(e, "GradCAM")}
+            >
               {urls.gradcam_heatmap_png ? (
                 <img
                   src={urls.gradcam_heatmap_png}
@@ -207,6 +312,7 @@ export default function CtGradcamView({ evidence = {}, urls = {}, show = true })
               ) : (
                 <canvas ref={canvasRef} className="ct-panel-img" />
               )}
+              {renderPinMarkers()}
               <span className="colormap-badge mono">Colormap: JET</span>
             </div>
           </div>
@@ -214,7 +320,12 @@ export default function CtGradcamView({ evidence = {}, urls = {}, show = true })
           {/* Panel 3: Overlay + localized region */}
           <div className="ct-panel-col">
             <h4 className="ct-panel-title">Overlay + localized region</h4>
-            <div className="ct-panel-frame" style={{ aspectRatio: `${cols} / ${rows}` }}>
+            <div
+              className="ct-panel-frame"
+              style={{ aspectRatio: `${cols} / ${rows}` }}
+              onClick={(e) => handleFrameClick(e, "Overlay")}
+              onContextMenu={(e) => handleFrameClick(e, "Overlay")}
+            >
               {/* Base CT Brain Scan */}
               <img
                 src={urls.ct_slice_png}
@@ -263,30 +374,43 @@ export default function CtGradcamView({ evidence = {}, urls = {}, show = true })
                 </div>
               )}
 
+              {renderPinMarkers()}
               <span className="opacity-badge mono">Opacity: {Math.round(overlayAlpha * 100)}%</span>
             </div>
           </div>
         </div>
       )}
 
+
       {/* Alternate Presentation: Dual View (Original & Heatmap only) */}
       {viewMode === "dual" && (
         <div className="ct-dualview-grid" data-testid="ct-dualview-grid">
           <div className="ct-panel-col">
             <h4 className="ct-panel-title">Original slice (brain window)</h4>
-            <div className="ct-panel-frame" style={{ aspectRatio: `${cols} / ${rows}` }}>
+            <div
+              className="ct-panel-frame"
+              style={{ aspectRatio: `${cols} / ${rows}` }}
+              onClick={(e) => handleFrameClick(e, "Original")}
+              onContextMenu={(e) => handleFrameClick(e, "Original")}
+            >
               <img
                 src={urls.ct_slice_png}
                 alt="Original slice (brain window)"
                 className="ct-panel-img"
               />
+              {renderPinMarkers()}
               <span className="slice-badge mono">Brain Window (W:80 C:40)</span>
             </div>
           </div>
 
           <div className="ct-panel-col">
             <h4 className="ct-panel-title">Grad-CAM: {targetClass}</h4>
-            <div className="ct-panel-frame jet-bg" style={{ aspectRatio: `${cols} / ${rows}` }}>
+            <div
+              className="ct-panel-frame jet-bg"
+              style={{ aspectRatio: `${cols} / ${rows}` }}
+              onClick={(e) => handleFrameClick(e, "GradCAM")}
+              onContextMenu={(e) => handleFrameClick(e, "GradCAM")}
+            >
               {urls.gradcam_heatmap_png ? (
                 <img
                   src={urls.gradcam_heatmap_png}
@@ -296,6 +420,7 @@ export default function CtGradcamView({ evidence = {}, urls = {}, show = true })
               ) : (
                 <canvas ref={canvasRef} className="ct-panel-img" />
               )}
+              {renderPinMarkers()}
               <span className="colormap-badge mono">Colormap: JET</span>
             </div>
           </div>
@@ -309,6 +434,8 @@ export default function CtGradcamView({ evidence = {}, urls = {}, show = true })
             className="ct-gradcam-stage"
             style={{ "--ct-ar": cols / rows, aspectRatio: `${cols} / ${rows}` }}
             data-testid="ct-gradcam-stage"
+            onClick={(e) => handleFrameClick(e, "SingleOverlay")}
+            onContextMenu={(e) => handleFrameClick(e, "SingleOverlay")}
           >
             <img
               className="ct-stage-img"
@@ -350,10 +477,12 @@ export default function CtGradcamView({ evidence = {}, urls = {}, show = true })
                 <span className="crosshair-v"></span>
               </div>
             )}
+            {renderPinMarkers()}
             <span className="opacity-badge mono">Opacity: {Math.round(overlayAlpha * 100)}%</span>
           </div>
         </div>
       )}
+
     </div>
   );
 }

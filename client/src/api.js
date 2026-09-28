@@ -76,4 +76,13 @@ export const api = {
     call(`/api/studies/${encodeURIComponent(study)}/metrics`, { token }),
   mriDemo: (token) => call("/api/mri/demo", { token, method: "POST" }),
   alzheimerDemo: (token) => call("/api/alzheimer/demo", { token, method: "POST" }),
+  getAnnotations: (token, study) =>
+    call(`/api/studies/${encodeURIComponent(study)}/annotations`, { token }),
+  createAnnotation: (token, study, data) =>
+    call(`/api/studies/${encodeURIComponent(study)}/annotations`, { token, method: "POST", body: data }),
+  updateAnnotation: (token, annotationId, data) =>
+    call(`/api/annotations/${encodeURIComponent(annotationId)}`, { token, method: "PATCH", body: data }),
+  deleteAnnotation: (token, annotationId) =>
+    call(`/api/annotations/${encodeURIComponent(annotationId)}`, { token, method: "DELETE" }),
 };
+

@@ -22,42 +22,105 @@ from core.types import AuditEvent, SeriesMeta, StudyMeta, StudyRef
 ROOT = Path(__file__).resolve().parents[3]
 WORKLIST = ROOT / "fixtures" / "worklist.json"
 BLOB = ROOT / "fixtures" / "blob"          # Grad-CAM overlays, built by make_fixtures.py
+ANNOTATIONS = ROOT / "fixtures" / "annotations.json"
 NO_STUDY = "-"
 
 
 class FixtureTable(TablePort):
     """In-memory worklist seeded from the fixture file. Audit is append only."""
 
-    def __init__(self, path: Path = WORKLIST):
+    def __init__(self, path: Path = WORKLIST, annotations_path: Path = ANNOTATIONS):
         rows = json.loads(Path(path).read_text())
         self._worklist = {r["study"]: r for r in rows}
         self._audit: list[dict] = []
+        self._annotations_path = Path(annotations_path)
+        self._annotations: dict[str, dict] = {}
+        if self._annotations_path.exists():
+            try:
+                anns = json.loads(self._annotations_path.read_text())
+                self._annotations = {a.get("annotation_id", a.get("id")): a for a in anns}
+            except Exception:
+                self._annotations = {}
+
+    def _persist_annotations(self):
+        try:
+            self._annotations_path.parent.mkdir(parents=True, exist_ok=True)
+            self._annotations_path.write_text(json.dumps(list(self._annotations.values()), indent=2))
+        except Exception:
+            pass
 
     def put_item(self, table, item):
         if table == "audit":
             raise PermissionError("audit is append only; use append_audit")
-        if table != "worklist":
+        if table == "worklist":
+            self._worklist[item["study"]] = copy.deepcopy(item)
+        elif table == "annotations":
+            ann_id = item.get("annotation_id") or item.get("id")
+            if not ann_id:
+                raise ValueError("annotation must have annotation_id or id")
+            self._annotations[ann_id] = copy.deepcopy(item)
+            self._persist_annotations()
+        else:
             raise KeyError(table)
-        self._worklist[item["study"]] = copy.deepcopy(item)
 
     def get_item(self, table, key):
-        if table != "worklist":
+        if table == "worklist":
+            row = self._worklist.get(key["study"])
+            return copy.deepcopy(row) if row else None
+        elif table == "annotations":
+            ann_id = key.get("annotation_id") or key.get("id")
+            if ann_id:
+                item = self._annotations.get(ann_id)
+                return copy.deepcopy(item) if item else None
+            elif "study" in key:
+                for item in self._annotations.values():
+                    if item.get("study") == key["study"] or item.get("study_id") == key["study"]:
+                        return copy.deepcopy(item)
+            return None
+        else:
             raise KeyError(table)
-        row = self._worklist.get(key["study"])
-        return copy.deepcopy(row) if row else None
+
+    def delete_item(self, table, key):
+        if table == "audit":
+            raise PermissionError("audit is append only")
+        elif table == "annotations":
+            ann_id = key.get("annotation_id") or key.get("id")
+            if ann_id and ann_id in self._annotations:
+                del self._annotations[ann_id]
+                self._persist_annotations()
+        elif table == "worklist":
+            study = key.get("study")
+            if study and study in self._worklist:
+                del self._worklist[study]
+        else:
+            raise KeyError(table)
 
     def query(self, table, **conditions):
-        if set(conditions) != {"study"}:
-            raise ValueError("query by study only")
         if table == "audit":
+            if set(conditions) != {"study"}:
+                raise ValueError("query by study only")
             return [copy.deepcopy(e) for e in self._audit if e["study"] == conditions["study"]]
-        row = self.get_item(table, conditions)
-        return [row] if row else []
+        elif table == "annotations":
+            study = conditions.get("study") or conditions.get("study_id")
+            if study:
+                return [copy.deepcopy(a) for a in self._annotations.values()
+                        if a.get("study") == study or a.get("study_id") == study]
+            return [copy.deepcopy(a) for a in self._annotations.values()]
+        elif table == "worklist":
+            if set(conditions) != {"study"}:
+                raise ValueError("query by study only")
+            row = self.get_item(table, conditions)
+            return [row] if row else []
+        raise KeyError(table)
 
     def scan(self, table):
         if table == "audit":
             raise PermissionError("audit is read per study with query, never scanned")
-        return [copy.deepcopy(r) for r in self._worklist.values()]
+        elif table == "worklist":
+            return [copy.deepcopy(r) for r in self._worklist.values()]
+        elif table == "annotations":
+            return [copy.deepcopy(a) for a in self._annotations.values()]
+        raise KeyError(table)
 
     def append_audit(self, event: AuditEvent) -> None:
         item = event.to_dict()

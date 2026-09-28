@@ -39,7 +39,7 @@ export default function App() {
         <Route path="/login" element={session ? <Navigate to={home(session)} /> : <Login onLogin={onLogin} />} />
         <Route path="/" element={radiologist ? <Worklist load={loadWorklist} token={token} /> : <Navigate to={home(session)} />} />
         <Route path="/studies/:id" element={radiologist
-          ? <Study load={loadStudy} loadSeries={loadSeries} sendVerdict={sendVerdict} />
+          ? <Study load={loadStudy} loadSeries={loadSeries} sendVerdict={sendVerdict} token={token} />
           : <Navigate to={home(session)} />} />
         <Route path="/admin/*" element={session && !radiologist
           ? <Admin loadAudit={loadAudit} loadLaneMix={loadLaneMix} loadModels={loadModels} />

@@ -3407,3 +3407,476 @@ header.top {
 :root[data-theme="dark"] .notice-blue { background: #172554; border-color: #1e40af; color: #93c5fd; }
 :root[data-theme="dark"] .notice-indigo { background: #2e1065; border-color: #5b21b6; color: #c4b5fd; }
 :root[data-theme="dark"] .notice-crimson { background: #2a0f18; border-color: #881337; color: #fda4af; }
+
+/* --------------------------------------------------------------------------
+   Clinician Pinpoint Notes & Annotations Styling (PACS Grade)
+-------------------------------------------------------------------------- */
+.study-annotations-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.annotations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.annotations-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.annotations-count-badge {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  color: var(--brand-purple);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 12px;
+}
+
+.btn-add-pinpoint, .btn-pin-mode {
+  background: var(--surface-raised);
+  border: 1px solid var(--brand-purple-border);
+  color: var(--brand-purple);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-add-pinpoint:hover, .btn-pin-mode:hover {
+  background: var(--brand-purple-light);
+  color: var(--brand-purple);
+  border-color: var(--brand-purple);
+}
+
+.btn-add-pinpoint.active, .btn-pin-mode.active {
+  background: var(--brand-purple);
+  color: #ffffff;
+  border-color: var(--brand-purple);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+}
+
+.pin-mode-banner, .mri-pin-instruction-hud, .ct-pin-instruction-hud, .cxr-pin-instruction-hud {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  color: #c7d2fe;
+  font-size: 11.5px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  animation: fade-in 0.2s ease-out;
+}
+
+.pin-mode-banner .pulse-dot, .mri-pin-instruction-hud .pulse-dot, .ct-pin-instruction-hud .pulse-dot, .cxr-pin-instruction-hud .pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #38bdf8;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: pulse-ring 1.5s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px #38bdf8; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.annotations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.annotation-item-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.annotation-item-card:hover {
+  border-color: var(--brand-purple);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.annotation-item-card.selected {
+  border-color: var(--brand-purple);
+  background: var(--brand-purple-light);
+  box-shadow: 0 0 0 1px var(--brand-purple);
+}
+
+.ann-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ann-meta-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ann-region-pill, .hud-region-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.region-et, [class*="region-et"] {
+  background: #f43f5e;
+  color: #ffffff;
+}
+
+.region-tc, [class*="region-tc"] {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.region-wt, [class*="region-wt"] {
+  background: #eab308;
+  color: #000000;
+}
+
+.region-user-annotation-on-t1-volume, [class*="region-t1"], [class*="region-user"] {
+  background: #8b5cf6;
+  color: #ffffff;
+}
+
+.region-localized, [class*="region-local"] {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.region-unsegmented-location, [class*="region-unseg"] {
+  background: #52525b;
+  color: #ffffff;
+}
+
+.ann-coords-tag {
+  font-size: 10px;
+  color: var(--soft);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+}
+
+.ann-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-ann-action {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--soft);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.btn-ann-action:hover {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--soft);
+}
+
+.btn-ann-action.delete-btn:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.delete-confirm-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn-ann-action.delete-confirm {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+.ann-text-body {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.ann-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+/* --------------------------------------------------------------------------
+   On-Image Pin Markers & Popovers
+-------------------------------------------------------------------------- */
+.pinpoint-active-mode {
+  cursor: crosshair !important;
+}
+
+.pinpoint-active-mode .mri-canvas,
+.pinpoint-active-mode .ct-panel-frame,
+.pinpoint-active-mode .viewport {
+  cursor: crosshair !important;
+}
+
+.pin-marker-point {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.pin-dot {
+  width: 10px;
+  height: 10px;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.8), 0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease;
+}
+
+.pin-pulse {
+  position: absolute;
+  inset: -4px;
+  border: 2px solid #ef4444;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: pin-ripple 2s infinite ease-out;
+}
+
+@keyframes pin-ripple {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+.pin-marker-point:hover .pin-dot,
+.pin-marker-point.selected .pin-dot {
+  transform: scale(1.3);
+  background: #38bdf8;
+  border-color: #ffffff;
+  box-shadow: 0 0 12px #38bdf8, 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.pin-tooltip-popover {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(9, 9, 11, 0.92);
+  backdrop-filter: blur(6px);
+  color: #f4f4f5;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 40;
+}
+
+/* --------------------------------------------------------------------------
+   Clinician Note Editor Modal
+-------------------------------------------------------------------------- */
+.note-editor-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fade-in 0.15s ease-out;
+}
+
+.note-editor-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  animation: scale-up 0.2s ease-out;
+}
+
+@keyframes scale-up {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.note-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-icon {
+  font-size: 16px;
+}
+
+.editor-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.btn-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--soft);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+}
+.btn-modal-close:hover {
+  color: var(--ink);
+}
+
+.note-spatial-hud {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11.5px;
+}
+
+.spatial-hud-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hud-label {
+  color: var(--soft);
+  font-weight: 600;
+}
+
+.hud-val {
+  color: var(--ink);
+}
+
+.text-accent {
+  color: var(--brand-purple);
+  font-weight: 700;
+}
+
+.note-editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.editor-input-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.note-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 90px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.note-textarea:focus {
+  border-color: var(--brand-purple);
+  box-shadow: 0 0 0 2px var(--brand-purple-light);
+}
+
+.note-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+

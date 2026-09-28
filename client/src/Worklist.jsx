@@ -250,7 +250,7 @@ export default function Worklist({ load, token }) {
           <div>
             <h2 className="center-title">AI Worklist Queue</h2>
             <p className="center-subtitle">
-              Prioritized by neural triage engine • High-urgency findings ranked automatically
+              Grouped by reading pool because a neuroradiologist reads the MRI and a chest radiologist reads the X-ray; studies are ranked within a pool, never across.
             </p>
           </div>
 
@@ -308,7 +308,7 @@ export default function Worklist({ load, token }) {
               <select value={lane} onChange={(e) => setLane(e.target.value)} aria-label="Lane filter">
                 {LANE_FILTERS.map((l) => (
                   <option key={l} value={l}>
-                    {l === "ALL" ? "All Lanes" : l}
+                    {l === "ALL" ? "All lanes" : l}
                   </option>
                 ))}
               </select>
@@ -404,7 +404,18 @@ export default function Worklist({ load, token }) {
               </div>
 
               {p.sections.map((s) => (
-                <div key={s.lane} className="lane-group">
+                <section key={s.lane} className={`lane-group lane-${s.lane}`} data-testid={`section-${p.pool}-${s.lane}`}>
+                  <h3 className="lane-group-heading">
+                    <span className="lanename">{s.label}</span>
+                    {s.clock && <span className="clock mono"> • {s.clock}</span>}
+                    <span className="mono count"> ({s.rows.length})</span>
+                  </h3>
+                  {s.lane === "ABSTAIN" && (
+                    <p className="lane-explain-why">Model confidence was not sufficient to assign a lane. A radiologist picks it.</p>
+                  )}
+                  {s.lane === "FAILED" && (
+                    <p className="lane-explain-why">Processing did not complete. The study is still in PACS; read it there.</p>
+                  )}
                   {s.rows.map((row) => {
                     const isSelected = row.study === selectedStudyId;
                     const verdict = row.verdict ? (row.verdict.value === "agree" ? "Agreed" : "Disagreed") : "Unread";
@@ -437,7 +448,7 @@ export default function Worklist({ load, token }) {
                           </span>
                         </div>
 
-                        <div className="cell-acuity mono">
+                        <div className="cell-acuity mono acuity">
                           <Acuity row={row} />
                         </div>
 
@@ -453,7 +464,7 @@ export default function Worklist({ load, token }) {
                       </div>
                     );
                   })}
-                </div>
+                </section>
               ))}
             </div>
           ))}

@@ -1,6 +1,9 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import CtGradcamView, { hasCtGradcam } from "./components/CtGradcamView.jsx";
+import AnnotationsPanel from "./components/AnnotationsPanel.jsx";
+import NoteEditorModal from "./components/NoteEditorModal.jsx";
+import { api, loadSession } from "./api.js";
 import { timeUTC } from "./worklist.js";
 import { CheckIcon, ClockIcon } from "./components/Icons.jsx";
 
@@ -28,7 +31,7 @@ function Rationale({ detail, on, onToggle }) {
         data-testid="rationale-toggle"
         className="btn-rationale-toggle"
       >
-        Triage rationale: {on ? "ON" : "OFF"}
+        Triage rationale: {on ? "on" : "off"}
       </button>
       {!available && <span className="note">No rationale image for this study.</span>}
       {on && urls.gradcam_layer_png && (
@@ -60,7 +63,7 @@ function Verdict({ study, onVerdict, busy }) {
           onClick={() => onVerdict("agree")}
           className={`btn-verdict btn-agree ${v?.value === "agree" ? "selected" : ""}`}
         >
-          {v?.value === "agree" && <CheckIcon size={14} />} Agree (Accept Triage)
+          {v?.value === "agree" && <CheckIcon size={14} />} Agree
         </button>
         <button
           type="button"
@@ -69,7 +72,7 @@ function Verdict({ study, onVerdict, busy }) {
           onClick={() => onVerdict("disagree")}
           className={`btn-verdict btn-disagree ${v?.value === "disagree" ? "selected" : ""}`}
         >
-          {v?.value === "disagree" && <CheckIcon size={14} />} Disagree (Override)
+          {v?.value === "disagree" && <CheckIcon size={14} />} Disagree
         </button>
       </div>
       <div className="verdict-audit-badge" data-testid="verdict-status">
@@ -78,7 +81,7 @@ function Verdict({ study, onVerdict, busy }) {
             {v.value === "agree" ? "Agreed" : "Disagreed"} by {v.by} at {v.at}
           </span>
         ) : (
-          <span className="audit-pending">Awaiting radiologist verification.</span>
+          <span className="audit-pending">No verdict yet.</span>
         )}
       </div>
     </div>
@@ -98,7 +101,19 @@ function SegmentationRationale({ detail }) {
   );
 }
 
-export function StudyPanel({ detail, onVerdict, busy, rationaleOn = false }) {
+export function StudyPanel({
+  detail,
+  onVerdict,
+  busy,
+  rationaleOn = false,
+  annotations = [],
+  activeAnnotationId = null,
+  onSelectAnnotation = null,
+  onEditAnnotation = null,
+  onDeleteAnnotation = null,
+  isAddNoteMode = false,
+  onToggleAddNoteMode = null,
+}) {
   const s = detail.study;
   const brain = s.modality === "MR";
   const [copied, setCopied] = useState(false);
@@ -146,9 +161,9 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = false }) {
           <dt>Confidence</dt>
           <dd>
             {brain ? (
-              <span className="confidence-volumetric">Volumetric MONAI SegResNet Output</span>
+              <span className="confidence-volumetric">None: the brain model reports volumes, not a probability</span>
             ) : (
-              <span className="mono">{fmt(s.confidence, 3)} (Calibrated)</span>
+              <><span className="mono">{fmt(s.confidence, 3)}</span> <span className="note">temperature-scaled model output for the driving finding</span></>
             )}
           </dd>
 
@@ -159,6 +174,17 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = false }) {
           <dd className="mono">{s.arrived ? `${timeUTC(s.arrived)} UTC` : "--"}</dd>
         </dl>
       </div>
+
+      {/* Persistent Clinician Pinpoint Annotations Card */}
+      <AnnotationsPanel
+        annotations={annotations}
+        activeAnnotationId={activeAnnotationId}
+        onSelectAnnotation={onSelectAnnotation}
+        onEditAnnotation={onEditAnnotation}
+        onDeleteAnnotation={onDeleteAnnotation}
+        isAddNoteMode={isAddNoteMode}
+        onToggleAddNoteMode={onToggleAddNoteMode}
+      />
 
       {rationaleOn && detail.evidence_urls?.overlay_png && <SegmentationRationale detail={detail} />}
       {s.lane === "FAILED" && <p className="error-banner">Processing error: {s.error}</p>}
@@ -180,11 +206,10 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = false }) {
             {s.lane === "FAILED" ? "None: processing did not reach the model output." : "None reported."}
           </p>
         ) : (
-          <table className="findings-table-modern">
+          <table className="findings">
             <thead>
               <tr>
-                <th>Finding Pathology</th>
-                <th>Signal Meter</th>
+                <th>Finding</th>
                 <th className="num">Signal</th>
                 <th className="num">Urgency</th>
               </tr>
@@ -192,23 +217,11 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = false }) {
             <tbody>
               {detail.findings.map((f) => {
                 const isDriver = f.name === s.driver;
-                const sigVal = f.signal != null ? Number(f.signal) : 0;
                 return (
-                  <tr key={f.name} className={isDriver ? "driver-finding-row" : ""}>
-                    <td className="finding-name-cell">
-                      <span>{f.label}</span>
-                      {isDriver && <span className="driver-pill">DRIVER</span>}
-                    </td>
-                    <td className="meter-cell">
-                      <div className="signal-track">
-                        <div
-                          className={`signal-bar ${isDriver ? "bar-driver" : "bar-normal"}`}
-                          style={{ width: `${Math.min(100, Math.max(0, sigVal * 100))}%` }}
-                        />
-                      </div>
-                    </td>
-                    <td className="mono num bold">{fmt(f.signal, 2)}</td>
-                    <td className="mono num text-soft">{fmt(f.urgency, 2)}</td>
+                  <tr key={f.name} className={isDriver ? "driver-row" : ""}>
+                    <td>{f.label}</td>
+                    <td className="mono num">{fmt(f.signal, 3)}</td>
+                    <td className="mono num">{fmt(f.urgency, 2)}</td>
                   </tr>
                 );
               })}
@@ -251,17 +264,28 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = false }) {
   );
 }
 
-export default function Study({ load, loadSeries, sendVerdict }) {
+export default function Study({ load, loadSeries, sendVerdict, token }) {
   const { id } = useParams();
+  const activeToken = token || loadSession()?.token;
+
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState(null);
   const [seriesUid, setSeriesUid] = useState(null);
   const [instances, setInstances] = useState(null);
-  const [rationale, setRationale] = useState(true);
+  const [rationale, setRationale] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const [view3D, setView3D] = useState(true);
 
+  // Clinician Pinpoint Annotations State
+  const [annotations, setAnnotations] = useState([]);
+  const [selectedAnnotation, setSelectedAnnotation] = useState(null);
+  const [isAddNoteMode, setIsAddNoteMode] = useState(false);
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [editingAnnotationData, setEditingAnnotationData] = useState(null);
+  const [savingNote, setSavingNote] = useState(false);
+
+  // Load study metadata
   useEffect(() => {
     load(id).then((d) => {
       setDetail(d);
@@ -269,6 +293,25 @@ export default function Study({ load, loadSeries, sendVerdict }) {
     }).catch(setError);
   }, [id, load]);
 
+  // Load persistent study annotations from backend
+  const refreshAnnotations = useCallback(() => {
+    if (!id) return;
+    api.getAnnotations(activeToken, id)
+      .then((res) => {
+        if (res && res.annotations) {
+          setAnnotations(res.annotations);
+        }
+      })
+      .catch((err) => {
+        console.warn("Notice: could not load study annotations:", err);
+      });
+  }, [id, activeToken]);
+
+  useEffect(() => {
+    refreshAnnotations();
+  }, [refreshAnnotations]);
+
+  // Load series instances for 2D Cornerstone fallback
   useEffect(() => {
     if (!seriesUid) return;
     setInstances(null);
@@ -286,6 +329,66 @@ export default function Study({ load, loadSeries, sendVerdict }) {
       setBusy(false);
     }
   }
+
+  // Pinpoint Annotation Handlers
+  const handleRequestNewNote = (draftData) => {
+    setEditingAnnotationData(draftData);
+    setNoteModalOpen(true);
+  };
+
+  const handleEditAnnotation = (ann) => {
+    setEditingAnnotationData(ann);
+    setNoteModalOpen(true);
+  };
+
+  const handleSaveNote = async (data) => {
+    setSavingNote(true);
+    try {
+      if (data.id) {
+        // Update existing note
+        const res = await api.updateAnnotation(activeToken, data.id, {
+          note_text: data.note_text,
+          segmentation_region: data.segmentation_region,
+          metadata: data.metadata,
+        });
+        if (res && res.annotation) {
+          setAnnotations((prev) =>
+            prev.map((a) => (a.id === data.id ? res.annotation : a))
+          );
+        }
+      } else {
+        // Create new persistent note
+        const res = await api.createAnnotation(activeToken, id, data);
+        if (res && res.annotation) {
+          setAnnotations((prev) => [...prev, res.annotation]);
+          setSelectedAnnotation(res.annotation);
+        }
+      }
+      setNoteModalOpen(false);
+      setEditingAnnotationData(null);
+      setIsAddNoteMode(false);
+    } catch (err) {
+      alert("Error saving note: " + (err.message || err));
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const handleDeleteAnnotation = async (annId) => {
+    try {
+      await api.deleteAnnotation(activeToken, annId);
+      setAnnotations((prev) => prev.filter((a) => a.id !== annId && a.annotation_id !== annId));
+      if (selectedAnnotation?.id === annId || selectedAnnotation?.annotation_id === annId) {
+        setSelectedAnnotation(null);
+      }
+    } catch (err) {
+      alert("Error deleting note: " + (err.message || err));
+    }
+  };
+
+  const handleSelectAnnotation = (ann) => {
+    setSelectedAnnotation(ann);
+  };
 
   if (error) {
     return (
@@ -327,7 +430,7 @@ export default function Study({ load, loadSeries, sendVerdict }) {
                 {detail.study.exam || detail.study.modality}
               </span>
               <span className={`lanetag lane-${detail.study.lane}`}>
-                {detail.study.lane_label || detail.study.lane}
+                {detail.study.lane}
               </span>
             </div>
           </div>
@@ -365,7 +468,7 @@ export default function Study({ load, loadSeries, sendVerdict }) {
                 ))}
               </div>
             )}
-            {!isMR && <Rationale detail={detail} on={rationale} onToggle={() => setRationale((v) => !v)} />}
+            <Rationale detail={detail} on={rationale} onToggle={() => setRationale((v) => !v)} />
           </div>
         </div>
 
@@ -380,13 +483,40 @@ export default function Study({ load, loadSeries, sendVerdict }) {
         <div className="viewer-viewport-container">
           {isCT ? (
             hasCtGradcam(urls)
-              ? <CtGradcamView evidence={ev} urls={urls} show={rationale} />
+              ? (
+                <CtGradcamView
+                  evidence={ev}
+                  urls={urls}
+                  show={rationale}
+                  annotations={annotations}
+                  selectedAnnotation={selectedAnnotation}
+                  onSelectAnnotation={handleSelectAnnotation}
+                  onRequestNewNote={handleRequestNewNote}
+                  isAddNoteMode={isAddNoteMode}
+                  onToggleAddNoteMode={() => setIsAddNoteMode((v) => !v)}
+                />
+              )
               : <p className="note viewer-empty" data-testid="ct-no-gradcam">No CT image is stored for this study.</p>
-          ) : isMR && view3D ? (
+          ) : isMR && view3D && (
+            detail.study?.has_3d_volume ||
+            detail.study?.model_id?.includes("segresnet") ||
+            detail.study?.model_id?.includes("brats") ||
+            detail.study?.model_id?.includes("alzheimer") ||
+            detail.study?.model_id?.includes("alz") ||
+            id?.toLowerCase().includes("brain-mri") ||
+            id?.toLowerCase().includes("alz") ||
+            id?.toLowerCase().includes("00000057")
+          ) ? (
             <Suspense fallback={<div className="viewer-loading-placeholder"><div className="clinical-spinner"></div><p>Initializing NiiVue 3D WebGL Engine...</p></div>}>
               <MriViewer3D
                 studyId={id}
                 isAlzheimer={Boolean(detail.study?.alzheimer || detail.alzheimer || id.toLowerCase().includes("alz"))}
+                annotations={annotations}
+                selectedAnnotation={selectedAnnotation}
+                onSelectAnnotation={handleSelectAnnotation}
+                onRequestNewNote={handleRequestNewNote}
+                isAddNoteMode={isAddNoteMode}
+                onToggleAddNoteMode={() => setIsAddNoteMode((v) => !v)}
               />
             </Suspense>
           ) : !current || current.instance_count === 0 ? (
@@ -405,14 +535,49 @@ export default function Study({ load, loadSeries, sendVerdict }) {
             </div>
           ) : (
             <Suspense fallback={<div className="viewer-loading-placeholder"><div className="clinical-spinner"></div><p>Rendering DICOM viewer...</p></div>}>
-              <Viewer instances={instances} overlay={overlay} label={current.description} />
+              <Viewer
+                instances={instances}
+                overlay={overlay}
+                label={current.description}
+                annotations={annotations}
+                selectedAnnotation={selectedAnnotation}
+                onSelectAnnotation={handleSelectAnnotation}
+                onRequestNewNote={handleRequestNewNote}
+                isAddNoteMode={isAddNoteMode}
+                onToggleAddNoteMode={() => setIsAddNoteMode((v) => !v)}
+              />
             </Suspense>
           )}
         </div>
       </div>
 
-      {/* Persistent Right Clinical Findings & Verdict Panel */}
-      <StudyPanel detail={detail} onVerdict={onVerdict} busy={busy} rationaleOn={rationale} />
+      {/* Persistent Right Clinical Findings, Annotations & Verdict Panel */}
+      <StudyPanel
+        detail={detail}
+        onVerdict={onVerdict}
+        busy={busy}
+        rationaleOn={rationale}
+        annotations={annotations}
+        activeAnnotationId={selectedAnnotation?.id || selectedAnnotation?.annotation_id}
+        onSelectAnnotation={handleSelectAnnotation}
+        onEditAnnotation={handleEditAnnotation}
+        onDeleteAnnotation={handleDeleteAnnotation}
+        isAddNoteMode={isAddNoteMode}
+        onToggleAddNoteMode={() => setIsAddNoteMode((v) => !v)}
+      />
+
+      {/* Persistent Spatially-Anchored Note Editor Modal */}
+      <NoteEditorModal
+        isOpen={noteModalOpen}
+        initialData={editingAnnotationData}
+        onSave={handleSaveNote}
+        onCancel={() => {
+          setNoteModalOpen(false);
+          setEditingAnnotationData(null);
+        }}
+        busy={savingNote}
+      />
     </main>
   );
 }
+

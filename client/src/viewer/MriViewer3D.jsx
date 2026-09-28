@@ -7,7 +7,36 @@ import { api } from "../api.js";
  * Displays Axial, Coronal, Sagittal, and 3D Volume rendering with interactive
  * sequence selection, segmentation mask overlays, and volumetric metrics.
  */
-export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzheimer = false }) {
+function getSegmentationRegionLabel(values, isAlzheimer) {
+  if (isAlzheimer) {
+    return "User annotation on T1 volume";
+  }
+  if (!values || values.length < 2) {
+    return "Unsegmented location";
+  }
+  const segVal = Math.round(Number(values[1]) || 0);
+  if (segVal === 4 || segVal === 3) {
+    return "ET (Enhancing Tumor)";
+  } else if (segVal === 1) {
+    return "TC (Tumor Core)";
+  } else if (segVal === 2) {
+    return "WT (Whole Tumor)";
+  } else {
+    return "Unsegmented location";
+  }
+}
+
+export default function MriViewer3D({
+  studyId,
+  initialSequence = "t1ce",
+  isAlzheimer = false,
+  annotations = [],
+  selectedAnnotation = null,
+  onSelectAnnotation = null,
+  onRequestNewNote = null,
+  isAddNoteMode = false,
+  onToggleAddNoteMode = null,
+}) {
   const isAlz = isAlzheimer || (studyId && studyId.toLowerCase().includes("alz"));
   const [sequence, setSequence] = useState(isAlz ? "t1" : initialSequence);
   const [showSeg, setShowSeg] = useState(!isAlz);
@@ -17,6 +46,7 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
   const [showCrosshairs, setShowCrosshairs] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentVoxel, setCurrentVoxel] = useState(null);
 
   const canvasAxialRef = useRef(null);
   const canvasCoronalRef = useRef(null);
@@ -27,6 +57,28 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
   const nvCoronalRef = useRef(null);
   const nvSagittalRef = useRef(null);
   const nv3DRef = useRef(null);
+
+  const lastLocationRef = useRef(null);
+
+  // Synchronize crosshair position to selected annotation's 3D voxel
+  useEffect(() => {
+    if (!selectedAnnotation || !selectedAnnotation.voxel) return;
+    const { x, y, z } = selectedAnnotation.voxel;
+    [nvAxialRef.current, nvCoronalRef.current, nvSagittalRef.current, nv3DRef.current].forEach((nv) => {
+      if (nv && nv.vox2frac) {
+        try {
+          const frac = nv.vox2frac([Number(x), Number(y), Number(z)]);
+          if (frac && frac.length === 3) {
+            if (nv.setCrosshairPos) nv.setCrosshairPos(frac[0], frac[1], frac[2]);
+            else if (nv.scene) nv.scene.crosshairPos = frac;
+            if (nv.drawScene) nv.drawScene();
+          }
+        } catch (e) {
+          console.warn("Crosshair sync error:", e);
+        }
+      }
+    });
+  }, [selectedAnnotation]);
 
   // Fetch quantitative volumetric metrics (tumor studies)
   useEffect(() => {
@@ -77,6 +129,49 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
     }
   };
 
+  // Handle canvas click to place pinpoint note
+  const handleViewportClick = (planeName, e) => {
+    if (!isAddNoteMode && e.type !== "contextmenu") return;
+    if (e.type === "contextmenu") e.preventDefault();
+
+    const loc = lastLocationRef.current;
+    if (!loc || !loc.vox || !loc.mm) return;
+
+    const [vx, vy, vz] = loc.vox;
+    const [mx, my, mz] = loc.mm;
+    const region = getSegmentationRegionLabel(loc.values, isAlz);
+
+    onRequestNewNote?.({
+      modality: "MR",
+      coordinate_space: "NIFTI_WORLD",
+      voxel: { x: vx, y: vy, z: vz },
+      world_mm: { x: mx, y: my, z: mz },
+      coordinate_x: vx,
+      coordinate_y: vy,
+      coordinate_z: vz,
+      slice_index: vz,
+      segmentation_region: region,
+      viewer_context: {
+        sequence,
+        plane: planeName,
+        layout: viewLayout,
+      },
+    });
+  };
+
+  const setupLocationCallback = (nv, planeName) => {
+    nv.onLocationChange = (data) => {
+      lastLocationRef.current = data;
+      if (data && data.vox) {
+        setCurrentVoxel({
+          vox: data.vox,
+          mm: data.mm,
+          region: getSegmentationRegionLabel(data.values, isAlz),
+        });
+      }
+    };
+  };
+
   // Initialize and load NiiVue viewports
   useEffect(() => {
     let cancelled = false;
@@ -110,6 +205,7 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
             nvAxialRef.current = new Niivue({ isColorbar: false, backColor: [0.03, 0.04, 0.07, 1.0] });
             nvAxialRef.current.attachToCanvas(canvasAxialRef.current);
           }
+          setupLocationCallback(nvAxialRef.current, "Axial");
           if (nvAxialRef.current.setSliceType) nvAxialRef.current.setSliceType(0);
           await nvAxialRef.current.loadVolumes(volumes);
         }
@@ -120,6 +216,7 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
             nvCoronalRef.current = new Niivue({ isColorbar: false, backColor: [0.03, 0.04, 0.07, 1.0] });
             nvCoronalRef.current.attachToCanvas(canvasCoronalRef.current);
           }
+          setupLocationCallback(nvCoronalRef.current, "Coronal");
           if (nvCoronalRef.current.setSliceType) nvCoronalRef.current.setSliceType(1);
           await nvCoronalRef.current.loadVolumes(volumes);
         }
@@ -130,6 +227,7 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
             nvSagittalRef.current = new Niivue({ isColorbar: false, backColor: [0.03, 0.04, 0.07, 1.0] });
             nvSagittalRef.current.attachToCanvas(canvasSagittalRef.current);
           }
+          setupLocationCallback(nvSagittalRef.current, "Sagittal");
           if (nvSagittalRef.current.setSliceType) nvSagittalRef.current.setSliceType(2);
           await nvSagittalRef.current.loadVolumes(volumes);
         }
@@ -140,6 +238,7 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
             nv3DRef.current = new Niivue({ isColorbar: false, backColor: [0.02, 0.02, 0.04, 1.0] });
             nv3DRef.current.attachToCanvas(canvas3DRef.current);
           }
+          setupLocationCallback(nv3DRef.current, "3D");
           if (nv3DRef.current.setSliceType) nv3DRef.current.setSliceType(4);
           await nv3DRef.current.loadVolumes(volumes);
           if (nv3DRef.current.setRenderAzimuthElevation) {
@@ -154,7 +253,6 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
       } catch (err) {
         if (!cancelled) {
           console.warn("NiiVue volume loading notice:", err);
-          // Fallback load without segmentation if seg fails
           try {
             const fallbackVol = [{ url: volumeUrl, name: seqFileName, colormap: "gray", opacity: 1.0 }];
             if (nvAxialRef.current) await nvAxialRef.current.loadVolumes(fallbackVol);
@@ -177,7 +275,7 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
   }, [studyId, sequence, viewLayout]);
 
   return (
-    <div className="mri-3d-workstation" data-testid="mri-3d-workstation">
+    <div className={`mri-3d-workstation ${isAddNoteMode ? "pinpoint-active-mode" : ""}`} data-testid="mri-3d-workstation">
       {/* Top Clinical MPR Workstation Toolbar */}
       <div className="mri-toolbar">
         {isAlz ? (
@@ -275,8 +373,18 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
           </div>
         </div>
 
-        {/* Utility Actions */}
+        {/* Pinpoint & Utility Actions */}
         <div className="toolbar-group tool-actions">
+          {onToggleAddNoteMode && (
+            <button
+              type="button"
+              className={`btn-tool-action btn-pin-mode ${isAddNoteMode ? "active" : ""}`}
+              onClick={onToggleAddNoteMode}
+              title="Click anywhere on the image to drop a spatially anchored note"
+            >
+              📍 {isAddNoteMode ? "Pin Active" : "Add Note"}
+            </button>
+          )}
           <button
             type="button"
             className={`btn-tool-action ${showCrosshairs ? "active" : ""}`}
@@ -295,6 +403,20 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
           </button>
         </div>
       </div>
+
+      {isAddNoteMode && (
+        <div className="mri-pin-instruction-hud">
+          <span className="pulse-dot"></span>
+          <span>
+            <strong>Pinpoint Mode Active:</strong> Click any region on the Axial, Coronal, Sagittal, or 3D view to place a clinician note.
+            {currentVoxel && (
+              <span className="voxel-preview mono">
+                {" "}[Vox: {currentVoxel.vox?.join(", ")} | Region: {currentVoxel.region}]
+              </span>
+            )}
+          </span>
+        </div>
+      )}
 
       {loading && (
         <div className="mri-loading-indicator">
@@ -325,7 +447,12 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
             <div className="orientation-tag bottom-tag">P</div>
             <div className="orientation-tag left-tag">R</div>
             <div className="orientation-tag right-tag">L</div>
-            <canvas ref={canvasAxialRef} className="mri-canvas" />
+            <canvas
+              ref={canvasAxialRef}
+              className="mri-canvas"
+              onClick={(e) => handleViewportClick("Axial", e)}
+              onContextMenu={(e) => handleViewportClick("Axial", e)}
+            />
           </div>
         )}
 
@@ -340,7 +467,12 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
               <div className="orientation-tag bottom-tag">I</div>
               <div className="orientation-tag left-tag">R</div>
               <div className="orientation-tag right-tag">L</div>
-              <canvas ref={canvasCoronalRef} className="mri-canvas" />
+              <canvas
+                ref={canvasCoronalRef}
+                className="mri-canvas"
+                onClick={(e) => handleViewportClick("Coronal", e)}
+                onContextMenu={(e) => handleViewportClick("Coronal", e)}
+              />
             </div>
 
             <div className="viewport-cell cell-sagittal">
@@ -352,7 +484,12 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
               <div className="orientation-tag bottom-tag">I</div>
               <div className="orientation-tag left-tag">A</div>
               <div className="orientation-tag right-tag">P</div>
-              <canvas ref={canvasSagittalRef} className="mri-canvas" />
+              <canvas
+                ref={canvasSagittalRef}
+                className="mri-canvas"
+                onClick={(e) => handleViewportClick("Sagittal", e)}
+                onContextMenu={(e) => handleViewportClick("Sagittal", e)}
+              />
             </div>
           </>
         )}
@@ -364,10 +501,16 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
               <span className="badge-coords mono">Az: 120° El: 25°</span>
             </div>
             <div className="raymarch-hint">Drag to Rotate • Wheel to Zoom</div>
-            <canvas ref={canvas3DRef} className="mri-canvas canvas-3d" />
+            <canvas
+              ref={canvas3DRef}
+              className="mri-canvas canvas-3d"
+              onClick={(e) => handleViewportClick("3D", e)}
+              onContextMenu={(e) => handleViewportClick("3D", e)}
+            />
           </div>
         )}
       </div>
+
 
       {/* Quantitative Volumetric Measurements HUD Footer */}
       {metrics && !isAlz && (
