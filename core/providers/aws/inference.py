@@ -31,6 +31,7 @@ to start. Neither has been measured: nothing has been deployed.
 from __future__ import annotations
 
 import io
+import sys
 import json
 import tempfile
 import time
@@ -41,6 +42,7 @@ from urllib.parse import urlparse
 
 import boto3
 import numpy as np
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from core.ports import InferencePort
@@ -71,7 +73,12 @@ class LambdaSageMakerInference(InferencePort):
                  ct_endpoint: str | None = None):
         self.bucket, self.chest_function, self.brain_endpoint = bucket, chest_function, brain_endpoint
         self.ct_endpoint = ct_endpoint
-        self.lam = lambda_client or boto3.client("lambda", region_name=region)
+        # Wait longer than the function may run (300 s, infra/auralane_stack.py)
+        # and never retry an invoke: botocore's default 60 s read timeout re-invoked
+        # a cold chest function twice, three model runs for one study.
+        self.lam = lambda_client or boto3.client(
+            "lambda", region_name=region,
+            config=Config(read_timeout=330, retries={"total_max_attempts": 1}))
         self.smr = sagemaker_runtime or boto3.client("sagemaker-runtime", region_name=region)
         self.s3 = s3 or boto3.client("s3", region_name=region)
         self.poll_seconds, self.brain_timeout = poll_seconds, brain_timeout
@@ -167,10 +174,17 @@ class LambdaSageMakerInference(InferencePort):
 
     def _await(self, output: str, failure: str | None, endpoint: str | None = None) -> bytes:
         endpoint = endpoint or self.brain_endpoint
-        deadline = time.monotonic() + self.brain_timeout
+        start = time.monotonic()
+        deadline = start + self.brain_timeout
+        said = 0
         while True:
             if self._exists(output):
                 return self._read(output)
+            waited = int(time.monotonic() - start)
+            if waited // 60 > said:             # a line a minute, so a long wait never looks hung
+                said = waited // 60
+                print(f"  waiting for {endpoint}: {waited} s (from zero instances, "
+                      f"starting one takes several minutes)", file=sys.stderr, flush=True)
             if failure and self._exists(failure):
                 raise RuntimeError(f"endpoint {endpoint} failed: "
                                    f"{self._read(failure)[:500]!r}")

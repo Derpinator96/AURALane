@@ -40,6 +40,7 @@ import gzip
 import json
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import quote, urlencode
 
@@ -94,11 +95,13 @@ class HealthImagingDatastore(DatastorePort):
 
         run = uuid.uuid4().hex
         prefix = f"import/{run}"
-        keys = []
-        for i, p in enumerate(paths):
-            key = f"{prefix}/in/{i:05d}.dcm"
-            self.s3.put_object(Bucket=self.bucket, Key=key, Body=p.read_bytes())
-            keys.append(key)
+        keys = [f"{prefix}/in/{i:05d}.dcm" for i in range(len(paths))]
+        # Staged 16 at a time: a 620-slice MR is 620 round trips to us-east-1,
+        # minutes when done one by one.
+        with ThreadPoolExecutor(16) as pool:
+            list(pool.map(lambda kp: self.s3.put_object(Bucket=self.bucket, Key=kp[0],
+                                                        Body=kp[1].read_bytes()),
+                          zip(keys, paths)))
         try:
             job = self.mi.start_dicom_import_job(
                 jobName=f"auralane-{run[:12]}", dataAccessRoleArn=self.role, clientToken=run,
@@ -107,8 +110,8 @@ class HealthImagingDatastore(DatastorePort):
                 outputS3Uri=f"s3://{self.bucket}/{prefix}/out/")
             self._wait(job["jobId"])
         finally:
-            for key in keys:
-                self.s3.delete_object(Bucket=self.bucket, Key=key)
+            with ThreadPoolExecutor(16) as pool:
+                list(pool.map(lambda k: self.s3.delete_object(Bucket=self.bucket, Key=k), keys))
         return StudyRef(study_uid=study_uid, datastore_id=self._image_set(study_uid))
 
     def _wait(self, job_id: str) -> None:

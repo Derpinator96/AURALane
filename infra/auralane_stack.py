@@ -114,7 +114,11 @@ class AuralaneStack(Stack):
                         "output back")
         import_role.add_to_policy(iam.PolicyStatement(
             actions=["s3:ListBucket"], resources=[bucket.bucket_arn],
-            conditions={"StringLike": {"s3:prefix": ["import/*"]}}))
+            # No s3:prefix condition: with one, StartDICOMImportJob refused with
+            # "data access role does not have proper read permission to the input
+            # s3 prefix". AWS's documented import role grants ListBucket on the
+            # bucket as a whole; object access stays limited to import/*.
+            ))
         import_role.add_to_policy(iam.PolicyStatement(
             actions=["s3:GetObject", "s3:PutObject"], resources=[bucket.arn_for_objects("import/*")]))
 
@@ -125,7 +129,9 @@ class AuralaneStack(Stack):
                 str(REPO), file="infra/lambda/chest/Dockerfile",
                 exclude=CHEST_CONTEXT, ignore_mode=IgnoreMode.DOCKER,
                 platform=ecr_assets.Platform.LINUX_AMD64),
-            memory_size=3008, timeout=Duration.seconds(120),
+            # 300 s: the first run after a deploy loads the 3 GB image lazily and
+            # exceeded 120 s (measured 2026-09-28). Billed only while running.
+            memory_size=3008, timeout=Duration.seconds(300),
             architecture=lambda_.Architecture.X86_64,
             environment={"AURALANE_BUCKET": bucket.bucket_name},
             log_group=logs.LogGroup(self, "ChestLogs", retention=logs.RetentionDays.ONE_WEEK,

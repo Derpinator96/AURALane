@@ -37,7 +37,10 @@ def run(cmd: list[str], **kw) -> None:
 
 
 def main() -> int:
-    run([sys.executable, "app.py"], cwd=HERE)                 # synth: no AWS calls
+    # Synth into infra/cdk.out, where cdk deploy synthesises too. Without
+    # CDK_OUTDIR a bare `python app.py` writes to a temporary directory, and
+    # this script would read a stale manifest.
+    run([sys.executable, "app.py"], cwd=HERE, env={**os.environ, "CDK_OUTDIR": str(OUT)})
     manifest = json.loads((OUT / "Auralane.assets.json").read_text())
     account = boto3.client("sts", region_name=REGION).get_caller_identity()["Account"]
     ecr = boto3.client("ecr", region_name=REGION)

@@ -244,16 +244,18 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
                 d["text_regions_masked"] = masked
 
             with run.step("blob_put") as d:
-                files = []
+                files, items = [], []
                 for ds in cleaned:
                     buf = io.BytesIO()
                     ds.save_as(buf, enforce_file_format=True)
-                    key = f"transient/{run.id}/{ds.SOPInstanceUID}.dcm"
-                    keys.append(blob.put(key, buf.getvalue()))
+                    items.append((f"transient/{run.id}/{ds.SOPInstanceUID}.dcm", buf.getvalue()))
                     local = work / "dicom" / f"{ds.SOPInstanceUID}.dcm"
                     local.parent.mkdir(exist_ok=True)
                     local.write_bytes(buf.getvalue())
                     files.append(local)
+                # 16 at a time: to S3 each put is a round trip to us-east-1.
+                with ThreadPoolExecutor(16) as pool:
+                    keys.extend(pool.map(lambda kv: blob.put(*kv), items))
                 d["objects"] = len(keys)
 
             with run.step("import") as d:
@@ -362,7 +364,7 @@ def _persist_failure(run: _Run, v: Verdict, meta, tb: str) -> None:
 def _delete_transient(run: _Run, blob: BlobPort, keys: list[str]) -> None:
     try:
         with run.step("blob_delete", objects=len(keys)):
-            for k in keys:
-                blob.delete(k)
+            with ThreadPoolExecutor(16) as pool:
+                list(pool.map(blob.delete, keys))
     except Exception:
         pass            # recorded in the audit by run.step
