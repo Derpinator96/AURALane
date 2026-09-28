@@ -5179,5 +5179,146 @@
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
+ },
+ {
+  "study": "fixture-mr-alzheimer-01",
+  "modality": "MR",
+  "model_id": "alzheimer-densenet121",
+  "status": "SCORED",
+  "lane": "URGENT",
+  "triage": {
+   "acuity": 74.5,
+   "lane": "URGENT",
+   "sla": "< 1 hr",
+   "sla_minutes": 60,
+   "abstained": false,
+   "driver": "Cognitive Decline (AD Risk)",
+   "confidence": 0.864,
+   "signal": 0.864,
+   "raw": 0.864,
+   "top_findings": [
+    {
+     "name": "Alzheimer's Disease (AD)",
+     "confidence": 0.864,
+     "signal": 0.864,
+     "urgency": 0.85
+    },
+    {
+     "name": "Mild Cognitive Impairment (MCI)",
+     "confidence": 0.112,
+     "signal": 0.112,
+     "urgency": 0.6
+    },
+    {
+     "name": "Cognitively Normal (CN)",
+     "confidence": 0.024,
+     "signal": 0.024,
+     "urgency": 0.1
+    }
+   ]
+  },
+  "findings": {
+   "Alzheimer's Disease (AD)": 0.864,
+   "Mild Cognitive Impairment (MCI)": 0.112,
+   "Cognitively Normal (CN)": 0.024
+  },
+  "alzheimer": {
+   "task": "alzheimer_classification",
+   "predicted_class": "AD",
+   "confidence": 0.864,
+   "probabilities": {
+    "AD": 0.864,
+    "MCI": 0.112,
+    "CN": 0.024
+   },
+   "model_name": "Rootstrap MONAI DenseNet121 3D",
+   "sequence": "T1-only (Axial MPRAGE)",
+   "status": "VALIDATED",
+   "case_id": "AD_01"
+  },
+  "evidence": {},
+  "error": null,
+  "series": [
+   {
+    "series_uid": "fixture-mr-alzheimer-01-t1",
+    "number": 1,
+    "description": "T1 Structural (Cognitive Pipeline)",
+    "instance_count": 96,
+    "instance_uids": []
+   }
+  ],
+  "source": "radiata-ai/brain-structure test split case AD_01.nii.gz through Rootstrap Alzheimer 3D MONAI DenseNet121. T1-only pipeline.",
+  "created_at": "2026-09-25T08:50:00+00:00",
+  "patient_id": "PAT-ALZ-001",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
+ },
+ {
+  "study": "fixture-ct-ich-009",
+  "modality": "CT",
+  "model_id": "ct-head-v1",
+  "status": "SCORED",
+  "lane": "CRITICAL",
+  "triage": {
+   "acuity": 88.0,
+   "lane": "CRITICAL",
+   "sla": "< 15 min",
+   "sla_minutes": 15,
+   "abstained": false,
+   "driver": "Intracranial Hemorrhage",
+   "confidence": 0.942,
+   "signal": 0.942,
+   "raw": 0.942,
+   "top_findings": [
+    {
+     "name": "Intracranial Hemorrhage",
+     "confidence": 0.942,
+     "signal": 0.942,
+     "urgency": 0.98
+    },
+    {
+     "name": "Mass Effect / Midline Shift",
+     "confidence": 0.781,
+     "signal": 0.781,
+     "urgency": 0.9
+    },
+    {
+     "name": "Cerebral Edema",
+     "confidence": 0.655,
+     "signal": 0.655,
+     "urgency": 0.7
+    }
+   ]
+  },
+  "findings": {
+   "Intracranial Hemorrhage": 0.942,
+   "Mass Effect / Midline Shift": 0.781,
+   "Cerebral Edema": 0.655
+  },
+  "evidence": {
+   "gradcam_png": "evidence/fixture-sample/ct_ich.png",
+   "gradcam_finding": "Intracranial Hemorrhage",
+   "gradcam_coverage": 0.08
+  },
+  "error": null,
+  "series": [
+   {
+    "series_uid": "fixture-ct-ich-009-1",
+    "number": 1,
+    "description": "Head CT Axial Non-Contrast",
+    "instance_count": 1,
+    "instance_uids": [
+     "ct.inst.001"
+    ],
+    "frame_url": "/fixtures/frames/ct_head.png"
+   }
+  ],
+  "source": "Non-contrast Head CT with acute extra-axial intracranial hemorrhage.",
+  "created_at": "2026-09-25T08:52:00+00:00",
+  "patient_id": "PAT-CT-9041",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925"
  }
 ]

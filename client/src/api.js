@@ -58,4 +58,22 @@ export const api = {
   audit: (token) => call("/api/admin/audit", { token }),
   laneMix: (token) => call("/api/admin/lane-mix", { token }),
   models: (token) => call("/api/admin/models", { token }),
+  upload: async (token, formData) => {
+    const res = await fetch(BASE + "/api/studies/upload", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, data.detail || res.statusText || "Upload failed");
+    return data;
+  },
+  volumeUrl: (study, sequence) =>
+    `${BASE}/api/studies/${encodeURIComponent(study)}/volume/${encodeURIComponent(sequence)}`,
+  segmentationUrl: (study) =>
+    `${BASE}/api/studies/${encodeURIComponent(study)}/segmentation`,
+  metrics: (token, study) =>
+    call(`/api/studies/${encodeURIComponent(study)}/metrics`, { token }),
+  mriDemo: (token) => call("/api/mri/demo", { token, method: "POST" }),
+  alzheimerDemo: (token) => call("/api/alzheimer/demo", { token, method: "POST" }),
 };
