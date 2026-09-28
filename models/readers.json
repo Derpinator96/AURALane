@@ -1,10 +1,33 @@
 {
   "_about": "Display name and reading pools per radiologist username. Names are synthetic on purpose. A radiologist not listed here reads both pools under their username.",
   "readers": {
-    "radiologist": {"name": "Development reader", "pools": ["Chest", "Neuro"]},
-    "radiologist-1": {"name": "Reader 1", "pools": ["Chest", "Neuro"]},
-    "radiologist-2": {"name": "Reader 2", "pools": ["Chest", "Neuro"]},
-    "radiologist-3": {"name": "Reader 3", "pools": ["Chest", "Neuro"]},
-    "radiologist-4": {"name": "Reader 4", "pools": ["Chest", "Neuro"]}
+    "radiologist-1": {
+      "name": "Reader 1",
+      "pools": [
+        "Chest",
+        "Neuro"
+      ]
+    },
+    "radiologist-2": {
+      "name": "Reader 2",
+      "pools": [
+        "Chest",
+        "Neuro"
+      ]
+    },
+    "radiologist-3": {
+      "name": "Reader 3",
+      "pools": [
+        "Chest",
+        "Neuro"
+      ]
+    },
+    "radiologist-4": {
+      "name": "Reader 4",
+      "pools": [
+        "Chest",
+        "Neuro"
+      ]
+    }
   }
 }

@@ -71,6 +71,10 @@ CT_CONTEXT = ["*", "!core", "!adapters", "!models", "!imaging.py", "!triage.py",
               "**/__pycache__"]
 
 
+CLIENT_ORIGINS = ["https://aura-lane.vercel.app", "http://localhost:5173",
+                  "http://localhost:4173", "http://localhost:4174"]
+
+
 class AuralaneStack(Stack):
     def __init__(self, scope: Construct, cid: str, **kwargs) -> None:
         super().__init__(scope, cid, **kwargs)
@@ -88,7 +92,13 @@ class AuralaneStack(Stack):
             lifecycle_rules=[s3.LifecycleRule(prefix=p, expiration=Duration.days(1))
                              for p in WORKING_PREFIXES]
                             + [s3.LifecycleRule(prefix="intake/", expiration=Duration.days(7))],
-            event_bridge_enabled=True)
+            event_bridge_enabled=True,
+            # The 3D viewer (NiiVue) fetches evidence NIfTI through presigned
+            # URLs with fetch(), which needs CORS; <img> tags did not. GET only,
+            # from the hosted client and the local dev and preview servers.
+            cors=[s3.CorsRule(allowed_methods=[s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+                              allowed_origins=CLIENT_ORIGINS, allowed_headers=["*"],
+                              max_age=3000)])
 
         # -- DynamoDB: the schema core/providers/aws/_dynamodb.py expects -------
         worklist = ddb.Table(

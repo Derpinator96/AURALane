@@ -3098,10 +3098,6 @@ header.top {
    Assignment, simulate ingest, draft panel, pipeline view (integrate branch).
    No gradients, no pill shapes. One solid accent per lane.
 -------------------------------------------------------------------------- */
-.queue-colhead,
-.study-row {
-  grid-template-columns: 110px 120px 100px minmax(120px, 1fr) 56px 110px 72px 60px;
-}
 .study-row.overdue { box-shadow: inset 4px 0 0 var(--lane-critical-solid); }
 .cell-assigned { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .overdue-tag { color: var(--lane-critical-text); font-weight: 700; }
@@ -3204,8 +3200,6 @@ table.admin tr.clickable { cursor: pointer; }
 
 /* Worklist columns fit the centre pane without a sideways scroll. */
 .workstation-center { overflow-x: hidden; }
-.queue-colhead,
-.study-row { grid-template-columns: 104px minmax(84px, 110px) 84px minmax(90px, 1fr) 46px 84px 62px 44px; gap: 6px; }
 .study-row .lanetag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
 
 /* Main's rules for the screens the redesign did not restyle (admin, sign-in,
@@ -3266,3 +3260,12 @@ tr.lane-FAILED .bar { background: var(--failed); }
 }
 .foot a { color: var(--soft); text-decoration: underline; }
 .datastore-note { color: var(--soft); border-left: 3px solid var(--soft); padding: 4px 10px; margin: 8px 0; }
+
+/* Status cell carries the reader under the verdict (Shaurya's seven columns kept). */
+.cell-status { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.cell-reader { font-size: 11px; color: var(--soft); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workstation-center { overflow-x: hidden; }
+
+/* The 2D viewer inside the latest-case panel: a panel-sized viewport. */
+.latest-case-panel .viewport { height: 420px; min-height: 0; }
+.latest-case-panel .mri-grid { min-height: 520px; }

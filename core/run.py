@@ -115,13 +115,38 @@ def providers(for_ingest: bool = False) -> dict:
                 "inference": p.LambdaSageMakerInference(
                     env["bucket"], env["chest_function"], env["brain_endpoint"],
                     ct_endpoint=env["ct_endpoint"]) if for_ingest else None,
-                "auth": p.CognitoAuth(env["user_pool_id"], env["client_id"]),
+                "auth": _aws_auth(p, env),
                 # Bedrock is blocked at the account level; drafting ships on the
                 # template everywhere, as decided on 2026-09-25.
                 "llm": TemplateLLM(),
                 "frame_proxy": _public_url() if proxy else None,
                 "notify": (p.SnsNotifier(env["access_topic"]) if env["access_topic"] else None)}
     sys.exit(f"AURALANE_RUNTIME must be local, fixture or aws, got {runtime!r}")
+
+
+class _LoopbackAuth:
+    """AURALANE_AUTH=dev on the aws runtime: development tokens against the
+    real AWS data, for testing on this machine only (cmd_serve refuses any
+    host but loopback). The reader list still comes from Cognito, and a token
+    can be minted for any of those readers (python -m core.run token --as)."""
+
+    def __init__(self, cognito):
+        from core.providers.local import DevAuth
+        self.dev, self.cognito = DevAuth(key_file=DEV_KEY, password_file=DEV_PASSWORD_FILE), cognito
+
+    def login(self, username, password):
+        return self.dev.login(username, password)
+
+    def verify(self, token):
+        return self.dev.verify(token)
+
+    def readers(self):
+        return self.cognito.readers()
+
+
+def _aws_auth(p, env):
+    cognito = p.CognitoAuth(env["user_pool_id"], env["client_id"])
+    return _LoopbackAuth(cognito) if os.environ.get("AURALANE_AUTH") == "dev" else cognito
 
 
 def _identity():
@@ -268,9 +293,9 @@ def _simulator(prov: dict):
             return ingest(paths, blob=p["blob"], datastore=p["datastore"], table=p["table"],
                           inference=p["inference"], registry=registry, identity=None,
                           regional=regional, **kw)
-        # Two in flight: the models are remote. Brain MR is the memory peak here
-        # (620 instances read, four volumes built), which is why not more.
-        return Simulator(pool, ingest_one, table, runtime, on_study=on_study, workers=2)
+        # Four in flight: the models are remote. Brain MR, the memory peak (620
+        # instances read, four volumes built), is held to one at a time.
+        return Simulator(pool, ingest_one, table, runtime, on_study=on_study, workers=4)
 
     shared = {}
 
@@ -294,6 +319,8 @@ def cmd_serve(args) -> int:
         if missing:
             sys.exit(f"refusing to serve on {args.host}: set "
                      + "; ".join(f"{v} ({HOSTED_REQUIRED[v]})" for v in missing))
+    if os.environ.get("AURALANE_AUTH") == "dev" and args.host not in LOOPBACK:
+        sys.exit("AURALANE_AUTH=dev is for this machine only: serve on 127.0.0.1")
     import uvicorn
     from core.api import create_app
     prov = providers()
@@ -354,6 +381,20 @@ def cmd_upload_corpus(args) -> int:
 
 
 def cmd_token(args) -> int:
+    if getattr(args, "as_reader", None):
+        # A development token for a named reader id (AURALANE_AUTH=dev testing).
+        import time as _t
+
+        import jwt
+        from core.providers.local import DevAuth
+        from core.providers.local.devauth import AUDIENCE, ISSUER
+        key = DevAuth(key_file=DEV_KEY, password_file=DEV_PASSWORD_FILE)._key
+        now = int(_t.time())
+        groups = ["admin", "superadmin"] if args.user == "admin" else ["radiologist"]
+        print(jwt.encode({"sub": f"dev-as-{args.as_reader}", "email": args.as_reader,
+                          "groups": groups, "iss": ISSUER, "aud": AUDIENCE, "iat": now,
+                          "exp": now + 3600 * 8}, key, algorithm="HS256"))
+        return 0
     auth = providers()["auth"]
     if not hasattr(auth, "issue"):
         sys.exit("token issues development tokens and only exists with the local runtime")
@@ -380,6 +421,7 @@ def main(argv=None) -> int:
     t = sub.add_parser("token", help="a development bearer token (local runtime only)")
     t.add_argument("user", choices=["radiologist", "radiologist-1", "radiologist-2",
                                     "radiologist-3", "radiologist-4", "admin"])
+    t.add_argument("--as", dest="as_reader", help="the token's reader id (AURALANE_AUTH=dev)")
     u = sub.add_parser("upload", help="send one study to the cloud pipeline (the edge's only step)")
     u.add_argument("path", help="a study directory or one .dcm file")
     u.add_argument("--state", default=None, help="the site's state for the chest regional prior")

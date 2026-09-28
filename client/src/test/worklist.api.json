@@ -523,7 +523,7 @@
   {
    "id": "radiologist@dev.auralane.local",
    "username": "radiologist",
-   "name": "Development reader",
+   "name": "radiologist",
    "pools": [
     "Chest",
     "Neuro"

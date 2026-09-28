@@ -58,9 +58,39 @@ def latest_run(events: Iterable[dict]) -> list[dict]:
     return max(rs.values(), key=lambda evs: evs[-1]["event_id"])
 
 
+# For runs recorded before each step named its service: what ran it, by
+# runtime. infer is read from the step's own detail (the registry runtime).
+DEFAULT_SERVICES = {
+    "aws": {"deidentify": "sim/edge/deid.py (Fargate ingest task)", "blob_put": "Amazon S3",
+            "import": "AWS HealthImaging", "prepare_inputs": "the pipeline process",
+            "adapt": "the pipeline process", "regional_prior": "the pipeline process",
+            "triage": "the pipeline process", "evidence": "Amazon S3",
+            "persist": "Amazon DynamoDB", "blob_delete": "Amazon S3"},
+    "local": {"deidentify": "sim/edge/deid.py, in this process", "blob_put": "local filesystem",
+              "import": "Orthanc (DICOMweb)", "infer": "in-process PyTorch",
+              "prepare_inputs": "the pipeline process", "adapt": "the pipeline process",
+              "regional_prior": "the pipeline process", "triage": "the pipeline process",
+              "evidence": "local filesystem", "persist": "DynamoDB Local",
+              "blob_delete": "local filesystem"},
+}
+INFER_BY_RUNTIME = {"lambda": "AWS Lambda", "sagemaker-async": "SageMaker async endpoint"}
+_defaults: dict[str, str] = {}
+
+
+def set_runtime(runtime: str | None) -> None:
+    """Which defaults apply to events that do not name their service."""
+    _defaults.clear()
+    _defaults.update(DEFAULT_SERVICES.get(runtime or "", {}))
+    _defaults["_runtime"] = runtime or ""
+
+
 def _service(e: dict) -> str | None:
     d = e.get("detail") or {}
-    return d.get("service")
+    if d.get("service"):
+        return d["service"]
+    if e["action"] == "infer" and _defaults.get("_runtime") == "aws":
+        return INFER_BY_RUNTIME.get(d.get("runtime"))
+    return _defaults.get(e["action"])
 
 
 def timeline(events: list[dict]) -> dict[str, Any]:

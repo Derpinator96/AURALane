@@ -1,0 +1,12 @@
+# Filled in at container start from AURALANE_METRICS_URL (docker-compose.yml).
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: auralane
+    scheme: SCHEME
+    metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials_file: /etc/auralane/metrics_token
+    static_configs:
+      - targets: ["HOSTPORT"]

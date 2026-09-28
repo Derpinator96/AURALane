@@ -288,8 +288,18 @@ class Simulator:
             finally:
                 shutil.rmtree(tmp, ignore_errors=True)
 
+        # Brain MR one at a time (620 instances in memory at once); the rest run
+        # beside it, so a chest X-ray never waits for an endpoint to wake.
+        mr_gate = threading.Semaphore(1)
+
+        def gated(i, item):
+            if item["type"] == "brain":
+                with mr_gate:
+                    return one(i, item)
+            return one(i, item)
+
         with ThreadPoolExecutor(self.workers) as pool:
-            list(pool.map(lambda a: one(*a), enumerate(items)))
+            list(pool.map(lambda a: gated(*a), enumerate(items)))
         with self._lock:
             self._batches[batch].update(running=False, finished_at=_now())
 

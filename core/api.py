@@ -742,8 +742,15 @@ def create_app(p: dict, registry: Registry | None = None,
     _pipe: dict[str, Any] = {"at": -1e9, "value": None}
     _pipe_lock = threading.Lock()
 
+    pipeline_view.set_runtime(p.get("runtime"))
+
     def _study_events(studies) -> dict[str, list[dict]]:
-        return {s: p["table"].query("audit", study=s) for s in studies}
+        # One query per study, sixteen at a time: sequential reads from Render
+        # to us-east-1 took 11 s for 36 studies.
+        studies = list(studies)
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(16) as pool:
+            return dict(zip(studies, pool.map(lambda s: p["table"].query("audit", study=s), studies)))
 
     def _snapshot() -> dict[str, Any]:
         with _pipe_lock:

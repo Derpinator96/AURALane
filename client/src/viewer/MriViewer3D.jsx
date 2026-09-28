@@ -163,6 +163,8 @@ export default function MriViewer3D({ studyId, token, onUnavailable }) {
             if (nv3DRef.current) await nv3DRef.current.loadVolumes(fallbackVol);
           } catch (e2) {
             console.warn("Fallback load:", e2);
+            setError(`Could not load the volumes: ${e2.message || e2}`);
+            if (onUnavailable) onUnavailable();
           }
           setLoading(false);
         }
