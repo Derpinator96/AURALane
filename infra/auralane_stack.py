@@ -321,6 +321,8 @@ class AuralaneStack(Stack):
                         assumed_by=iam.ServicePrincipal("sagemaker.amazonaws.com"))
         image.repository.grant_pull(role)
         bucket.grant_read_write(role, "inference/*")
+        # The CT endpoint writes its Grad-CAM images to evidence/ (core/ct_gradcam.py).
+        bucket.grant_put(role, "evidence/*")
         role.add_to_policy(iam.PolicyStatement(
             actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents",
                      "cloudwatch:PutMetricData"], resources=["*"]))

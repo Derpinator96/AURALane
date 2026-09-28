@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir torch==2.14.0 --index-url https://download.pytorc
 # torchvision: transformers 5 loads the ViT image processor's fast version,
 # which needs it.
 RUN pip install --no-cache-dir torchvision==0.29.0 --index-url https://download.pytorch.org/whl/cpu \
- && pip install --no-cache-dir "transformers>=4.46" huggingface_hub pyyaml pillow \
+ && pip install --no-cache-dir "transformers>=4.46" huggingface_hub pyyaml pillow matplotlib\
         "numpy>=1.24" "pydicom>=3.0" boto3 nibabel scipy httpx "PyJWT>=2.8"
 
 # The ViT weights, from Hugging Face at build time (about 343 MB), never at run time.
