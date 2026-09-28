@@ -391,8 +391,119 @@
     }
   },
   {
-    "id": "ann-619b8914af",
-    "annotation_id": "ann-619b8914af",
+    "id": "ann-8c25b86973",
+    "annotation_id": "ann-8c25b86973",
+    "study": "fixture-ct-id_bd8ef2b128",
+    "study_id": "fixture-ct-id_bd8ef2b128",
+    "series_id": null,
+    "image_instance_id": null,
+    "modality": "CT",
+    "annotation_type": "pinpoint",
+    "note_text": "hello",
+    "created_by": "radiologist@dev.auralane.local",
+    "created_at": "2026-09-28T20:12:47+00:00",
+    "updated_at": "2026-09-28T20:12:47+00:00",
+    "coordinate_space": "IMAGE_NORMALIZED",
+    "coordinate_x": 0.6508919551595502,
+    "coordinate_y": 0.46398443054616917,
+    "coordinate_z": null,
+    "voxel": null,
+    "world_mm": null,
+    "slice_index": 0,
+    "segmentation_region": "Head CT Scan",
+    "viewer_context": {
+      "panel": "Original",
+      "pixel_coords": {
+        "x": 333,
+        "y": 238
+      },
+      "dims": {
+        "rows": 512,
+        "cols": 512
+      }
+    },
+    "metadata": {
+      "pixel_x": 333,
+      "pixel_y": 238,
+      "frame_rows": 512,
+      "frame_cols": 512
+    }
+  },
+  {
+    "id": "ann-b72ac6fcce",
+    "annotation_id": "ann-b72ac6fcce",
+    "study": "upload-55ca0317",
+    "study_id": "upload-55ca0317",
+    "series_id": null,
+    "image_instance_id": null,
+    "modality": "MR",
+    "annotation_type": "pinpoint",
+    "note_text": "what is up biyatch",
+    "created_by": "radiologist@dev.auralane.local",
+    "created_at": "2026-09-28T20:13:41+00:00",
+    "updated_at": "2026-09-28T20:13:41+00:00",
+    "coordinate_space": "NIFTI_WORLD",
+    "coordinate_x": 120.0,
+    "coordinate_y": 147.0,
+    "coordinate_z": 77.0,
+    "voxel": {
+      "x": 120,
+      "y": 147,
+      "z": 77
+    },
+    "world_mm": {
+      "x": -118.99999237060547,
+      "y": 147,
+      "z": 77
+    },
+    "slice_index": 77,
+    "segmentation_region": "Unsegmented location",
+    "viewer_context": {
+      "sequence": "t1",
+      "plane": "Coronal",
+      "layout": "mpr"
+    },
+    "metadata": {}
+  },
+  {
+    "id": "ann-eb89f79d19",
+    "annotation_id": "ann-eb89f79d19",
+    "study": "upload-55ca0317",
+    "study_id": "upload-55ca0317",
+    "series_id": null,
+    "image_instance_id": null,
+    "modality": "MR",
+    "annotation_type": "pinpoint",
+    "note_text": "skyler",
+    "created_by": "radiologist@dev.auralane.local",
+    "created_at": "2026-09-28T20:13:58+00:00",
+    "updated_at": "2026-09-28T20:13:58+00:00",
+    "coordinate_space": "NIFTI_WORLD",
+    "coordinate_x": 121.0,
+    "coordinate_y": 89.0,
+    "coordinate_z": 124.0,
+    "voxel": {
+      "x": 121,
+      "y": 89,
+      "z": 124
+    },
+    "world_mm": {
+      "x": -118.00000762939453,
+      "y": 89.19403839111328,
+      "z": 123.61566925048828
+    },
+    "slice_index": 124,
+    "segmentation_region": "Unsegmented location",
+    "viewer_context": {
+      "sequence": "t1",
+      "plane": "Sagittal",
+      "layout": "mpr"
+    },
+    "metadata": {}
+  },
+  {
+    "id": "ann-143088a3e3",
+    "annotation_id": "ann-143088a3e3",
     "study": "fixture-cr-chest-01",
     "study_id": "fixture-cr-chest-01",
     "series_id": null,
@@ -401,8 +512,8 @@
     "annotation_type": "pinpoint",
     "note_text": "Right lower lobe consolidative opacity consistent with pneumonia.",
     "created_by": "radiologist@dev.auralane.local",
-    "created_at": "2026-09-28T19:45:32+00:00",
-    "updated_at": "2026-09-28T19:45:32+00:00",
+    "created_at": "2026-09-28T20:54:22+00:00",
+    "updated_at": "2026-09-28T20:54:22+00:00",
     "coordinate_space": "IMAGE_NORMALIZED",
     "coordinate_x": 0.62,
     "coordinate_y": 0.41,
@@ -415,8 +526,8 @@
     "metadata": {}
   },
   {
-    "id": "ann-0aab6a35c3",
-    "annotation_id": "ann-0aab6a35c3",
+    "id": "ann-a25203e60b",
+    "annotation_id": "ann-a25203e60b",
     "study": "fixture-ct-head-01",
     "study_id": "fixture-ct-head-01",
     "series_id": null,
@@ -425,8 +536,8 @@
     "annotation_type": "pinpoint",
     "note_text": "Hyperdense signal in right sylvian fissure.",
     "created_by": "radiologist@dev.auralane.local",
-    "created_at": "2026-09-28T19:45:32+00:00",
-    "updated_at": "2026-09-28T19:45:32+00:00",
+    "created_at": "2026-09-28T20:54:22+00:00",
+    "updated_at": "2026-09-28T20:54:22+00:00",
     "coordinate_space": "IMAGE_NORMALIZED",
     "coordinate_x": 0.54,
     "coordinate_y": 0.38,

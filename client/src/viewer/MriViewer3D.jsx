@@ -26,6 +26,112 @@ function getSegmentationRegionLabel(values, isAlzheimer) {
   }
 }
 
+/**
+ * Interactive Pinpoint Spatial Dot Marker with Depth Awareness & Quick Actions
+ */
+function MriPinMarker({
+  ann,
+  index,
+  xPercent,
+  yPercent,
+  sliceDelta = null,
+  isSelected,
+  onSelect,
+  onEdit,
+  onDelete,
+}) {
+  const [hovered, setHovered] = useState(false);
+  const region = ann.segmentation_region || "User note";
+  const noteText = ann.note_text || "";
+  const author = ann.created_by || "Clinician";
+
+  // Slice proximity styling (exact slice, nearby, or distant)
+  const isClose = sliceDelta == null || Math.abs(sliceDelta) <= 3;
+  const isMid = sliceDelta != null && Math.abs(sliceDelta) > 3 && Math.abs(sliceDelta) <= 12;
+
+  const opacityStyle = isSelected || hovered || isClose ? 1.0 : isMid ? 0.45 : 0.2;
+  const scaleStyle = isSelected ? 1.3 : isClose ? 1.0 : 0.85;
+
+  const isTop = yPercent < 45;
+  const isLeft = xPercent < 28;
+  const isRight = xPercent > 72;
+
+  let posClass = isTop ? "popover-below" : "popover-above";
+  if (isLeft) posClass += " popover-align-left";
+  else if (isRight) posClass += " popover-align-right";
+
+  return (
+    <div
+      className={`mri-pin-marker ${isSelected ? "selected" : ""} ${isClose ? "in-slice" : "out-slice"}`}
+      style={{
+        left: `${Math.max(4, Math.min(96, xPercent))}%`,
+        top: `${Math.max(4, Math.min(96, yPercent))}%`,
+        opacity: opacityStyle,
+        transform: `translate(-50%, -50%) scale(${scaleStyle})`,
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect?.(ann);
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title={`Note #${index + 1}: ${noteText} ${sliceDelta != null && Math.abs(sliceDelta) > 0 ? `(${Math.abs(sliceDelta)} slices ${sliceDelta > 0 ? "below" : "above"})` : ""}`}
+    >
+      {isClose && <div className="mri-pin-pulse"></div>}
+      <div className="mri-pin-core">
+        <span className="mri-pin-number">{index + 1}</span>
+      </div>
+
+      {hovered && (
+        <div className={`mri-pin-popover ${posClass}`} onClick={(e) => e.stopPropagation()}>
+          <div className="mri-pin-popover-header">
+            <span className="popover-tag">Note #{index + 1}</span>
+            {region && <span className="popover-region-badge">{region}</span>}
+          </div>
+          <div className="popover-note-text">{noteText}</div>
+          <div className="popover-meta mono">
+            <span>By: {author.split("@")[0]}</span>
+            {ann.voxel && (
+              <span>
+                [{Math.round(ann.voxel.x)}, {Math.round(ann.voxel.y)}, {Math.round(ann.voxel.z)}]
+              </span>
+            )}
+          </div>
+          {(onEdit || onDelete) && (
+            <div className="popover-actions-bar">
+              <button
+                type="button"
+                className="btn-popover-action btn-popover-focus"
+                onClick={() => onSelect?.(ann)}
+              >
+                Focus
+              </button>
+              {onEdit && (
+                <button
+                  type="button"
+                  className="btn-popover-action"
+                  onClick={() => onEdit?.(ann)}
+                >
+                  Edit
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  className="btn-popover-action btn-popover-delete"
+                  onClick={() => onDelete?.(ann.id || ann.annotation_id)}
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MriViewer3D({
   studyId,
   initialSequence = "t1ce",
@@ -33,6 +139,8 @@ export default function MriViewer3D({
   annotations = [],
   selectedAnnotation = null,
   onSelectAnnotation = null,
+  onEditAnnotation = null,
+  onDeleteAnnotation = null,
   onRequestNewNote = null,
   isAddNoteMode = false,
   onToggleAddNoteMode = null,
@@ -59,6 +167,24 @@ export default function MriViewer3D({
   const nv3DRef = useRef(null);
 
   const lastLocationRef = useRef(null);
+
+  // Global keyboard shortcuts: 'N' to toggle Add Note mode, 'Esc' to cancel
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+      if (e.key === "n" || e.key === "N") {
+        if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          onToggleAddNoteMode?.();
+        }
+      } else if (e.key === "Escape" && isAddNoteMode) {
+        e.preventDefault();
+        onToggleAddNoteMode?.();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isAddNoteMode, onToggleAddNoteMode]);
 
   // Synchronize crosshair position to selected annotation's 3D voxel
   useEffect(() => {
@@ -447,12 +573,42 @@ export default function MriViewer3D({
             <div className="orientation-tag bottom-tag">P</div>
             <div className="orientation-tag left-tag">R</div>
             <div className="orientation-tag right-tag">L</div>
-            <canvas
-              ref={canvasAxialRef}
-              className="mri-canvas"
-              onClick={(e) => handleViewportClick("Axial", e)}
-              onContextMenu={(e) => handleViewportClick("Axial", e)}
-            />
+            <div className="mri-canvas-wrapper">
+              <canvas
+                ref={canvasAxialRef}
+                className="mri-canvas"
+                onClick={(e) => handleViewportClick("Axial", e)}
+                onContextMenu={(e) => handleViewportClick("Axial", e)}
+              />
+              <div className="mri-pin-dot-overlay">
+                {annotations.map((ann, idx) => {
+                  const vx = Number(ann.voxel?.x ?? ann.coordinate_x ?? 0);
+                  const vy = Number(ann.voxel?.y ?? ann.coordinate_y ?? 0);
+                  const vz = Number(ann.voxel?.z ?? ann.coordinate_z ?? 0);
+                  const volDims = nvAxialRef.current?.volumes?.[0]?.hdr?.dims || nvAxialRef.current?.volumes?.[0]?.dims || [1, 240, 240, 155];
+                  const dimX = volDims[1] || 240;
+                  const dimY = volDims[2] || 240;
+                  const xPct = (vx / dimX) * 100;
+                  const yPct = ((dimY - vy) / dimY) * 100;
+                  const curZ = currentVoxel?.vox?.[2] ?? 75;
+                  const isSelected = selectedAnnotation?.id === ann.id || selectedAnnotation?.annotation_id === ann.annotation_id;
+                  return (
+                    <MriPinMarker
+                      key={ann.id || ann.annotation_id || idx}
+                      ann={ann}
+                      index={idx}
+                      xPercent={xPct}
+                      yPercent={yPct}
+                      sliceDelta={vz - curZ}
+                      isSelected={isSelected}
+                      onSelect={onSelectAnnotation}
+                      onEdit={onEditAnnotation}
+                      onDelete={onDeleteAnnotation}
+                    />
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
@@ -467,12 +623,42 @@ export default function MriViewer3D({
               <div className="orientation-tag bottom-tag">I</div>
               <div className="orientation-tag left-tag">R</div>
               <div className="orientation-tag right-tag">L</div>
-              <canvas
-                ref={canvasCoronalRef}
-                className="mri-canvas"
-                onClick={(e) => handleViewportClick("Coronal", e)}
-                onContextMenu={(e) => handleViewportClick("Coronal", e)}
-              />
+              <div className="mri-canvas-wrapper">
+                <canvas
+                  ref={canvasCoronalRef}
+                  className="mri-canvas"
+                  onClick={(e) => handleViewportClick("Coronal", e)}
+                  onContextMenu={(e) => handleViewportClick("Coronal", e)}
+                />
+                <div className="mri-pin-dot-overlay">
+                  {annotations.map((ann, idx) => {
+                    const vx = Number(ann.voxel?.x ?? ann.coordinate_x ?? 0);
+                    const vy = Number(ann.voxel?.y ?? ann.coordinate_y ?? 0);
+                    const vz = Number(ann.voxel?.z ?? ann.coordinate_z ?? 0);
+                    const volDims = nvCoronalRef.current?.volumes?.[0]?.hdr?.dims || nvCoronalRef.current?.volumes?.[0]?.dims || [1, 240, 240, 155];
+                    const dimX = volDims[1] || 240;
+                    const dimZ = volDims[3] || 155;
+                    const xPct = (vx / dimX) * 100;
+                    const yPct = ((dimZ - vz) / dimZ) * 100;
+                    const curY = currentVoxel?.vox?.[1] ?? 120;
+                    const isSelected = selectedAnnotation?.id === ann.id || selectedAnnotation?.annotation_id === ann.annotation_id;
+                    return (
+                      <MriPinMarker
+                        key={ann.id || ann.annotation_id || idx}
+                        ann={ann}
+                        index={idx}
+                        xPercent={xPct}
+                        yPercent={yPct}
+                        sliceDelta={vy - curY}
+                        isSelected={isSelected}
+                        onSelect={onSelectAnnotation}
+                        onEdit={onEditAnnotation}
+                        onDelete={onDeleteAnnotation}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             <div className="viewport-cell cell-sagittal">
@@ -484,12 +670,42 @@ export default function MriViewer3D({
               <div className="orientation-tag bottom-tag">I</div>
               <div className="orientation-tag left-tag">A</div>
               <div className="orientation-tag right-tag">P</div>
-              <canvas
-                ref={canvasSagittalRef}
-                className="mri-canvas"
-                onClick={(e) => handleViewportClick("Sagittal", e)}
-                onContextMenu={(e) => handleViewportClick("Sagittal", e)}
-              />
+              <div className="mri-canvas-wrapper">
+                <canvas
+                  ref={canvasSagittalRef}
+                  className="mri-canvas"
+                  onClick={(e) => handleViewportClick("Sagittal", e)}
+                  onContextMenu={(e) => handleViewportClick("Sagittal", e)}
+                />
+                <div className="mri-pin-dot-overlay">
+                  {annotations.map((ann, idx) => {
+                    const vx = Number(ann.voxel?.x ?? ann.coordinate_x ?? 0);
+                    const vy = Number(ann.voxel?.y ?? ann.coordinate_y ?? 0);
+                    const vz = Number(ann.voxel?.z ?? ann.coordinate_z ?? 0);
+                    const volDims = nvSagittalRef.current?.volumes?.[0]?.hdr?.dims || nvSagittalRef.current?.volumes?.[0]?.dims || [1, 240, 240, 155];
+                    const dimY = volDims[2] || 240;
+                    const dimZ = volDims[3] || 155;
+                    const xPct = (vy / dimY) * 100;
+                    const yPct = ((dimZ - vz) / dimZ) * 100;
+                    const curX = currentVoxel?.vox?.[0] ?? 120;
+                    const isSelected = selectedAnnotation?.id === ann.id || selectedAnnotation?.annotation_id === ann.annotation_id;
+                    return (
+                      <MriPinMarker
+                        key={ann.id || ann.annotation_id || idx}
+                        ann={ann}
+                        index={idx}
+                        xPercent={xPct}
+                        yPercent={yPct}
+                        sliceDelta={vx - curX}
+                        isSelected={isSelected}
+                        onSelect={onSelectAnnotation}
+                        onEdit={onEditAnnotation}
+                        onDelete={onDeleteAnnotation}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </>
         )}
@@ -501,12 +717,64 @@ export default function MriViewer3D({
               <span className="badge-coords mono">Az: 120° El: 25°</span>
             </div>
             <div className="raymarch-hint">Drag to Rotate • Wheel to Zoom</div>
-            <canvas
-              ref={canvas3DRef}
-              className="mri-canvas canvas-3d"
-              onClick={(e) => handleViewportClick("3D", e)}
-              onContextMenu={(e) => handleViewportClick("3D", e)}
-            />
+            <div className="mri-canvas-wrapper">
+              <canvas
+                ref={canvas3DRef}
+                className="mri-canvas canvas-3d"
+                onClick={(e) => handleViewportClick("3D", e)}
+                onContextMenu={(e) => handleViewportClick("3D", e)}
+              />
+              <div className="mri-pin-dot-overlay">
+                {annotations.map((ann, idx) => {
+                  const vx = Number(ann.voxel?.x ?? ann.coordinate_x ?? 0);
+                  const vz = Number(ann.voxel?.z ?? ann.coordinate_z ?? 0);
+                  const volDims = nv3DRef.current?.volumes?.[0]?.hdr?.dims || nv3DRef.current?.volumes?.[0]?.dims || [1, 240, 240, 155];
+                  const dimX = volDims[1] || 240;
+                  const dimZ = volDims[3] || 155;
+                  const xPct = (vx / dimX) * 100;
+                  const yPct = ((dimZ - vz) / dimZ) * 100;
+                  const isSelected = selectedAnnotation?.id === ann.id || selectedAnnotation?.annotation_id === ann.annotation_id;
+                  return (
+                    <MriPinMarker
+                      key={ann.id || ann.annotation_id || idx}
+                      ann={ann}
+                      index={idx}
+                      xPercent={xPct}
+                      yPercent={yPct}
+                      sliceDelta={null}
+                      isSelected={isSelected}
+                      onSelect={onSelectAnnotation}
+                      onEdit={onEditAnnotation}
+                      onDelete={onDeleteAnnotation}
+                    />
+                  );
+                })}
+              </div>
+              {annotations.length > 0 && (
+                <div className="mri-3d-pin-floating-hud">
+                  <span>3D Notes:</span>
+                  <div className="hud-pin-dot-list">
+                    {annotations.map((ann, idx) => {
+                      const isSelected = selectedAnnotation?.id === ann.id || selectedAnnotation?.annotation_id === ann.annotation_id;
+                      return (
+                        <button
+                          key={ann.id || ann.annotation_id || idx}
+                          type="button"
+                          className={`hud-pin-pill ${isSelected ? "active" : ""}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectAnnotation?.(ann);
+                          }}
+                          title={`Focus Note #${idx + 1}: ${ann.note_text}`}
+                        >
+                          {idx + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

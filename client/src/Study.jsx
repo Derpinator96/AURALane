@@ -514,6 +514,8 @@ export default function Study({ load, loadSeries, sendVerdict, token }) {
                 annotations={annotations}
                 selectedAnnotation={selectedAnnotation}
                 onSelectAnnotation={handleSelectAnnotation}
+                onEditAnnotation={handleEditAnnotation}
+                onDeleteAnnotation={handleDeleteAnnotation}
                 onRequestNewNote={handleRequestNewNote}
                 isAddNoteMode={isAddNoteMode}
                 onToggleAddNoteMode={() => setIsAddNoteMode((v) => !v)}

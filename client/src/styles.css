@@ -3880,3 +3880,352 @@ header.top {
   gap: 10px;
 }
 
+/* --------------------------------------------------------------------------
+   3D MRI Pinpoint Spatial Dot Markers & Overlays
+-------------------------------------------------------------------------- */
+.mri-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mri-pin-dot-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.mri-pin-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 25;
+  transition: transform 0.15s ease;
+}
+
+.mri-pin-marker:hover {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.mri-pin-marker.selected {
+  transform: translate(-50%, -50%) scale(1.3);
+  z-index: 30;
+}
+
+.mri-pin-core {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.9), 0 0 4px rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  position: relative;
+  z-index: 2;
+}
+
+.mri-pin-marker.selected .mri-pin-core {
+  background: #8b5cf6;
+  border-color: #f5f3ff;
+  box-shadow: 0 0 14px rgba(139, 92, 246, 1.0), 0 0 6px rgba(0, 0, 0, 0.9);
+}
+
+.mri-pin-pulse {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.35);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  animation: mri-pin-pulse-anim 2s infinite ease-out;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mri-pin-marker.selected .mri-pin-pulse {
+  background: rgba(139, 92, 246, 0.4);
+  border-color: rgba(139, 92, 246, 0.8);
+}
+
+@keyframes mri-pin-pulse-anim {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.mri-pin-popover {
+  position: absolute;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(139, 92, 246, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 170px;
+  max-width: 220px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+  color: #f1f5f9;
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: auto;
+  z-index: 50;
+  white-space: normal;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mri-pin-popover.popover-above {
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.mri-pin-popover.popover-above::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(15, 23, 42, 0.95);
+}
+
+.mri-pin-popover.popover-below {
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.mri-pin-popover.popover-below::after {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-bottom-color: rgba(15, 23, 42, 0.95);
+}
+
+.mri-pin-popover.popover-align-left {
+  left: 0;
+  transform: none;
+}
+.mri-pin-popover.popover-align-left::after {
+  left: 14px;
+  transform: none;
+}
+
+.mri-pin-popover.popover-align-right {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.mri-pin-popover.popover-align-right::after {
+  left: auto;
+  right: 14px;
+  transform: none;
+}
+
+.mri-pin-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 4px;
+}
+
+.popover-tag {
+  font-weight: 700;
+  color: #a78bfa;
+}
+
+.popover-region-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.popover-note-text {
+  font-size: 11.5px;
+  color: #ffffff;
+  word-break: break-word;
+}
+
+.popover-meta {
+  font-size: 10px;
+  color: #94a3b8;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.mri-3d-pin-floating-hud {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 22;
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.hud-pin-dot-list {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hud-pin-pill {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 1px solid #ffffff;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.hud-pin-pill:hover,
+.hud-pin-pill.active {
+  background: #8b5cf6;
+  transform: scale(1.18);
+  box-shadow: 0 0 8px #8b5cf6;
+}
+
+.popover-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.btn-popover-action {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  color: #f1f5f9;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-popover-action:hover {
+  background: rgba(139, 92, 246, 0.3);
+  border-color: #8b5cf6;
+  color: #ffffff;
+}
+
+.btn-popover-focus {
+  background: rgba(139, 92, 246, 0.25);
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #c4b5fd;
+}
+
+.btn-popover-delete {
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
+  margin-left: auto;
+}
+
+.btn-popover-delete:hover {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: #ef4444;
+}
+
+/* Quick Clinical Template Chips */
+.editor-quick-templates {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quick-templates-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--soft);
+}
+
+.template-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn-template-chip {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.btn-template-chip:hover {
+  background: var(--brand-purple-light);
+  border-color: var(--brand-purple);
+  color: var(--brand-purple);
+  transform: translateY(-1px);
+}
+
+.editor-shortcut-hint {
+  font-size: 10.5px;
+  color: var(--faint);
+  margin-right: auto;
+}
+
+.mri-pin-marker.in-slice .mri-pin-core {
+  box-shadow: 0 0 12px rgba(239, 68, 68, 1.0), 0 0 0 2px rgba(255, 255, 255, 0.8);
+}
+
+.mri-pin-marker.out-slice .mri-pin-core {
+  opacity: 0.7;
+}
+
+
+

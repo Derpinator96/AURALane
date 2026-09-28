@@ -1,4 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const CLINICAL_TEMPLATES = {
+  MR_TUMOR: [
+    "Enhancing tumor margin expansion",
+    "Central necrotic core involvement",
+    "Peritumoral vasogenic edema boundary",
+    "Suspected satellite lesion",
+    "Review for surgical resection boundary",
+    "Mass effect on lateral ventricle",
+  ],
+  MR_ALZHEIMER: [
+    "Bilateral hippocampal volume reduction",
+    "Temporal horn enlargement",
+    "Cortical sulcal widening",
+    "Normal age-matched baseline",
+    "Recommend follow-up volumetric study",
+  ],
+  CT: [
+    "Hyperdense acute hemorrhage focus",
+    "Midline shift evaluation required",
+    "Subdural collection margin",
+    "Bone window inspection recommended",
+    "No acute intracranial abnormality",
+  ],
+  CXR: [
+    "Discrete pulmonary nodule focus",
+    "Perihilar airspace opacity",
+    "Pleural effusion blunting costophrenic angle",
+    "Cardiomegaly index > 0.50",
+    "Clear lung fields bilaterally",
+  ],
+};
 
 export default function NoteEditorModal({
   isOpen,
@@ -12,6 +44,35 @@ export default function NoteEditorModal({
   const [text, setText] = useState(initialData.note_text || "");
   const [region, setRegion] = useState(initialData.segmentation_region || "");
 
+  const isMri = initialData.modality === "MR" || initialData.coordinate_space === "NIFTI_WORLD";
+  const isAlz = isMri && (initialData.segmentation_region?.includes("T1") || initialData.study_id?.includes("alz"));
+  const isCt = initialData.modality === "CT";
+  const isCxr = initialData.modality === "CR" || initialData.modality === "DX";
+
+  const templateCategory = isAlz ? "MR_ALZHEIMER" : isMri ? "MR_TUMOR" : isCt ? "CT" : "CXR";
+  const templates = CLINICAL_TEMPLATES[templateCategory] || CLINICAL_TEMPLATES.MR_TUMOR;
+
+  // Keyboard shortcut listener (Ctrl+Enter to save, Esc to cancel)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        if (text.trim() && !busy) {
+          onSave({
+            ...initialData,
+            note_text: text.trim(),
+            segmentation_region: region || initialData.segmentation_region || null,
+          });
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [text, region, busy, initialData, onSave, onCancel]);
+
   const handleSave = (e) => {
     e.preventDefault();
     if (!text.trim()) return;
@@ -22,9 +83,12 @@ export default function NoteEditorModal({
     });
   };
 
-  const isMri = initialData.modality === "MR" || initialData.coordinate_space === "NIFTI_WORLD";
-  const isCt = initialData.modality === "CT";
-  const isCxr = initialData.modality === "CR" || initialData.modality === "DX";
+  const handleAddTemplate = (tmpl) => {
+    setText((prev) => {
+      const trimmed = prev.trim();
+      return trimmed ? `${trimmed}. ${tmpl}` : tmpl;
+    });
+  };
 
   return (
     <div className="note-editor-overlay" role="dialog" aria-modal="true">
@@ -91,6 +155,24 @@ export default function NoteEditorModal({
           )}
         </div>
 
+        {/* Quick Clinical Template Chips */}
+        <div className="editor-quick-templates">
+          <span className="quick-templates-label">Quick Clinical Findings:</span>
+          <div className="template-chips-row">
+            {templates.map((tmpl) => (
+              <button
+                key={tmpl}
+                type="button"
+                className="btn-template-chip"
+                onClick={() => handleAddTemplate(tmpl)}
+                title="Click to insert template into note text"
+              >
+                + {tmpl}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <form onSubmit={handleSave} className="note-editor-form">
           <label className="editor-input-label">
             <span>Clinical Findings / Radiologist Note:</span>
@@ -99,13 +181,14 @@ export default function NoteEditorModal({
               rows={4}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Enter clinical observations, lesion review note, surgical planning comments..."
+              placeholder="Enter clinical observations, lesion review note, surgical planning comments... (Ctrl+Enter to save)"
               autoFocus
               required
             />
           </label>
 
           <div className="note-editor-actions">
+            <span className="editor-shortcut-hint mono">Press Ctrl+Enter to save • Esc to cancel</span>
             <button
               type="button"
               className="btn-action-secondary"
