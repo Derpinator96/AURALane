@@ -135,7 +135,8 @@ export default function NoteEditorModal({
             </div>
           )}
 
-          {(isCxr || isCt || initialData.coordinate_x != null) && (
+          {/* MRI notes carry voxel indices in coordinate_x/y, shown above; not fractions. */}
+          {!isMri && (isCxr || isCt || initialData.coordinate_x != null) && (
             <div className="spatial-hud-row">
               <span className="hud-label">Image Normalized Coords:</span>
               <span className="hud-val mono">

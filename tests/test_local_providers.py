@@ -97,7 +97,10 @@ def test_dynamo_audit_is_append_only(table):
     assert len(rows) == 2 and rows[0]["duration_ms"] == 12.5
     with pytest.raises(PermissionError):
         table.put_item("audit", {"study": "1.2.3", "event_id": rows[0]["event_id"]})
-    assert not hasattr(table, "delete_item") and not hasattr(table, "update_item")
+    # delete_item exists for notes (annotations); it refuses the audit table.
+    with pytest.raises(PermissionError):
+        table.delete_item("audit", {"study": "1.2.3", "event_id": rows[0]["event_id"]})
+    assert not hasattr(table, "update_item")
 
 
 def test_inference_dispatches_on_output_type():

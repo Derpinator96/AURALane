@@ -3583,6 +3583,8 @@ tr.lane-FAILED .bar { background: var(--failed); }
 /* The 2D viewer inside the latest-case panel: a panel-sized viewport. */
 .latest-case-panel .viewport { height: 420px; min-height: 0; }
 .latest-case-panel .mri-grid { min-height: 520px; }
+
+/* --------------------------------------------------------------------------
    Clinician Pinpoint Notes & Annotations Styling (PACS Grade)
 -------------------------------------------------------------------------- */
 .study-annotations-card {

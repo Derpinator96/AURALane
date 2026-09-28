@@ -33,7 +33,11 @@ import triage
 from core.providers.local.inference import heat_coverage, render_heat_layer
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "CT_Mehak" / "triagelane-ct" / "src"
+# The submodule when it is checked out, else the read-only clone the pipeline
+# and the CT container use (same repository, same commit).
+SRC = next((d for d in (ROOT / "CT_Mehak" / "triagelane-ct" / "src",
+                        ROOT / "_external" / "triagelane-ct" / "src")
+            if (d / "triagelane_ct").is_dir()), ROOT / "CT_Mehak" / "triagelane-ct" / "src")
 MODEL_ID = "ct-ich-vit-rsna"
 LANES = {"critical": "CRITICAL", "urgent": "URGENT", "expedited": "EXPEDITED",
          "routine": "ROUTINE"}

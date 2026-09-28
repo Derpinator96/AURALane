@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import uuid
 from pathlib import Path
 from typing import Any
@@ -34,7 +35,9 @@ class FixtureTable(TablePort):
         rows = json.loads(Path(path).read_text())
         self._worklist = {r["study"]: r for r in rows}
         self._audit: list[dict] = []
-        self._annotations_path = Path(annotations_path)
+        # AURALANE_FIXTURE_ANNOTATIONS: tests point this at a copy, so a test
+        # run never rewrites the committed fixtures/annotations.json.
+        self._annotations_path = Path(os.environ.get("AURALANE_FIXTURE_ANNOTATIONS", annotations_path))
         self._annotations: dict[str, dict] = {}
         if self._annotations_path.exists():
             try:

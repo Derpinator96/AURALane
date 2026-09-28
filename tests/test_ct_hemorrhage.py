@@ -86,90 +86,25 @@ def test_abstention_is_abstain_with_her_reason():
     assert t["sla_minutes"] is None
 
 
-# -- the upload route, model stubbed --------------------------------------------
-@pytest.fixture
-def api(tmp_path):
-    blob = FileBlob(tmp_path / "blob", url_base="/api/blob")
-    table = FixtureTable()
-    app = create_app({"runtime": "fixture", "blob": blob, "table": table,
-                      "datastore": FixtureDatastore(table), "inference": None,
-                      "auth": DevAuth(password=PASSWORD), "llm": TemplateLLM()})
-    c = TestClient(app)
-    token = c.post("/api/auth/login", json={"username": "radiologist",
-                                            "password": PASSWORD}).json()["token"]
-    c.headers["Authorization"] = f"Bearer {token}"
-    return c, blob
+# -- in the pipeline: the CT endpoint's evidence reaches the row ----------------
+# (His upload route scored CT inside the API; on this platform the CT endpoint
+# writes the same evidence, core/ct_gradcam.py, and the adapter carries it.)
+def test_the_ct_adapter_carries_the_gradcam_evidence_the_endpoint_wrote():
+    from adapters import ct_hemorrhage as adapter
+    from core.registry import Registry
+    entry = Registry().get("ct-ich-vit-v1")
+    out = {"raw_score": 0.8, "study_score": 0.8, "k_used": 3, "n_slices": 17,
+           "dominant_subtype": "subdural", "top_slice_index": 4,
+           "subtype_scores": {"subdural": 0.8},
+           "evidence": {"ct_slice_png": "evidence/x/ct_slice.png",
+                        "gradcam_layer_png": "evidence/x/gradcam_subdural_layer.png",
+                        "gradcam_bbox": {"row_min": 1, "row_max": 5, "col_min": 2, "col_max": 6}}}
+    f = adapter.adapt(out, {"entry": entry})
+    assert f.evidence["ct_slice_png"] == "evidence/x/ct_slice.png"
+    assert f.evidence["gradcam_bbox"]["row_max"] == 5
+    assert f.evidence["ct"]["top_slice_index"] == 4
 
 
-def _fake_score(payloads, blob, study_uid):
-    stem = f"evidence/{study_uid}"
-    img = io.BytesIO()
-    Image.fromarray(np.zeros((8, 8), np.uint8)).save(img, format="PNG")
-    blob.put(f"{stem}/ct_slice.png", img.getvalue())
-    blob.put(f"{stem}/gradcam_subdural_layer.png", img.getvalue())
-    lane, t, findings = ct.triage_fields(_scored(dominant_subtype="subdural", lane="urgent"))
-    return {"lane": lane, "triage": t, "findings": findings, "n_slices": len(payloads),
-            "evidence": {"ct_slice_png": f"{stem}/ct_slice.png",
-                         "gradcam_layer_png": f"{stem}/gradcam_subdural_layer.png",
-                         "gradcam_finding": "Subdural", "gradcam_coverage": 0.2,
-                         "gradcam_bbox": {"row_min": 1, "row_max": 5, "col_min": 2, "col_max": 6},
-                         "frame_rows": 8, "frame_cols": 8, "gradcam_slice_index": 3}}
-
-
-def _upload(c, files):
-    return c.post("/api/studies/upload", data={"modality": "CT", "workflow": "CT"},
-                  files=[("file", (name, data, "application/dicom")) for name, data in files])
-
-
-def test_every_slice_reaches_the_model_and_the_row_carries_its_gradcam(api, monkeypatch):
-    c, _ = api
-    seen = {}
-
-    def spy(payloads, blob, study_uid):
-        seen["names"] = [n for n, _ in payloads]
-        return _fake_score(payloads, blob, study_uid)
-
-    monkeypatch.setattr(ct, "score_upload", spy)
-    r = _upload(c, [(f"ID_{i}.dcm", DICM) for i in range(3)])
-    assert r.status_code == 200, r.text
-    assert seen["names"] == ["ID_0.dcm", "ID_1.dcm", "ID_2.dcm"]
-    s = r.json()["study"]
-    assert s["lane"] == "URGENT" and s["driver_label"] == "Subdural" and s["model_id"] == ct.MODEL_ID
-    assert s["pool"] == "Neuro" and s["exam"] == "CT Head"
-
-    d = c.get(f"/api/studies/{s['study']}").json()
-    assert set(d["evidence_urls"]) == {"ct_slice_png", "gradcam_layer_png"}
-    for url in d["evidence_urls"].values():
-        img = c.get(url)
-        assert img.status_code == 200 and img.content.startswith(b"\x89PNG")
-    assert {f["name"]: f["urgency"] for f in d["findings"]}["Subdural"] == 1.15
-    assert d["decision_reason"]
-    assert d["series"][0]["instance_count"] == 3
-
-
-def test_an_upload_that_is_not_ct_is_refused_and_not_queued(api):
-    c, _ = api
-    before = len(c.get("/api/worklist").json()["studies"])
-    r = _upload(c, [("scan.png", b"\x89PNG not dicom")])
-    assert r.status_code == 422 and "no DICOM" in r.json()["detail"]
-    assert len(c.get("/api/worklist").json()["studies"]) == before
-
-
-def test_a_model_failure_stays_visible_as_failed(api, monkeypatch):
-    c, _ = api
-
-    def boom(*_):
-        raise RuntimeError("weights unavailable")
-
-    monkeypatch.setattr(ct, "score_upload", boom)
-    r = _upload(c, [("ID_0.dcm", DICM)])
-    assert r.status_code == 200
-    s = r.json()["study"]
-    assert s["lane"] == "FAILED" and s["status"] == "FAILED"
-    assert "weights unavailable" in s["error"]
-
-
-# -- the fixture row ------------------------------------------------------------
 def test_the_fixture_ct_row_is_a_model_run_with_its_evidence_on_disk():
     rows = [r for r in json.loads(WORKLIST.read_text()) if r["modality"] == "CT"]
     assert len(rows) == 1

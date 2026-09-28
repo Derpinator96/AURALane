@@ -249,8 +249,7 @@ export default function Worklist({ load, token }) {
             )}
 
             <p className="note">
-              Grouped by reading pool because a neuroradiologist reads the MRI and a chest radiologist reads the X-ray;
-              studies are ranked within a pool, never across. Needs human triage is always shown and is not affected by filters.
+              Needs human triage is always shown and is not affected by filters.
             </p>
 
             <div className="queue-container">
