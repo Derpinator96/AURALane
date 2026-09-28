@@ -50,6 +50,32 @@
  ],
  "studies": [
   {
+   "study": "fixture-ct-id_bd8ef2b128",
+   "patient_id": "RSNA-ID_bd8ef2b128",
+   "exam": "CT",
+   "modality": "CT",
+   "pool": "Neuro",
+   "model_id": "ct-ich-vit-rsna",
+   "arrived": "2026-09-25T08:52:00+00:00",
+   "lane": "CRITICAL",
+   "lane_label": "CRITICAL",
+   "clock": "under 15 min",
+   "acuity": 98.8,
+   "abstained": false,
+   "driver": "Subarachnoid",
+   "driver_label": "Subarachnoid",
+   "confidence": 0.668,
+   "abstain_reason": null,
+   "status": "SCORED",
+   "verdict": null,
+   "error": null,
+   "source": "RSNA Intracranial Hemorrhage Detection study ID_bd8ef2b128, 17 slices, scored by scripts/make_ct_fixture.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
+  },
+  {
    "study": "fixture-mr-MRI-1790070297",
    "patient_id": "FIXTURE-0004",
    "exam": "MR Brain",
@@ -523,7 +549,7 @@
   {
    "id": "radiologist@dev.auralane.local",
    "username": "radiologist",
-   "name": "Development reader",
+   "name": "radiologist",
    "pools": [
     "Chest",
     "Neuro"

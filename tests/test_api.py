@@ -173,7 +173,7 @@ def test_worklist_is_in_lane_order_with_values_copied_from_rows(client):
 def test_worklist_names_each_study_s_reading_pool(client):
     body = client.get("/api/worklist", headers=client.radiologist).json()
     assert [p["pool"] for p in body["pools"]] == ["Chest", "Neuro"]
-    pool = {"CR": "Chest", "MR": "Neuro"}
+    pool = {"CR": "Chest", "MR": "Neuro", "CT": "Neuro"}
     assert all(r["pool"] == pool[r["modality"]] for r in body["studies"])
 
 

@@ -5179,5 +5179,110 @@
   "run_id": "fixture",
   "datastore_id": "fixture",
   "study_date": "20260925"
+ },
+ {
+  "study": "fixture-ct-id_bd8ef2b128",
+  "modality": "CT",
+  "model_id": "ct-ich-vit-rsna",
+  "status": "SCORED",
+  "lane": "CRITICAL",
+  "triage": {
+   "acuity": 98.8,
+   "lane": "CRITICAL",
+   "sla": "< 15 min",
+   "sla_minutes": 15,
+   "abstained": false,
+   "driver": "Subarachnoid",
+   "confidence": 0.668,
+   "signal": 0.988,
+   "raw_score": 0.978,
+   "k_used": 5,
+   "n_slices": 17,
+   "decision_reason": "Urgency-weighted study score 0.988 is at or above the critical threshold (0.85), driven by a subarachnoid finding across the top 5 of 17 slices.",
+   "reason": null,
+   "urgency_weights": {
+    "Epidural": 1.25,
+    "Subdural": 1.15,
+    "Subarachnoid": 1.15,
+    "Intraparenchymal": 1.05,
+    "Intraventricular": 1.0
+   },
+   "top_findings": [
+    {
+     "name": "Subarachnoid",
+     "signal": 0.668,
+     "urgency": 1.15
+    },
+    {
+     "name": "Subdural",
+     "signal": 0.1653,
+     "urgency": 1.15
+    },
+    {
+     "name": "Epidural",
+     "signal": 0.0254,
+     "urgency": 1.25
+    },
+    {
+     "name": "Intraparenchymal",
+     "signal": 0.0207,
+     "urgency": 1.05
+    },
+    {
+     "name": "Intraventricular",
+     "signal": 0.0148,
+     "urgency": 1.0
+    }
+   ]
+  },
+  "findings": {
+   "Epidural": 0.0254,
+   "Intraparenchymal": 0.0207,
+   "Intraventricular": 0.0148,
+   "Subarachnoid": 0.668,
+   "Subdural": 0.1653
+  },
+  "evidence": {
+   "ct_slice_png": "evidence/fixture-ct-id_bd8ef2b128/ct_slice.png",
+   "gradcam_layer_png": "evidence/fixture-ct-id_bd8ef2b128/gradcam_subarachnoid_layer.png",
+   "gradcam_heatmap_png": "evidence/fixture-ct-id_bd8ef2b128/gradcam_heatmap.png",
+   "gradcam_overlay_png": "evidence/fixture-ct-id_bd8ef2b128/gradcam_overlay.png",
+   "gradcam_tri_view_png": "evidence/fixture-ct-id_bd8ef2b128/gradcam_tri_view.png",
+   "gradcam_finding": "Subarachnoid",
+   "gradcam_coverage": 0.0717,
+   "gradcam_bbox": {
+    "row_min": 156,
+    "row_max": 277,
+    "col_min": 183,
+    "col_max": 324
+   },
+   "gradcam_centroid": {
+    "row": 215.66929673694074,
+    "col": 256.4761802658312
+   },
+   "gradcam_threshold": 0.5,
+   "gradcam_slice_index": 7,
+   "gradcam_slice_id": "ID_a1bd7f758.dcm",
+   "gradcam_target_layer": "vit backbone, last transformer block, layernorm_before",
+   "frame_rows": 512,
+   "frame_cols": 512,
+   "gradcam_note": "Computed on slice 8 of 17, the one with the highest urgency-weighted score."
+  },
+  "error": null,
+  "source": "RSNA Intracranial Hemorrhage Detection study ID_bd8ef2b128, 17 slices, scored by scripts/make_ct_fixture.py.",
+  "created_at": "2026-09-25T08:52:00+00:00",
+  "patient_id": "RSNA-ID_bd8ef2b128",
+  "run_id": "fixture",
+  "datastore_id": "fixture",
+  "study_date": "20260925",
+  "series": [
+   {
+    "series_uid": "fixture-ct-id_bd8ef2b128-1",
+    "number": 1,
+    "description": "Head CT Axial Non-Contrast (17 slices)",
+    "instance_count": 17,
+    "instance_uids": []
+   }
+  ]
  }
 ]

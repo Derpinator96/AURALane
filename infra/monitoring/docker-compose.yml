@@ -1,0 +1,34 @@
+# Prometheus and Grafana for AURALane's GET /metrics (docs/OBSERVABILITY.md).
+#
+#   AURALANE_METRICS_URL=https://auralane-api.onrender.com  (or http://host.docker.internal:8100)
+#   put the API's AURALANE_METRICS_TOKEN in infra/monitoring/metrics_token (gitignored)
+#   docker compose -f infra/monitoring/docker-compose.yml up -d
+#   Grafana: http://localhost:3000 (anonymous, read only), dashboard "AURALane pipeline"
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        U="$${AURALANE_METRICS_URL}";
+        S="$${U%%://*}"; H="$${U#*://}"; H="$${H%%/*}";
+        sed -e "s#SCHEME#$$S#" -e "s#HOSTPORT#$$H#" /etc/auralane/prometheus.yml.tmpl > /prometheus/prometheus.yml &&
+        exec /bin/prometheus --config.file=/prometheus/prometheus.yml --storage.tsdb.path=/prometheus
+    environment:
+      AURALANE_METRICS_URL: ${AURALANE_METRICS_URL:-http://host.docker.internal:8100}
+    volumes:
+      - ./prometheus.yml.tmpl:/etc/auralane/prometheus.yml.tmpl:ro
+      - ./metrics_token:/etc/auralane/metrics_token:ro
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    ports: ["9090:9090"]
+  grafana:
+    image: grafana/grafana:12.1.1
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/auralane.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]
+    depends_on: [prometheus]

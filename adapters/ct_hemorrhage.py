@@ -45,7 +45,8 @@ def adapt(model_output: dict[str, Any], context: dict[str, Any]) -> Findings:
     name = f"{model_output['dominant_subtype']}_hemorrhage"
     return Findings(
         findings={name: signal},
-        evidence={"ct": {k: model_output[k] for k in
+        evidence={**(model_output.get("evidence") or {}),     # Grad-CAM, core/ct_gradcam.py
+                  "ct": {k: model_output[k] for k in
                          ("dominant_subtype", "raw_score", "study_score", "k_used",
                           "n_slices", "top_slice_index", "subtype_scores")}},
         meta={"model_id": entry["id"],

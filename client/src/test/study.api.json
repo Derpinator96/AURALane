@@ -67,6 +67,7 @@
     "urgency": 0.16
    }
   ],
+  "decision_reason": null,
   "evidence": {
    "gradcam_png": "evidence/fixture-sample/gradcam_nodule.png",
    "gradcam_layer_png": "evidence/fixture-sample/gradcam_nodule_layer.png",

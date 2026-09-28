@@ -241,7 +241,7 @@ class InProcessInference(InferencePort):
         metrics["_prediction_path"] = str(out)
         return metrics
 
-    def _ct_hemorrhage(self, model_cfg, *, slices: list, **_) -> dict[str, Any]:
+    def _ct_hemorrhage(self, model_cfg, *, slices: list, ref=None, **_) -> dict[str, Any]:
         """slices: [(pixel_array, rescale_slope, rescale_intercept)] in position
         order. Mehak's pipeline, unchanged: her three-window preprocessing, her
         ViT (weights from Hugging Face, model_cfg["hf_model"]), her per-slice
@@ -272,7 +272,17 @@ class InProcessInference(InferencePort):
                   "calibrated_likelihood": r["subtype_probs"][d]} for r in results])[0], 4)
             for d in subtypes}
         top = max(range(len(results)), key=lambda i: results[i]["urgency_weighted_score"])
-        return {"raw_score": raw, "study_score": study, "k_used": k, "n_slices": len(results),
-                "dominant_subtype": results[top]["dominant_subtype"], "top_slice_index": top,
-                "subtype_scores": subtype_scores,
-                "slice_likelihood": [round(r["calibrated_likelihood"], 4) for r in results]}
+        out = {"raw_score": raw, "study_score": study, "k_used": k, "n_slices": len(results),
+               "dominant_subtype": results[top]["dominant_subtype"], "top_slice_index": top,
+               "subtype_scores": subtype_scores,
+               "slice_likelihood": [round(r["calibrated_likelihood"], 4) for r in results]}
+        # Grad-CAM on the top slice (Shaurya's CT view), where the model runs.
+        # A failure here costs the picture, never the triage.
+        if self.blob is not None and ref is not None and ref.study_uid:
+            try:
+                from core import ct_gradcam
+                out["evidence"] = ct_gradcam.evidence(slices[top], out["dominant_subtype"], top,
+                                                      len(results), ref.study_uid, self.blob)
+            except Exception as e:
+                out["evidence"] = {"gradcam_error": f"{type(e).__name__}: {e}"}
+        return out

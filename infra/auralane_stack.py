@@ -71,6 +71,10 @@ CT_CONTEXT = ["*", "!core", "!adapters", "!models", "!imaging.py", "!triage.py",
               "**/__pycache__"]
 
 
+CLIENT_ORIGINS = ["https://aura-lane.vercel.app", "http://localhost:5173",
+                  "http://localhost:4173", "http://localhost:4174"]
+
+
 class AuralaneStack(Stack):
     def __init__(self, scope: Construct, cid: str, **kwargs) -> None:
         super().__init__(scope, cid, **kwargs)
@@ -88,7 +92,13 @@ class AuralaneStack(Stack):
             lifecycle_rules=[s3.LifecycleRule(prefix=p, expiration=Duration.days(1))
                              for p in WORKING_PREFIXES]
                             + [s3.LifecycleRule(prefix="intake/", expiration=Duration.days(7))],
-            event_bridge_enabled=True)
+            event_bridge_enabled=True,
+            # The 3D viewer (NiiVue) fetches evidence NIfTI through presigned
+            # URLs with fetch(), which needs CORS; <img> tags did not. GET only,
+            # from the hosted client and the local dev and preview servers.
+            cors=[s3.CorsRule(allowed_methods=[s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+                              allowed_origins=CLIENT_ORIGINS, allowed_headers=["*"],
+                              max_age=3000)])
 
         # -- DynamoDB: the schema core/providers/aws/_dynamodb.py expects -------
         worklist = ddb.Table(
@@ -106,6 +116,12 @@ class AuralaneStack(Stack):
         access = ddb.Table(
             self, "Access", table_name=f"{TABLE_PREFIX}-access",
             partition_key=ddb.Attribute(name="username", type=ddb.AttributeType.STRING),
+            billing_mode=ddb.BillingMode.PAY_PER_REQUEST, removal_policy=RemovalPolicy.DESTROY)
+        # Radiologists' notes pinned to images (core/api.py, annotations routes).
+        annotations = ddb.Table(
+            self, "Annotations", table_name=f"{TABLE_PREFIX}-annotations",
+            partition_key=ddb.Attribute(name="study", type=ddb.AttributeType.STRING),
+            sort_key=ddb.Attribute(name="annotation_id", type=ddb.AttributeType.STRING),
             billing_mode=ddb.BillingMode.PAY_PER_REQUEST, removal_policy=RemovalPolicy.DESTROY)
         identity = ddb.Table(
             self, "Identity", table_name=f"{TABLE_PREFIX}-identity",
@@ -220,6 +236,9 @@ class AuralaneStack(Stack):
                                 resources=[bucket.arn_for_objects("upload/*")]),
             iam.PolicyStatement(actions=["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Scan",
                                          "dynamodb:DescribeTable"], resources=[access.table_arn]),
+            iam.PolicyStatement(actions=["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query",
+                                         "dynamodb:Scan", "dynamodb:DeleteItem",
+                                         "dynamodb:DescribeTable"], resources=[annotations.table_arn]),
             iam.PolicyStatement(actions=["cognito-idp:AdminConfirmSignUp",
                                          "cognito-idp:AdminAddUserToGroup",
                                          "cognito-idp:AdminDeleteUser",
@@ -311,6 +330,8 @@ class AuralaneStack(Stack):
                         assumed_by=iam.ServicePrincipal("sagemaker.amazonaws.com"))
         image.repository.grant_pull(role)
         bucket.grant_read_write(role, "inference/*")
+        # The CT endpoint writes its Grad-CAM images to evidence/ (core/ct_gradcam.py).
+        bucket.grant_put(role, "evidence/*")
         role.add_to_policy(iam.PolicyStatement(
             actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents",
                      "cloudwatch:PutMetricData"], resources=["*"]))

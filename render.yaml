@@ -55,6 +55,11 @@ services:
       # Emails the super admin when someone requests access (stack output).
       - key: AURALANE_ACCESS_TOPIC
         sync: false
+      # Bearer token Prometheus sends to GET /metrics (docs/OBSERVABILITY.md).
+      # Generated once by Render and kept; read it in the dashboard and put it
+      # in infra/monitoring/metrics_token.
+      - key: AURALANE_METRICS_TOKEN
+        generateValue: true
       # presigned: the browser fetches frames from HealthImaging directly
       # (CORS checked live 2026-09-28). proxy: the API streams them, the fallback.
       - key: AURALANE_FRAME_MODE

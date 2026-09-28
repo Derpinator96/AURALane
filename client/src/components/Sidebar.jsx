@@ -15,17 +15,17 @@ export default function Sidebar({
   counts = {},
 }) {
   const NAV_ITEMS = [
-    { id: "worklist", label: "Worklist", icon: <WorklistIcon size={16} />, badge: counts.total },
-    { id: "recent", label: "Read", icon: <ClockIcon size={16} />, badge: counts.recent },
-    { id: "history", label: "By patient", icon: <HistoryIcon size={16} /> },
-    { id: "reports", label: "My activity", icon: <ReportsIcon size={16} /> },
+    { id: "worklist", label: "AI Worklist", icon: <WorklistIcon size={16} />, badge: counts.total },
+    { id: "recent", label: "Read Cases", icon: <ClockIcon size={16} />, badge: counts.recent },
+    { id: "history", label: "All Cases / Patient History", icon: <HistoryIcon size={16} /> },
+    { id: "reports", label: "Reports", icon: <ReportsIcon size={16} /> },
     { id: "settings", label: "Settings", icon: <SettingsIcon size={16} /> },
   ];
 
   const SPECIALTIES = [
-    { id: "ALL", label: "All modalities", code: "ALL" },
-    { id: "CR", label: "Chest X-ray", code: "CR" },
-    { id: "MR", label: "Brain MR", code: "MR" },
+    { id: "ALL", label: "All Modalities", code: "ALL" },
+    { id: "CR", label: "Chest Radiography", code: "CXR" },
+    { id: "MR", label: "Brain Tumor MRI", code: "MR-T" },
     { id: "CT", label: "Head CT", code: "CT" },
   ];
 
@@ -35,11 +35,11 @@ export default function Sidebar({
         <BrandLogo size={22} className="brand-logo-svg" />
         <div>
           <h1 className="brand-name">AURALane</h1>
-          <span className="brand-badge">Reading worklist</span>
+          <span className="brand-badge">Clinician Workstation</span>
         </div>
       </div>
 
-      <div className="sidebar-section-title">VIEW</div>
+      <div className="sidebar-section-title">CLINICAL NAVIGATION</div>
       <nav className="sidebar-nav">
         {NAV_ITEMS.map((item) => (
           <button
@@ -56,7 +56,7 @@ export default function Sidebar({
         ))}
       </nav>
 
-      <div className="sidebar-section-title">MODALITY</div>
+      <div className="sidebar-section-title">READING SPECIALTY</div>
       <div className="sidebar-specialties">
         {SPECIALTIES.map((spec) => (
           <button

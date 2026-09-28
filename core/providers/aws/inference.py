@@ -155,7 +155,9 @@ class LambdaSageMakerInference(InferencePort):
                             intercepts=np.array([i for _, _, i in slices], dtype=np.float64))
         self.s3.put_object(Bucket=self.bucket, Key=f"{prefix}/slices.npz", Body=buf.getvalue())
         self.s3.put_object(Bucket=self.bucket, Key=f"{prefix}/request.json",
-                           Body=json.dumps({"slices": f"s3://{self.bucket}/{prefix}/slices.npz"}).encode())
+                           Body=json.dumps({"slices": f"s3://{self.bucket}/{prefix}/slices.npz",
+                                            "study": ref.study_uid,
+                                            "bucket": self.bucket}).encode())
         r = self.smr.invoke_endpoint_async(
             EndpointName=self.ct_endpoint, ContentType="application/json",
             InputLocation=f"s3://{self.bucket}/{prefix}/request.json",

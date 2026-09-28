@@ -26,8 +26,10 @@ def sort_slices(datasets) -> list:
     return sorted(datasets, key=lambda d: float(np.dot(normal, d.ImagePositionPatient)))
 
 
-def series_to_nifti(datasets) -> nib.Nifti1Image:
-    """datasets: every instance of one axial series, any order."""
+def series_to_nifti(datasets, pixels=None) -> nib.Nifti1Image:
+    """datasets: every instance of one axial series, any order. pixels(ds), when
+    given, supplies each instance's stored pixel values (headers read from a
+    datastore carry no pixel data)."""
     if not datasets:
         raise ValueError("empty series")
     iop = np.array(datasets[0].ImageOrientationPatient, dtype=float)
@@ -56,6 +58,7 @@ def series_to_nifti(datasets) -> nib.Nifti1Image:
     lps[:3, 2] = step
     lps[:3, 3] = pos[0]
 
-    vol = np.stack([apply_modality_lut(d.pixel_array, d) for d in slices], axis=-1)
+    vol = np.stack([apply_modality_lut(pixels(d) if pixels else d.pixel_array, d)
+                    for d in slices], axis=-1)
     vol = np.round(vol).astype(np.int16).transpose(1, 0, 2)  # (rows, cols, k) -> (i, j, k)
     return nib.Nifti1Image(vol, LPS_TO_RAS @ lps)
