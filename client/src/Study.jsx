@@ -1,18 +1,16 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { timeUTC } from "./worklist.js";
+import { CheckIcon, ClockIcon } from "./components/Icons.jsx";
 
 // The viewer pulls in Cornerstone and its codecs; load it only on this page.
 const Viewer = lazy(() => import("./viewer/Viewer.jsx"));
+const MriViewer3D = lazy(() => import("./viewer/MriViewer3D.jsx"));
 
 const fmt = (v, d = 3) => (v == null ? "--" : Number(v).toFixed(d));
 
-// Patient identity: the API returns the pseudonymous ID only. Resolving it to a
-// name is the local identity map's job (sim/edge/identity.py, resolve_study),
-// which runs inside the hospital and is not exposed by this API yet. When it
-// is, it plugs in here; until then the pseudonym is shown and nothing is
-// invented.
 function Patient({ study }) {
-  return <span className="mono">{study.patient_id || study.study}</span>;
+  return <span className="mono bold">{study.patient_id || study.study}</span>;
 }
 
 function Rationale({ detail, on, onToggle }) {
@@ -21,9 +19,15 @@ function Rationale({ detail, on, onToggle }) {
   const available = Boolean(urls.gradcam_layer_png || urls.overlay_png);
   return (
     <div className="rationale">
-      <button type="button" aria-pressed={on} disabled={!available} onClick={onToggle}
-              data-testid="rationale-toggle">
-        Triage rationale: {on ? "on" : "off"}
+      <button
+        type="button"
+        aria-pressed={on}
+        disabled={!available}
+        onClick={onToggle}
+        data-testid="rationale-toggle"
+        className="btn-rationale-toggle"
+      >
+        Triage rationale: {on ? "ON" : "OFF"}
       </button>
       {!available && <span className="note">No rationale image for this study.</span>}
       {on && urls.gradcam_layer_png && (
@@ -42,23 +46,44 @@ function Rationale({ detail, on, onToggle }) {
 function Verdict({ study, onVerdict, busy }) {
   const v = study.verdict;
   return (
-    <div className="verdict">
-      <h3>Lane assignment</h3>
-      <div className="verdict-buttons">
-        <button type="button" disabled={busy} aria-pressed={v?.value === "agree"}
-                onClick={() => onVerdict("agree")}>Agree</button>
-        <button type="button" disabled={busy} aria-pressed={v?.value === "disagree"}
-                onClick={() => onVerdict("disagree")}>Disagree</button>
+    <div className="study-verdict-section">
+      <div className="verdict-header">
+        <h4 className="verdict-heading">Radiologist Decision Support</h4>
+        <span className="verdict-sub">Audit Record</span>
       </div>
-      <p className="note" data-testid="verdict-status">
-        {v ? `${v.value === "agree" ? "Agreed" : "Disagreed"} by ${v.by} at ${v.at}` : "No verdict yet."}
-      </p>
+      <div className="verdict-action-buttons">
+        <button
+          type="button"
+          disabled={busy}
+          aria-pressed={v?.value === "agree"}
+          onClick={() => onVerdict("agree")}
+          className={`btn-verdict btn-agree ${v?.value === "agree" ? "selected" : ""}`}
+        >
+          {v?.value === "agree" && <CheckIcon size={14} />} Agree (Accept Triage)
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          aria-pressed={v?.value === "disagree"}
+          onClick={() => onVerdict("disagree")}
+          className={`btn-verdict btn-disagree ${v?.value === "disagree" ? "selected" : ""}`}
+        >
+          {v?.value === "disagree" && <CheckIcon size={14} />} Disagree (Override)
+        </button>
+      </div>
+      <div className="verdict-audit-badge" data-testid="verdict-status">
+        {v ? (
+          <span className="audit-ok">
+            {v.value === "agree" ? "Agreed" : "Disagreed"} by {v.by} at {v.at}
+          </span>
+        ) : (
+          <span className="audit-pending">Awaiting radiologist verification.</span>
+        )}
+      </div>
     </div>
   );
 }
 
-// The brain rationale is a rendered slice, not a layer on the viewer, so it
-// sits in the panel and leaves the viewer its full size.
 function SegmentationRationale({ detail }) {
   const ev = detail.evidence || {};
   return (
@@ -99,60 +124,143 @@ export function RegionalContext({ regional, driver, driverLabel }) {
 export function StudyPanel({ detail, onVerdict, busy, rationaleOn = false }) {
   const s = detail.study;
   const brain = s.modality === "MR";
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyDraft = () => {
+    if (detail.draft) {
+      navigator.clipboard.writeText(detail.draft);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
-    <aside className="panel">
-      <div className={`panel-lane lane-${s.lane}`}>
-        <span className="lanename">{s.lane_label}</span>
-        <span className="clock">{s.clock}</span>
+    <aside className="study-analysis-sidebar" data-testid="study-panel">
+      {/* Priority Lane Card */}
+      <div className={`analysis-lane-card lane-${s.lane}`}>
+        <div className="lane-header-row">
+          <span className="lane-badge-text">{s.lane_label || s.lane}</span>
+          {s.clock && (
+            <span className="lane-sla-target mono">
+              <ClockIcon size={13} /> SLA: {s.clock}
+            </span>
+          )}
+        </div>
+        <div className="lane-meta-row">
+          <span className="meta-acuity">
+            Acuity: <strong className="mono">{s.lane === "ABSTAIN" || s.lane === "FAILED" ? "--" : fmt(s.acuity, 1)}</strong>
+          </span>
+          <span className="meta-driver">
+            Primary Finding: <strong>{s.driver_label || s.driver || "Unremarkable"}</strong>
+          </span>
+        </div>
       </div>
-      <dl className="facts">
-        <dt>Patient (pseudonym)</dt><dd><Patient study={s} /></dd>
-        <dt>Exam</dt><dd>{s.exam}</dd>
-        <dt>Driving finding</dt><dd>{s.driver_label || "--"}</dd>
-        <dt>Acuity</dt>
-        <dd className="mono">{s.lane === "ABSTAIN" || s.lane === "FAILED" ? "--" : fmt(s.acuity, 1)}</dd>
-        <dt>Confidence</dt>
-        <dd>
-          {brain ? "None: the brain model reports volumes, not a probability"
-                 : <><span className="mono">{fmt(s.confidence)}</span> <span className="note">temperature-scaled model output for the driving finding</span></>}
-        </dd>
-      </dl>
+      <div className="study-facts-card">
+        <h4 className="card-section-title">Study</h4>
+        <dl className="facts-grid">
+          <dt>Patient (pseudonym)</dt><dd><Patient study={s} /></dd>
+          <dt>Exam</dt><dd>{s.exam}</dd>
+          <dt>Driving finding</dt><dd>{s.driver_label || "--"}</dd>
+          <dt>Acuity</dt>
+          <dd className="mono">{s.lane === "ABSTAIN" || s.lane === "FAILED" ? "--" : fmt(s.acuity, 1)}</dd>
+          <dt>Confidence</dt>
+          <dd>
+            {brain ? "None: the brain model reports volumes, not a probability"
+                   : <><span className="mono">{fmt(s.confidence)}</span> <span className="note">temperature-scaled model output for the driving finding</span></>}
+          </dd>
+          <dt>Model</dt><dd className="mono">{s.model_id || "--"}</dd>
+          <dt>Arrived</dt><dd className="mono">{s.arrived ? `${timeUTC(s.arrived)} UTC` : "--"}</dd>
+        </dl>
+      </div>
       <RegionalContext regional={detail.evidence?.regional} driver={s.driver}
                        driverLabel={s.driver_label} />
       {rationaleOn && detail.evidence_urls?.overlay_png && <SegmentationRationale detail={detail} />}
-      {s.lane === "FAILED" && <p className="error">Processing failed: {s.error}</p>}
+      {s.lane === "FAILED" && <p className="error-banner">Processing error: {s.error}</p>}
       {s.abstain_reason && (
-        <p className="note" data-testid="abstain-reason">No lane assigned. {s.abstain_reason}. A radiologist places this study.</p>
+        <div className="abstain-notice-box" data-testid="abstain-reason">
+          <strong>No lane assigned:</strong> {s.abstain_reason}. Radiologist review required.
+        </div>
       )}
-      <h3>Findings</h3>
-      {detail.findings.length === 0 ? (
-        <p className="note" data-testid="no-findings">
-          {s.lane === "FAILED" ? "None: processing did not reach the model output." : "None reported."}
-        </p>
-      ) : (<>
-      <p className="note">Signal 0 to 1 against the model's own operating point, not a probability of disease.</p>
-      <table className="findings">
-        <thead><tr><th>Finding</th><th className="num">Signal</th><th className="num">Urgency</th></tr></thead>
-        <tbody>
-          {detail.findings.map((f) => (
-            <tr key={f.name} className={f.name === s.driver ? "driver-row" : ""}>
-              <td>{f.label}</td><td className="mono num">{fmt(f.signal)}</td>
-              <td className="mono num">{fmt(f.urgency, 2)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      </>)}
+
+      {/* Structured AI Findings Table */}
+      <div className="study-findings-card">
+        <div className="findings-header">
+          <h4 className="card-section-title">Deep AI Findings Signal</h4>
+          <span className="findings-sub">Signal (0.0 to 1.0) against operating threshold</span>
+        </div>
+
+        {detail.findings.length === 0 ? (
+          <p className="note" data-testid="no-findings">
+            {s.lane === "FAILED" ? "None: processing did not reach the model output." : "None reported."}
+          </p>
+        ) : (
+          <table className="findings-table-modern">
+            <thead>
+              <tr>
+                <th>Finding Pathology</th>
+                <th>Signal Meter</th>
+                <th className="num">Signal</th>
+                <th className="num">Urgency</th>
+              </tr>
+            </thead>
+            <tbody>
+              {detail.findings.map((f) => {
+                const isDriver = f.name === s.driver;
+                const sigVal = f.signal != null ? Number(f.signal) : 0;
+                return (
+                  <tr key={f.name} className={isDriver ? "driver-finding-row" : ""}>
+                    <td className="finding-name-cell">
+                      <span>{f.label}</span>
+                      {isDriver && <span className="driver-pill">DRIVER</span>}
+                    </td>
+                    <td className="meter-cell">
+                      <div className="signal-track">
+                        <div
+                          className={`signal-bar ${isDriver ? "bar-driver" : "bar-normal"}`}
+                          style={{ width: `${Math.min(100, Math.max(0, sigVal * 100))}%` }}
+                        />
+                      </div>
+                    </td>
+                    <td className="mono num bold">{fmt(f.signal, 2)}</td>
+                    <td className="mono num text-soft">{fmt(f.urgency, 2)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Radiologist Verdict Decision Section */}
       {s.lane === "FAILED" ? (
-        <p className="note">No lane was assigned, so there is nothing to agree or disagree with. Read the study in PACS.</p>
+        <p className="note">No lane assigned. Study flagged for manual PACS review.</p>
       ) : (
         <Verdict study={s} onVerdict={onVerdict} busy={busy} />
       )}
-      {s.source && <p className="source-note"><span className="source">{s.source.split(".")[0]}</span> {s.source}</p>}
-      <details className="draft">
-        <summary>Draft note (template, no language model)</summary>
-        <pre>{detail.draft}</pre>
-      </details>
+
+      {/* AI Structured Draft Note */}
+      {detail.draft && (
+        <div className="study-draft-card">
+          <div className="draft-header">
+            <h4 className="card-section-title">Structured Draft Note</h4>
+            <button
+              type="button"
+              className="btn-copy-draft"
+              onClick={handleCopyDraft}
+              title="Copy formatted note to clipboard"
+            >
+              {copied ? "✓ Copied" : "Copy Note"}
+            </button>
+          </div>
+          <pre className="draft-note-body">{detail.draft}</pre>
+        </div>
+      )}
+
+      {s.source && (
+        <div className="study-source-footer mono">
+          <span>Audit Source: {s.source}</span>
+        </div>
+      )}
     </aside>
   );
 }
@@ -165,6 +273,8 @@ export default function Study({ load, loadSeries, sendVerdict }) {
   const [instances, setInstances] = useState(null);
   const [rationale, setRationale] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const [view3D, setView3D] = useState(true);
 
   useEffect(() => {
     load(id).then((d) => {
@@ -191,9 +301,24 @@ export default function Study({ load, loadSeries, sendVerdict }) {
     }
   }
 
-  if (error) return <main className="study"><p className="error" role="alert">{String(error.message || error)}</p></main>;
-  if (!detail) return <main className="study"><p>Loading study.</p></main>;
+  if (error) {
+    return (
+      <main className="study-page-layout">
+        <p className="error" role="alert">{String(error.message || error)}</p>
+      </main>
+    );
+  }
 
+  if (!detail) {
+    return (
+      <main className="study-page-layout loading-state">
+        <div className="clinical-spinner"></div>
+        <p>Loading clinical study analysis...</p>
+      </main>
+    );
+  }
+
+  const isMR = detail.study.modality === "MR";
   const ev = detail.evidence || {};
   const urls = detail.evidence_urls || {};
   const overlay = rationale && urls.gradcam_layer_png && ev.gradcam_box
@@ -201,35 +326,101 @@ export default function Study({ load, loadSeries, sendVerdict }) {
   const current = detail.series.find((s) => s.series_uid === seriesUid);
 
   return (
-    <main className="study">
-      <div className="study-main">
-        <div className="study-bar">
-          <Link to="/" className="back">Back to worklist</Link>
-          {detail.series.length > 1 && (
-            <div className="series-switch" role="group" aria-label="Series">
-              {detail.series.map((s) => (
-                <button key={s.series_uid} type="button" aria-pressed={s.series_uid === seriesUid}
-                        onClick={() => setSeriesUid(s.series_uid)}>{s.description}</button>
-              ))}
+    <main className="study-page-layout" data-testid="study-page">
+      <div className="study-main-viewport">
+        {/* Navigation & Study Meta HUD Header */}
+        <div className="study-header-hud">
+          <div className="hud-left-section">
+            <Link to="/" className="btn-back-worklist">
+              ← Back to Worklist
+            </Link>
+            <div className="hud-study-tag">
+              <span className="hud-patient mono">{detail.study.patient_id || detail.study.study}</span>
+              <span className={`mod-badge mod-${detail.study.modality}`}>
+                {detail.study.exam || detail.study.modality}
+              </span>
+              <span className={`lanetag lane-${detail.study.lane}`}>
+                {detail.study.lane_label || detail.study.lane}
+              </span>
             </div>
-          )}
-          <Rationale detail={detail} on={rationale} onToggle={() => setRationale((v) => !v)} />
+          </div>
+
+          <div className="hud-right-section">
+            {isMR && (
+              <div className="view-mode-toggle" role="group" aria-label="Viewer Mode">
+                <button
+                  type="button"
+                  className={`mode-btn ${view3D ? "active" : ""}`}
+                  onClick={() => setView3D(true)}
+                >
+                  3D MPR (NiiVue)
+                </button>
+                <button
+                  type="button"
+                  className={`mode-btn ${!view3D ? "active" : ""}`}
+                  onClick={() => setView3D(false)}
+                >
+                  2D Slice Stack
+                </button>
+              </div>
+            )}
+            {!isMR && detail.series.length > 1 && (
+              <div className="series-switch" role="group" aria-label="Series">
+                {detail.series.map((s) => (
+                  <button
+                    key={s.series_uid}
+                    type="button"
+                    aria-pressed={s.series_uid === seriesUid}
+                    onClick={() => setSeriesUid(s.series_uid)}
+                  >
+                    {s.description}
+                  </button>
+                ))}
+              </div>
+            )}
+            {!isMR && <Rationale detail={detail} on={rationale} onToggle={() => setRationale((v) => !v)} />}
+          </div>
         </div>
-        {detail.datastore_note && (
+
+        {/* Datastore note shown only when 2D slices are requested and datastore is non-connected */}
+        {detail.datastore_note && (!isMR || !view3D) && (
           <p className="note datastore-note" role="note" data-testid="datastore-note">
             {detail.datastore_note}
           </p>
         )}
-        {!current || current.instance_count === 0 ? (
-          <p className="note viewer-empty">No images are available for this series from this datastore.</p>
-        ) : !instances ? (
-          <p className="note viewer-empty">Loading series.</p>
-        ) : (
-          <Suspense fallback={<p className="note viewer-empty">Loading viewer.</p>}>
-            <Viewer instances={instances} overlay={overlay} label={current.description} />
-          </Suspense>
-        )}
+
+        {/* Primary Medical Imaging Workstation View */}
+        <div className="viewer-viewport-container">
+          {isMR && view3D ? (
+            <Suspense fallback={<div className="viewer-loading-placeholder"><div className="clinical-spinner"></div><p>Initializing NiiVue 3D WebGL Engine...</p></div>}>
+              <MriViewer3D
+                studyId={id}
+                isAlzheimer={Boolean(detail.study?.alzheimer || detail.alzheimer || id.toLowerCase().includes("alz"))}
+              />
+            </Suspense>
+          ) : !current || current.instance_count === 0 ? (
+            <div className="viewer-empty-placeholder">
+              <p>No 2D DICOM instances available in this local test environment.</p>
+              {isMR && (
+                <button type="button" className="btn-action-primary" onClick={() => setView3D(true)}>
+                  Switch to 3D MPR Workstation
+                </button>
+              )}
+            </div>
+          ) : !instances ? (
+            <div className="viewer-loading-placeholder">
+              <div className="clinical-spinner"></div>
+              <p>Loading DICOM series instances...</p>
+            </div>
+          ) : (
+            <Suspense fallback={<div className="viewer-loading-placeholder"><div className="clinical-spinner"></div><p>Rendering DICOM viewer...</p></div>}>
+              <Viewer instances={instances} overlay={overlay} label={current.description} />
+            </Suspense>
+          )}
+        </div>
       </div>
+
+      {/* Persistent Right Clinical Findings & Verdict Panel */}
       <StudyPanel detail={detail} onVerdict={onVerdict} busy={busy} rationaleOn={rationale} />
     </main>
   );

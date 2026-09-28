@@ -44,7 +44,7 @@ export default function App() {
         <Route path="/request-access" element={session ? <Navigate to={home(session)} />
                                                        : <RequestAccess request={api.requestAccess} />} />
         <Route path="/login" element={session ? <Navigate to={home(session)} /> : <Login onLogin={onLogin} />} />
-        <Route path="/" element={radiologist ? <Worklist load={loadWorklist} /> : <Navigate to={home(session)} />} />
+        <Route path="/" element={radiologist ? <Worklist load={loadWorklist} token={token} /> : <Navigate to={home(session)} />} />
         <Route path="/studies/:id" element={radiologist
           ? <Study load={loadStudy} loadSeries={loadSeries} sendVerdict={sendVerdict} />
           : <Navigate to={home(session)} />} />

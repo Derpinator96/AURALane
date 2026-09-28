@@ -64,4 +64,10 @@ export const api = {
     call(`/api/admin/access-requests/${encodeURIComponent(username)}`, { token, method: "POST", body: { decision } }),
   intake: (token) => call("/api/admin/intake", { token }),
   startIntake: (token, count) => call("/api/admin/intake", { token, method: "POST", body: { count } }),
+  volumeUrl: (study, sequence) =>
+    `${BASE}/api/studies/${encodeURIComponent(study)}/volume/${encodeURIComponent(sequence)}`,
+  segmentationUrl: (study) =>
+    `${BASE}/api/studies/${encodeURIComponent(study)}/segmentation`,
+  metrics: (token, study) =>
+    call(`/api/studies/${encodeURIComponent(study)}/metrics`, { token }),
 };
