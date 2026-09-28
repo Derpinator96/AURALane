@@ -189,10 +189,15 @@ class AuralaneStack(Stack):
         """A SageMaker asynchronous endpoint for one model image, scaling between
         0 and 1 instances. Returns the endpoint name."""
         low = name.lower()
+        # SageMaker accepts only Docker v2 manifests. Docker with the containerd
+        # image store writes OCI ones, which CreateModel rejects ("Unsupported
+        # manifest media type application/vnd.oci.image.manifest.v1+json").
+        # The CDK CLI already turns build attestations off, which this needs.
         image = ecr_assets.DockerImageAsset(
             self, f"{name}Image", directory=str(REPO), file=dockerfile,
             exclude=context, ignore_mode=IgnoreMode.DOCKER,
-            platform=ecr_assets.Platform.LINUX_AMD64)
+            platform=ecr_assets.Platform.LINUX_AMD64,
+            outputs=["type=image,oci-mediatypes=false"])
         role = iam.Role(self, f"{name}Role",
                         assumed_by=iam.ServicePrincipal("sagemaker.amazonaws.com"))
         image.repository.grant_pull(role)
