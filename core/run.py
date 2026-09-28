@@ -119,7 +119,8 @@ def providers(for_ingest: bool = False) -> dict:
                 # Bedrock is blocked at the account level; drafting ships on the
                 # template everywhere, as decided on 2026-09-25.
                 "llm": TemplateLLM(),
-                "frame_proxy": _public_url() if proxy else None}
+                "frame_proxy": _public_url() if proxy else None,
+                "notify": (p.SnsNotifier(env["access_topic"]) if env["access_topic"] else None)}
     sys.exit(f"AURALANE_RUNTIME must be local, fixture or aws, got {runtime!r}")
 
 

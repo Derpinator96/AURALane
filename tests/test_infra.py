@@ -46,7 +46,7 @@ def _of(t, kind):
 def test_synthesises_without_credentials_and_never_creates_a_datastore(template):
     types = Counter(r["Type"] for r in template["Resources"].values())
     assert not any(k.startswith("AWS::HealthImaging") for k in types)
-    assert types["AWS::S3::Bucket"] == 1 and types["AWS::DynamoDB::Table"] == 3
+    assert types["AWS::S3::Bucket"] == 1 and types["AWS::DynamoDB::Table"] == 4
     # 2 functions: the chest model, and CDK's handler that turns on the bucket's
     # EventBridge notifications.
     assert types["AWS::Lambda::Function"] == 2 and types["AWS::SageMaker::Endpoint"] == 2
@@ -71,7 +71,8 @@ def test_working_prefixes_expire_and_evidence_is_kept(template):
 
 
 def test_cognito_has_the_two_groups_and_password_auth(template):
-    assert {g["GroupName"] for g in _of(template, "AWS::Cognito::UserPoolGroup")} == {"radiologist", "admin"}
+    assert {g["GroupName"] for g in _of(template, "AWS::Cognito::UserPoolGroup")} == {
+        "radiologist", "admin", "superadmin"}
     (client,) = _of(template, "AWS::Cognito::UserPoolClient")
     assert "ALLOW_USER_PASSWORD_AUTH" in client["ExplicitAuthFlows"]
     (pool,) = _of(template, "AWS::Cognito::UserPool")
@@ -144,3 +145,14 @@ def test_an_upload_manifest_starts_a_fargate_ingest_task_and_the_api_cannot_read
               for s in p["PolicyDocument"]["Statement"] if s.get("Effect") == "Deny"]
     assert len(denies) == 1 and denies[0]["Action"] == "s3:GetObject"
     assert "upload/*" in json.dumps(denies[0]["Resource"])
+
+
+def test_people_can_request_access_but_get_nothing_until_approved(template):
+    (pool,) = _of(template, "AWS::Cognito::UserPool")
+    assert pool["AdminCreateUserConfig"]["AllowAdminCreateUserOnly"] is False   # sign-up is open
+    assert not pool.get("AutoVerifiedAttributes")                               # the super admin is the gate
+    (topic,) = _of(template, "AWS::SNS::Topic")
+    actions = {a for p in _of(template, "AWS::IAM::ManagedPolicy")
+               for s in p["PolicyDocument"]["Statement"]
+               for a in ([s["Action"]] if isinstance(s["Action"], str) else s["Action"])}
+    assert {"cognito-idp:AdminConfirmSignUp", "cognito-idp:AdminAddUserToGroup", "sns:Publish"} <= actions

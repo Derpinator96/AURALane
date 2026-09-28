@@ -52,6 +52,9 @@ services:
         sync: false
       - key: AURALANE_CT_ENDPOINT
         sync: false
+      # Emails the super admin when someone requests access (stack output).
+      - key: AURALANE_ACCESS_TOPIC
+        sync: false
       # presigned: the browser fetches frames from HealthImaging directly
       # (CORS checked live 2026-09-28). proxy: the API streams them, the fallback.
       - key: AURALANE_FRAME_MODE

@@ -64,6 +64,17 @@ class Login(BaseModel):
     password: str
 
 
+class AccessRequestIn(BaseModel):
+    username: str = Field(pattern=r"^[A-Za-z0-9._-]{3,64}$")
+    email: str = Field(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", max_length=254)
+    password: str = Field(min_length=8, max_length=256)
+    role: Literal["radiologist", "admin"]
+
+
+class DecisionIn(BaseModel):
+    decision: Literal["approve", "reject"]
+
+
 class IntakeIn(BaseModel):
     count: int = Field(30, ge=1, le=60)
 
@@ -120,6 +131,7 @@ def create_app(p: dict, registry: Registry | None = None,
         return dep
 
     radiologist, admin = require("radiologist"), require("admin")
+    superadmin = require("superadmin")
 
     # Frames. With p["frame_proxy"] set (the aws runtime's default), frame URLs
     # point back at this API, which reads the frame from the datastore with its
@@ -364,6 +376,68 @@ def create_app(p: dict, registry: Registry | None = None,
                          + (". Fixture rows were picked three per lane by make_fixtures.py, "
                             "so this is not a population lane mix"
                             if p.get("runtime") == "fixture" else "")}
+
+    # -- access requests: sign up, then a super admin decides --------------------
+    # The requester chooses their own password; it goes to the identity
+    # provider's sign-up call and is never stored, logged or audited here. The
+    # account cannot sign in, and has no group, until a super admin approves.
+    @app.post("/api/access-requests", status_code=202)
+    def request_access(body: AccessRequestIn):
+        auth = p["auth"]
+        if not hasattr(auth, "request_access"):
+            raise HTTPException(409, "access requests go through Cognito on the deployed "
+                                     "site; this runtime has fixed development users")
+        if p["table"].get_item("access", {"username": body.username}):
+            raise HTTPException(409, "a request for this username already exists")
+        try:
+            auth.request_access(body.username, body.email, body.password)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        at = _now()
+        p["table"].put_item("access", {"username": body.username, "email": body.email,
+                                       "role": body.role, "status": "pending",
+                                       "requested_at": at})
+        p["table"].append_audit(AuditEvent(
+            actor=body.username, action="access_request", study=NO_STUDY, at=at,
+            outcome="ok", duration_ms=0.0, detail={"role": body.role}))
+        if p.get("notify"):
+            p["notify"](f"AURALANE: {body.username} requests {body.role} access",
+                        "\n".join([f"{body.username} <{body.email}> asked for {body.role} "
+                                   f"access at {at}.",
+                                   "Approve or reject it under Admin, Access requests.",
+                                   "NON-DIAGNOSTIC; DECISION SUPPORT ONLY."]))
+        return {"status": "pending", "username": body.username, "role": body.role}
+
+    @app.get("/api/admin/access-requests")
+    def access_requests(who: Principal = Depends(superadmin)):
+        try:
+            rows = p["table"].scan("access")
+        except KeyError:
+            rows = []
+        rows.sort(key=lambda r: (r["status"] != "pending", r.get("requested_at", "")))
+        return {"requests": rows}
+
+    @app.post("/api/admin/access-requests/{username}")
+    def decide_access(username: str, body: DecisionIn, who: Principal = Depends(superadmin)):
+        row = p["table"].get_item("access", {"username": username})
+        if not row:
+            raise HTTPException(404, "no such access request")
+        if row["status"] != "pending":
+            raise HTTPException(409, f"already {row['status']}")
+        start = time.perf_counter()
+        if body.decision == "approve":
+            p["auth"].approve(username, row["role"])
+        else:
+            p["auth"].reject(username)
+        row.update(status="approved" if body.decision == "approve" else "rejected",
+                   decided_by=who.email, decided_at=_now())
+        p["table"].put_item("access", row)
+        p["table"].append_audit(AuditEvent(
+            actor=who.email, action=f"access_{row['status']}", study=NO_STUDY,
+            at=row["decided_at"], outcome="ok",
+            duration_ms=round((time.perf_counter() - start) * 1000, 3),
+            detail={"username": username, "role": row["role"]}))
+        return {"request": row}
 
     # -- simulated intake: real studies from this host's corpus ----------------
     @app.get("/api/admin/intake")

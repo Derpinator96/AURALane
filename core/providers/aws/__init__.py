@@ -20,6 +20,7 @@ from core.providers.aws.cognito import CognitoAuth
 from core.providers.aws.dynamo import DynamoTable
 from core.providers.aws.healthimaging import HealthImagingDatastore
 from core.providers.aws.inference import LambdaSageMakerInference
+from core.providers.aws.notify import SnsNotifier
 from core.providers.aws.s3 import S3Blob
 
 
@@ -35,4 +36,4 @@ class BedrockLLM(LLMPort):
 
 
 __all__ = ["S3Blob", "DynamoTable", "HealthImagingDatastore", "CognitoAuth",
-           "LambdaSageMakerInference", "BedrockLLM"]
+           "LambdaSageMakerInference", "BedrockLLM", "SnsNotifier"]

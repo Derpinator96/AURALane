@@ -42,7 +42,8 @@ from aws_cdk import (CfnOutput, Duration, IgnoreMode, RemovalPolicy, Stack, aws_
                      aws_events as events, aws_events_targets as targets,
                      aws_iam as iam, aws_lambda as lambda_,
                      aws_logs as logs,
-                     aws_s3 as s3, aws_sagemaker as sm)
+                     aws_s3 as s3, aws_sagemaker as sm, aws_sns as sns,
+                     aws_sns_subscriptions as subs)
 from constructs import Construct
 
 REPO = Path(__file__).resolve().parents[1]
@@ -102,6 +103,10 @@ class AuralaneStack(Stack):
 
         # The identity map for de-identification in AWS (core/providers/aws/
         # identity.py). Only the ingest task's role can read it; the API cannot.
+        access = ddb.Table(
+            self, "Access", table_name=f"{TABLE_PREFIX}-access",
+            partition_key=ddb.Attribute(name="username", type=ddb.AttributeType.STRING),
+            billing_mode=ddb.BillingMode.PAY_PER_REQUEST, removal_policy=RemovalPolicy.DESTROY)
         identity = ddb.Table(
             self, "Identity", table_name=f"{TABLE_PREFIX}-identity",
             partition_key=ddb.Attribute(name="k", type=ddb.AttributeType.STRING),
@@ -109,10 +114,16 @@ class AuralaneStack(Stack):
 
         # -- Cognito -----------------------------------------------------------
         pool = cognito.UserPool(
-            self, "Users", feature_plan=cognito.FeaturePlan.LITE, self_sign_up_enabled=False,
+            # Self sign-up is how people request access (core/api.py): the new
+            # account is unconfirmed and in no group until a super admin
+            # approves it, so it can neither sign in nor reach a route.
+            # Cognito's own verification emails are off; the super admin is
+            # the gate, not an email code.
+            self, "Users", feature_plan=cognito.FeaturePlan.LITE, self_sign_up_enabled=True,
             sign_in_aliases=cognito.SignInAliases(username=True, email=True),
+            auto_verify=cognito.AutoVerifiedAttrs(email=False),
             removal_policy=RemovalPolicy.DESTROY)
-        for group in ("radiologist", "admin"):
+        for group in ("radiologist", "admin", "superadmin"):
             cognito.CfnUserPoolGroup(self, f"Group-{group}", user_pool_id=pool.user_pool_id,
                                      group_name=group)
         client = pool.add_client("Web", auth_flows=cognito.AuthFlow(user_password=True),
@@ -191,9 +202,25 @@ class AuralaneStack(Stack):
             resources=[f"arn:aws:sagemaker:{REGION}:{self.account}:endpoint/*"])]
              if endpoints else [])
         # The API may start arrivals (write upload/) but never read a raw upload.
+        # Access requests: a topic that emails the super admin (-c admin_email=...),
+        # and what the API needs to record and decide requests.
+        topic = sns.Topic(self, "AccessRequests", display_name="AURALANE access requests")
+        # From -c admin_email or AURALANE_ADMIN_EMAIL; never committed (the repo
+        # is public). A deploy without either drops the subscription.
+        admin_email = (self.node.try_get_context("admin_email")
+                       or __import__("os").environ.get("AURALANE_ADMIN_EMAIL"))
+        if admin_email:
+            topic.add_subscription(subs.EmailSubscription(str(admin_email)))
         app_policy = iam.ManagedPolicy(self, "AppPolicy", statements=common + [
             iam.PolicyStatement(effect=iam.Effect.DENY, actions=["s3:GetObject"],
-                                resources=[bucket.arn_for_objects("upload/*")])])
+                                resources=[bucket.arn_for_objects("upload/*")]),
+            iam.PolicyStatement(actions=["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Scan",
+                                         "dynamodb:DescribeTable"], resources=[access.table_arn]),
+            iam.PolicyStatement(actions=["cognito-idp:AdminConfirmSignUp",
+                                         "cognito-idp:AdminAddUserToGroup",
+                                         "cognito-idp:AdminDeleteUser"],
+                                resources=[pool.user_pool_arn]),
+            iam.PolicyStatement(actions=["sns:Publish"], resources=[topic.topic_arn])])
 
         # -- Cloud ingest: an upload manifest starts one Fargate task ------------
         # upload/<batch>/<item>/_ready.json -> EventBridge -> ECS RunTask. The
@@ -254,6 +281,7 @@ class AuralaneStack(Stack):
                    "AURALANE_APP_POLICY_ARN": app_policy.managed_policy_arn}
         outputs.update(endpoints)
         outputs["AURALANE_IDENTITY_TABLE"] = identity.table_name
+        outputs["AURALANE_ACCESS_TOPIC"] = topic.topic_arn
         outputs["AURALANE_INGEST_CLUSTER"] = cluster.cluster_name
         for name, value in outputs.items():
             CfnOutput(self, name.replace("_", ""), key=name.replace("_", ""), value=value,

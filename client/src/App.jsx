@@ -5,6 +5,7 @@ import Admin from "./Admin.jsx";
 import { Header } from "./Chrome.jsx";
 import { Footer, Privacy, Terms } from "./Legal.jsx";
 import Login from "./Login.jsx";
+import RequestAccess from "./RequestAccess.jsx";
 import Study from "./Study.jsx";
 import Worklist from "./Worklist.jsx";
 
@@ -30,6 +31,8 @@ export default function App() {
   const loadModels = useCallback(() => api.models(token), [token]);
   const loadIntake = useCallback(() => api.intake(token), [token]);
   const startIntake = useCallback((count) => api.startIntake(token, count), [token]);
+  const loadAccess = useCallback(() => api.accessRequests(token), [token]);
+  const decideAccess = useCallback((u, d) => api.decideAccess(token, u, d), [token]);
   const radiologist = session?.user.groups.includes("radiologist");
 
   return (
@@ -38,6 +41,8 @@ export default function App() {
       <Routes>
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/request-access" element={session ? <Navigate to={home(session)} />
+                                                       : <RequestAccess request={api.requestAccess} />} />
         <Route path="/login" element={session ? <Navigate to={home(session)} /> : <Login onLogin={onLogin} />} />
         <Route path="/" element={radiologist ? <Worklist load={loadWorklist} /> : <Navigate to={home(session)} />} />
         <Route path="/studies/:id" element={radiologist
@@ -45,7 +50,9 @@ export default function App() {
           : <Navigate to={home(session)} />} />
         <Route path="/admin/*" element={session && !radiologist
           ? <Admin loadAudit={loadAudit} loadLaneMix={loadLaneMix} loadModels={loadModels}
-                   loadIntake={loadIntake} startIntake={startIntake} />
+                   loadIntake={loadIntake} startIntake={startIntake}
+                   superadmin={session?.user.groups.includes("superadmin")}
+                   loadAccess={loadAccess} decideAccess={decideAccess} />
           : <Navigate to={home(session)} />} />
         <Route path="*" element={<Navigate to={home(session)} />} />
       </Routes>

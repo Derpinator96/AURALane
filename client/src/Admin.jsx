@@ -280,14 +280,77 @@ export function Intake({ load, start }) {
   );
 }
 
+// Access requests, for the super admin only. Approving confirms the account
+// and puts it in the requested group; rejecting deletes it. Both are audited.
+export function AccessRequests({ load, decide }) {
+  const [state, setState] = useState({ data: null, error: null });
+  const [busy, setBusy] = useState(null);
+  const refresh = () => load().then((data) => setState({ data, error: null }),
+                                    (error) => setState({ data: null, error }));
+  useEffect(() => { refresh(); }, [load]);
+
+  async function onDecide(username, decision) {
+    setBusy(username);
+    try {
+      await decide(username, decision);
+      await refresh();
+    } catch (error) {
+      setState((s) => ({ ...s, error }));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Loaded state={state} what="access requests">
+      {(d) => (
+        <>
+          <p className="note">
+            The waitlist: accounts created from the sign-in page, waiting for a role. Each person
+            chose their own password; it is held by the identity provider, never by AURALANE. A
+            waiting account cannot sign in.
+          </p>
+          <table className="admin" data-testid="access-requests">
+            <thead><tr><th>Requested (UTC)</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th /></tr></thead>
+            <tbody>
+              {d.requests.map((r) => (
+                <tr key={r.username}>
+                  <td className="mono">{r.requested_at?.slice(0, 10)} {timeUTC(r.requested_at)}</td>
+                  <td className="mono">{r.username}</td>
+                  <td className="mono">{r.email}</td>
+                  <td>{r.role}</td>
+                  <td>{r.status}{r.decided_by ? ` by ${r.decided_by}` : ""}</td>
+                  <td>
+                    {r.status === "pending" && (
+                      <>
+                        <button type="button" disabled={busy === r.username}
+                                onClick={() => onDecide(r.username, "approve")}>Approve</button>{" "}
+                        <button type="button" disabled={busy === r.username}
+                                onClick={() => onDecide(r.username, "reject")}>Reject</button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {d.requests.length === 0 && <p>No access requests.</p>}
+        </>
+      )}
+    </Loaded>
+  );
+}
+
 const TABS = [["audit", "Audit log"], ["lanes", "Lane mix"], ["thresholds", "Thresholds"], ["models", "Model registry"],
               ["intake", "Simulated intake"]];
 
-export default function Admin({ loadAudit, loadLaneMix, loadModels, loadIntake, startIntake }) {
+export default function Admin({ loadAudit, loadLaneMix, loadModels, loadIntake, startIntake,
+                                superadmin = false, loadAccess, decideAccess }) {
+  const tabs = superadmin ? [...TABS, ["access", "Waitlist"]] : TABS;
   return (
     <main className="adminpage">
       <nav className="tabs" aria-label="Admin">
-        {TABS.map(([path, label]) => <NavLink key={path} to={`/admin/${path}`}>{label}</NavLink>)}
+        {tabs.map(([path, label]) => <NavLink key={path} to={`/admin/${path}`}>{label}</NavLink>)}
       </nav>
       <p className="note">Admins configure and audit the system. Studies are opened by radiologists only.</p>
       <Routes>
@@ -297,6 +360,7 @@ export default function Admin({ loadAudit, loadLaneMix, loadModels, loadIntake, 
         <Route path="thresholds" element={<Thresholds load={loadModels} />} />
         <Route path="models" element={<Registry load={loadModels} />} />
         <Route path="intake" element={<Intake load={loadIntake} start={startIntake} />} />
+        {superadmin && <Route path="access" element={<AccessRequests load={loadAccess} decide={decideAccess} />} />}
         <Route path="*" element={<Navigate to="audit" replace />} />
       </Routes>
     </main>

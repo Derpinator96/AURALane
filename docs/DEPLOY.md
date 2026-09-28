@@ -182,6 +182,33 @@ instead.
 The first brain and CT jobs after idle wait for their endpoint to start an
 instance: several minutes, with a waiting line printed every minute.
 
+### 8. Accounts: people request access, the super admin decides
+
+Anyone can create an account from the sign-in page ("Create an account"):
+username, email, their own password, and the role (radiologist or
+administrator). The password goes straight to Cognito's sign-up; AURALANE
+never stores it. The account is unconfirmed and in no group, so it cannot sign
+in or reach any route until the super admin approves it under Admin, Waitlist
+(the waitlist). Approve confirms it and adds it to the requested group; reject
+deletes it. Every step is audited.
+
+The super admin is any user in the `superadmin` group. Make yourself one (and
+an admin, so the admin screens open):
+
+```
+aws cognito-idp admin-add-user-to-group --user-pool-id <AURALANE_COGNITO_POOL_ID> --username admin --group-name superadmin
+```
+
+Request emails go to `AURALANE_ADMIN_EMAIL` (set it, or pass
+`-c admin_email=...`, on every deploy: a deploy without it drops the
+subscription; it is never committed). AWS first sends that address a
+"confirm subscription" email; click it. On Render, set
+`AURALANE_ACCESS_TOPIC` to the stack output of the same name.
+
+Each person has their own password, held by Cognito. Nobody, including the
+super admin, can read it; a forgotten one is reset with
+`aws cognito-idp admin-set-user-password`.
+
 ### What it costs
 
 | state | cost | from |

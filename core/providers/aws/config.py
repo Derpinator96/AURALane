@@ -22,6 +22,7 @@ ENV = {
     "chest_function": "AURALANE_CHEST_FUNCTION",
     "brain_endpoint": "AURALANE_BRAIN_ENDPOINT",
     "ct_endpoint": "AURALANE_CT_ENDPOINT",
+    "access_topic": "AURALANE_ACCESS_TOPIC",   # optional: emails the super admin on a request
 }
 
 # What each command needs. The deployed API never runs a model, so serve needs

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "./api.js";
 
 export default function Login({ onLogin }) {
@@ -41,6 +42,7 @@ export default function Login({ onLogin }) {
         Radiologists see the worklist. Administrators see configuration and audit, and cannot
         open studies.
       </p>
+      <p className="note">No account? <Link to="/request-access">Create an account</Link>; it waits for a super admin to approve your role.</p>
     </main>
   );
 }
