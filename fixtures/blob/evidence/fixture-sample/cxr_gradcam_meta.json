@@ -1,0 +1,182 @@
+[
+  {
+    "name": "Lung Opacity",
+    "slug": "lung_opacity",
+    "confidence": 77.3,
+    "signal": 0.773,
+    "coverage": 0.0293,
+    "heatmap_png": "evidence/fixture-sample/gradcam_lung_opacity_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_lung_opacity_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_lung_opacity.png"
+  },
+  {
+    "name": "Mass",
+    "slug": "mass",
+    "confidence": 72.1,
+    "signal": 0.721,
+    "coverage": 0.0124,
+    "heatmap_png": "evidence/fixture-sample/gradcam_mass_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_mass_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_mass.png"
+  },
+  {
+    "name": "Nodule",
+    "slug": "nodule",
+    "confidence": 69.7,
+    "signal": 0.697,
+    "coverage": 0.0335,
+    "heatmap_png": "evidence/fixture-sample/gradcam_nodule_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_nodule_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_nodule.png"
+  },
+  {
+    "name": "Fracture",
+    "slug": "fracture",
+    "confidence": 55.1,
+    "signal": 0.551,
+    "coverage": 0.0491,
+    "heatmap_png": "evidence/fixture-sample/gradcam_fracture_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_fracture_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_fracture.png"
+  },
+  {
+    "name": "Infiltration",
+    "slug": "infiltration",
+    "confidence": 51.5,
+    "signal": 0.515,
+    "coverage": 0.0561,
+    "heatmap_png": "evidence/fixture-sample/gradcam_infiltration_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_infiltration_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_infiltration.png"
+  },
+  {
+    "name": "Fibrosis",
+    "slug": "fibrosis",
+    "confidence": 51.5,
+    "signal": 0.515,
+    "coverage": 0.0145,
+    "heatmap_png": "evidence/fixture-sample/gradcam_fibrosis_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_fibrosis_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_fibrosis.png"
+  },
+  {
+    "name": "Enlarged Cardiomediastinum",
+    "slug": "enlarged_cardiomediastinum",
+    "confidence": 50.7,
+    "signal": 0.507,
+    "coverage": 0.0439,
+    "heatmap_png": "evidence/fixture-sample/gradcam_enlarged_cardiomediastinum_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_enlarged_cardiomediastinum_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_enlarged_cardiomediastinum.png"
+  },
+  {
+    "name": "Cardiomegaly",
+    "slug": "cardiomegaly",
+    "confidence": 50.6,
+    "signal": 0.506,
+    "coverage": 0.0596,
+    "heatmap_png": "evidence/fixture-sample/gradcam_cardiomegaly_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_cardiomegaly_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_cardiomegaly.png"
+  },
+  {
+    "name": "Emphysema",
+    "slug": "emphysema",
+    "confidence": 50.2,
+    "signal": 0.502,
+    "coverage": 0.0495,
+    "heatmap_png": "evidence/fixture-sample/gradcam_emphysema_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_emphysema_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_emphysema.png"
+  },
+  {
+    "name": "Consolidation",
+    "slug": "consolidation",
+    "confidence": 48.2,
+    "signal": 0.482,
+    "coverage": 0.0287,
+    "heatmap_png": "evidence/fixture-sample/gradcam_consolidation_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_consolidation_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_consolidation.png"
+  },
+  {
+    "name": "Effusion",
+    "slug": "effusion",
+    "confidence": 39.9,
+    "signal": 0.399,
+    "coverage": 0.0727,
+    "heatmap_png": "evidence/fixture-sample/gradcam_effusion_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_effusion_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_effusion.png"
+  },
+  {
+    "name": "Pneumothorax",
+    "slug": "pneumothorax",
+    "confidence": 38.4,
+    "signal": 0.384,
+    "coverage": 0.0457,
+    "heatmap_png": "evidence/fixture-sample/gradcam_pneumothorax_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_pneumothorax_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_pneumothorax.png"
+  },
+  {
+    "name": "Atelectasis",
+    "slug": "atelectasis",
+    "confidence": 38.1,
+    "signal": 0.381,
+    "coverage": 0.0349,
+    "heatmap_png": "evidence/fixture-sample/gradcam_atelectasis_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_atelectasis_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_atelectasis.png"
+  },
+  {
+    "name": "Pleural_Thickening",
+    "slug": "pleural_thickening",
+    "confidence": 36.9,
+    "signal": 0.369,
+    "coverage": 0.0171,
+    "heatmap_png": "evidence/fixture-sample/gradcam_pleural_thickening_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_pleural_thickening_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_pleural_thickening.png"
+  },
+  {
+    "name": "Lung Lesion",
+    "slug": "lung_lesion",
+    "confidence": 13.9,
+    "signal": 0.139,
+    "coverage": 0.0287,
+    "heatmap_png": "evidence/fixture-sample/gradcam_lung_lesion_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_lung_lesion_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_lung_lesion.png"
+  },
+  {
+    "name": "Hernia",
+    "slug": "hernia",
+    "confidence": 1.6,
+    "signal": 0.016,
+    "coverage": 0.019,
+    "heatmap_png": "evidence/fixture-sample/gradcam_hernia_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_hernia_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_hernia.png"
+  },
+  {
+    "name": "Edema",
+    "slug": "edema",
+    "confidence": 1.3,
+    "signal": 0.013,
+    "coverage": 0.0531,
+    "heatmap_png": "evidence/fixture-sample/gradcam_edema_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_edema_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_edema.png"
+  },
+  {
+    "name": "Pneumonia",
+    "slug": "pneumonia",
+    "confidence": 0.1,
+    "signal": 0.001,
+    "coverage": 0.0658,
+    "heatmap_png": "evidence/fixture-sample/gradcam_pneumonia_heatmap.png",
+    "layer_png": "evidence/fixture-sample/gradcam_pneumonia_layer.png",
+    "blended_png": "evidence/fixture-sample/gradcam_pneumonia.png"
+  }
+]

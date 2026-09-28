@@ -1145,6 +1145,78 @@ header.top {
   mix-blend-mode: screen;
 }
 
+.cxr-panel-mode-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cxr-preview-opacity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.cxr-preview-opacity-row .preview-label {
+  color: var(--faint, #64748b);
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.cxr-preview-opacity-row .preview-slider {
+  width: 100px;
+  height: 4px;
+  cursor: pointer;
+  accent-color: var(--brand, #2563eb);
+}
+
+.cxr-preview-opacity-row .preview-val {
+  color: var(--ink, #f1f5f9);
+  font-size: 10.5px;
+}
+
+.cxr-preview-systems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.system-pill {
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--surface-raised, #182234);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.pill-pulmonary {
+  border-color: rgba(0, 191, 255, 0.4);
+  color: #38bdf8;
+}
+
+.pill-cardio {
+  border-color: rgba(255, 69, 0, 0.4);
+  color: #fb923c;
+}
+
+.pill-skeletal {
+  border-color: rgba(255, 0, 255, 0.4);
+  color: #e879f9;
+}
+
+.pill-diaphragm {
+  border-color: rgba(50, 205, 50, 0.4);
+  color: #4ade80;
+}
+
 /* --------------------------------------------------------------------------
    Head CT Grad-CAM Workstation Styles (CT_Mehak triagelane-ct)
 -------------------------------------------------------------------------- */
@@ -1514,6 +1586,379 @@ header.top {
   color: var(--soft);
   line-height: 1.4;
 }
+
+/* --------------------------------------------------------------------------
+   Chest Radiography PSPNet Multi-Color Anatomical Segmentation Workstation
+   (Derived from shaurya-webapp: 14 targets, curated colors, system filters)
+-------------------------------------------------------------------------- */
+.cxr-segmentation-workstation {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  background: var(--surface, #121824);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.cxr-segmentation-workstation.pinpoint-active-mode {
+  outline: 2px solid #3b82f6;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.35);
+}
+
+.cxr-workstation-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface-raised, #182234);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+.cxr-mode-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 3px;
+  border-radius: 6px;
+}
+
+.mode-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--soft, #94a3b8);
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mode-tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mode-tab-btn.active {
+  background: var(--brand, #2563eb);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.45);
+}
+
+.cxr-opacity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+
+.cxr-opacity-control .opacity-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--faint, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.cxr-opacity-control .opacity-slider {
+  width: 90px;
+  cursor: pointer;
+  accent-color: var(--brand, #2563eb);
+}
+
+.cxr-opacity-control .opacity-val {
+  font-size: 11px;
+  color: var(--ink, #f1f5f9);
+  min-width: 32px;
+  font-family: var(--font-mono, monospace);
+}
+
+.cxr-extra-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.cxr-extra-tools .btn-tool {
+  background: var(--surface, #121824);
+  border: 1px solid var(--line);
+  color: var(--ink, #e2e8f0);
+  padding: 5px 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cxr-extra-tools .btn-tool:hover {
+  border-color: var(--brand, #3b82f6);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.cxr-extra-tools .btn-tool.active {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+
+.cxr-viewing-stage {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+  min-height: 480px;
+  background: #000000;
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.cxr-viewing-stage.single-mode .cxr-panel-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cxr-viewing-stage.split-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 860px) {
+  .cxr-viewing-stage.split-mode {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cxr-panel-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.cxr-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.cxr-panel-header .panel-badge {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: var(--soft, #94a3b8);
+  font-weight: 600;
+}
+
+.cxr-panel-header .panel-badge.highlight {
+  background: rgba(37, 99, 235, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+}
+
+.cxr-panel-header .panel-title {
+  color: var(--ink, #e2e8f0);
+  font-weight: 600;
+}
+
+.btn-clear-isolation {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-clear-isolation:hover {
+  background: rgba(239, 68, 68, 0.35);
+  color: #ffffff;
+}
+
+.cxr-viewport-frame {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  aspect-ratio: 448 / 496;
+  background: #050505;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: crosshair;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.cxr-stage-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.cxr-stage-img.inverted {
+  filter: invert(1) contrast(1.1);
+}
+
+.cxr-overlay-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  mix-blend-mode: screen;
+}
+
+/* 14 Anatomical Regions Panel & Chips */
+.cxr-anatomy-panel {
+  background: var(--surface-raised, #182234);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.anatomy-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.anatomy-panel-header .header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.anatomy-panel-header .header-title h4 {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink, #f1f5f9);
+}
+
+.anatomy-panel-header .hint-text {
+  font-size: 11px;
+  color: var(--faint, #64748b);
+}
+
+.system-filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.system-tab-chip {
+  background: var(--surface, #121824);
+  border: 1px solid var(--line);
+  color: var(--soft, #94a3b8);
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.system-tab-chip:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.system-tab-chip.active {
+  background: rgba(37, 99, 235, 0.25);
+  border-color: var(--brand, #3b82f6);
+  color: #ffffff;
+}
+
+.regions-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.anatomy-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface, #121824);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: var(--ink, #e2e8f0);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.anatomy-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.anatomy-chip.isolated {
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 700;
+}
+
+.chip-color-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.chip-name {
+  font-weight: 600;
+}
+
+.chip-system-badge {
+  font-size: 9px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--faint, #64748b);
+  padding: 1px 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.chip-coverage-val {
+  font-size: 10px;
+  color: var(--soft, #94a3b8);
+}
+
 
 /* Findings Section */
 .case-panel-findings-section {
@@ -4226,6 +4671,747 @@ header.top {
 .mri-pin-marker.out-slice .mri-pin-core {
   opacity: 0.7;
 }
+
+/* ==========================================================================
+   CXR MULTI-TARGET SEGMENTATION WORKSTATION & GRAD-CAM SALIENCY STUDIO
+   ========================================================================== */
+.cxr-segmentation-workstation {
+  display: flex;
+  flex-direction: column;
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  margin-top: 12px;
+}
+
+.cxr-segmentation-workstation.pinpoint-active-mode {
+  border-color: rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+}
+
+.cxr-workstation-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cxr-mode-group {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mode-tab-btn {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.mode-tab-btn:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mode-tab-btn.active {
+  background: #6366f1;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+}
+
+.cxr-opacity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #cbd5e1;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cxr-opacity-control .opacity-label {
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.opacity-slider {
+  accent-color: #6366f1;
+  cursor: pointer;
+  width: 90px;
+}
+
+.opacity-val {
+  font-weight: 700;
+  min-width: 36px;
+  color: #818cf8;
+}
+
+.cxr-extra-tools {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-tool {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-tool:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.btn-tool.active {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: #6366f1;
+  color: #c7d2fe;
+}
+
+.btn-pin-mode {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-weight: 700;
+  padding: 5px 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11.5px;
+  transition: all 0.15s ease;
+}
+
+.btn-pin-mode:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #ffffff;
+}
+
+.btn-pin-mode.active {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+}
+
+.cxr-pin-instruction-hud {
+  background: rgba(239, 68, 68, 0.12);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.25);
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #fecaca;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cxr-viewing-stage {
+  padding: 14px;
+  background: #050811;
+  min-height: 520px;
+}
+
+.cxr-viewing-stage.split-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.cxr-viewing-stage.single-mode {
+  display: flex;
+  justify-content: center;
+}
+
+.cxr-panel-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.cxr-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 480px;
+  padding: 0 4px;
+}
+
+.panel-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.panel-badge.highlight {
+  color: #818cf8;
+}
+
+.btn-clear-isolation {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #94a3b8;
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 2px 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-clear-isolation:hover {
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+.cxr-viewport-frame {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 448 / 496;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  cursor: default;
+}
+
+.pinpoint-active-mode .cxr-viewport-frame {
+  cursor: crosshair;
+}
+
+.cxr-stage-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.cxr-stage-img.inverted {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.cxr-overlay-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* Grad-CAM Saliency Studio Bottom Panel */
+.cxr-gradcam-panel {
+  padding: 14px 18px;
+  background: rgba(15, 23, 42, 0.92);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gradcam-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.gradcam-panel-header .header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gradcam-panel-header h4 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.gradcam-panel-header .hint-text {
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+.gradcam-active-badge {
+  font-size: 12px;
+  color: #cbd5e1;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.gradcam-active-badge .highlight-text {
+  color: #fbbf24;
+}
+
+.gradcam-pathologies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gradcam-pathology-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: left;
+}
+
+.gradcam-pathology-chip:hover {
+  background: rgba(51, 65, 85, 0.9);
+  border-color: rgba(245, 158, 11, 0.4);
+  transform: translateY(-1px);
+}
+
+.gradcam-pathology-chip.active {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.25));
+  border-color: #f59e0b;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.4);
+  color: #ffffff;
+}
+
+.pathology-fire-icon {
+  font-size: 13px;
+}
+
+.pathology-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pathology-conf-badge {
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+.pathology-conf-badge.high {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  font-weight: 700;
+}
+
+.gradcam-rationale-note {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #94a3b8;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #f59e0b;
+  margin: 0;
+}
+
+.gradcam-rationale-note .highlight-text {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+/* 14 Anatomical Targets Bottom Panel */
+.cxr-anatomy-panel {
+  padding: 14px 18px;
+  background: rgba(15, 23, 42, 0.92);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.anatomy-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.anatomy-panel-header .header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.anatomy-panel-header h4 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.system-filter-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.system-tab-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.system-tab-chip:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.system-tab-chip.active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #ffffff;
+}
+
+.regions-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.anatomy-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.anatomy-chip:hover {
+  background: rgba(51, 65, 85, 0.85);
+}
+
+.anatomy-chip.isolated {
+  background: rgba(15, 23, 42, 0.95);
+}
+
+.chip-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chip-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.chip-system-badge {
+  font-size: 9.5px;
+  color: #94a3b8;
+}
+
+.chip-coverage-val {
+  font-size: 10.5px;
+  color: #cbd5e1;
+}
+
+/* Pinpoint Markers on CXR */
+.pin-marker-point {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 15;
+  cursor: pointer;
+}
+
+.pin-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+  display: block;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.pin-marker-point.selected .pin-dot {
+  background: #8b5cf6;
+  border-color: #ffffff;
+  box-shadow: 0 0 12px #8b5cf6;
+  transform: scale(1.2);
+}
+
+.pin-pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #ef4444;
+  animation: pulse 1.8s infinite;
+}
+
+.pin-tooltip-popover {
+  position: absolute;
+  width: 220px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  z-index: 30;
+  color: #f8fafc;
+}
+
+.pin-tooltip-popover.popover-above {
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pin-tooltip-popover.popover-below {
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pin-tooltip-popover.popover-left {
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.pin-tooltip-popover.popover-right {
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.popover-meta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 10.5px;
+}
+
+.popover-author {
+  font-weight: 700;
+  color: #a78bfa;
+}
+
+.popover-region-tag {
+  background: rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 9.5px;
+}
+
+.popover-body-text {
+  font-size: 11.5px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.popover-action-row {
+  display: flex;
+  gap: 6px;
+}
+
+/* LatestCasePanel CXR Styling */
+.cxr-panel-mode-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-gradcam-toggle {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-gradcam-toggle:hover {
+  border-color: var(--brand-purple);
+  color: var(--brand-purple);
+}
+
+.btn-gradcam-toggle.active {
+  background: var(--brand-purple);
+  border-color: var(--brand-purple);
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.cxr-preview-opacity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.preview-slider {
+  accent-color: var(--brand-purple);
+  flex: 1;
+}
+
+.preview-val {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--brand-purple);
+}
+
+.cxr-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 448 / 496;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  margin: 0 auto 10px;
+}
+
+.cxr-base-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.cxr-overlay-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.cxr-preview-systems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.system-pill {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.pill-pulmonary {
+  color: #0284c7;
+  background: #e0f2fe;
+  border-color: #bae6fd;
+}
+
+.pill-cardio {
+  color: #e11d48;
+  background: #ffe4e6;
+  border-color: #fecdd3;
+}
+
+.pill-skeletal {
+  color: #16a34a;
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.pill-diaphragm {
+  color: #854d0e;
+  background: #fef9c3;
+  border-color: #fef08a;
+}
+
+.cxr-preview-pathologies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.pathology-preview-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--ink-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pathology-preview-chip:hover {
+  border-color: #f59e0b;
+  color: #d97706;
+}
+
+.pathology-preview-chip.active {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #b45309;
+  font-weight: 700;
+}
+
 
 
 

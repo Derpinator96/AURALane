@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import CtGradcamView, { hasCtGradcam } from "./components/CtGradcamView.jsx";
+import CxrSegmentationView, { hasCxrSegmentation } from "./components/CxrSegmentationView.jsx";
 import AnnotationsPanel from "./components/AnnotationsPanel.jsx";
 import NoteEditorModal from "./components/NoteEditorModal.jsx";
 import { api, loadSession } from "./api.js";
@@ -276,6 +277,7 @@ export default function Study({ load, loadSeries, sendVerdict, token }) {
   const [busy, setBusy] = useState(false);
 
   const [view3D, setView3D] = useState(true);
+  const [viewCxrSegmentation, setViewCxrSegmentation] = useState(true);
 
   // Clinician Pinpoint Annotations State
   const [annotations, setAnnotations] = useState([]);
@@ -409,6 +411,7 @@ export default function Study({ load, loadSeries, sendVerdict, token }) {
 
   const isMR = detail.study.modality === "MR";
   const isCT = detail.study.modality === "CT";
+  const isCR = detail.study.modality === "CR" || detail.study.modality === "DX";
   const ev = detail.evidence || {};
   const urls = detail.evidence_urls || {};
   const overlay = rationale && urls.gradcam_layer_png && ev.gradcam_box
@@ -451,6 +454,24 @@ export default function Study({ load, loadSeries, sendVerdict, token }) {
                   onClick={() => setView3D(false)}
                 >
                   2D Slice Stack
+                </button>
+              </div>
+            )}
+            {isCR && hasCxrSegmentation(urls) && (
+              <div className="view-mode-toggle" role="group" aria-label="Viewer Mode">
+                <button
+                  type="button"
+                  className={`mode-btn ${viewCxrSegmentation ? "active" : ""}`}
+                  onClick={() => setViewCxrSegmentation(true)}
+                >
+                  PSPNet Anatomy
+                </button>
+                <button
+                  type="button"
+                  className={`mode-btn ${!viewCxrSegmentation ? "active" : ""}`}
+                  onClick={() => setViewCxrSegmentation(false)}
+                >
+                  2D DICOM Stack
                 </button>
               </div>
             )}
@@ -521,6 +542,22 @@ export default function Study({ load, loadSeries, sendVerdict, token }) {
                 onToggleAddNoteMode={() => setIsAddNoteMode((v) => !v)}
               />
             </Suspense>
+          ) : isCR && hasCxrSegmentation(urls) && viewCxrSegmentation ? (
+            <CxrSegmentationView
+              evidence={ev}
+              urls={urls}
+              show={rationale}
+              studyId={id}
+              findings={detail.findings}
+              annotations={annotations}
+              selectedAnnotation={selectedAnnotation}
+              onSelectAnnotation={handleSelectAnnotation}
+              onEditAnnotation={handleEditAnnotation}
+              onDeleteAnnotation={handleDeleteAnnotation}
+              onRequestNewNote={handleRequestNewNote}
+              isAddNoteMode={isAddNoteMode}
+              onToggleAddNoteMode={() => setIsAddNoteMode((v) => !v)}
+            />
           ) : !current || current.instance_count === 0 ? (
             <div className="viewer-empty-placeholder">
               <p>No 2D DICOM instances available in this local test environment.</p>

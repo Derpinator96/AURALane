@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import datetime
 import io
+import json
 import os
 import time
 import uuid
@@ -271,6 +272,40 @@ def create_app(p: dict, registry: Registry | None = None,
         evidence = dict(row.get("evidence") or {})
         evidence_urls = {k: p["blob"].presigned_url(v) for k, v in evidence.items()
                          if isinstance(v, str) and k.endswith("_png")}
+        if "cxr_segmentation_regions" in evidence and isinstance(evidence["cxr_segmentation_regions"], list):
+            regions_with_urls = []
+            for r in evidence["cxr_segmentation_regions"]:
+                rc = dict(r)
+                if "mask_png" in rc:
+                    rc["mask_url"] = p["blob"].presigned_url(rc["mask_png"])
+                regions_with_urls.append(rc)
+            evidence["cxr_segmentation_regions"] = regions_with_urls
+
+        if row.get("modality") == "CR":
+            evidence_urls["cxr_base_png"] = p["blob"].presigned_url("evidence/fixture-sample/cxr_base.png")
+            gradcam_meta_file = ROOT / "fixtures" / "blob" / "evidence" / "fixture-sample" / "cxr_gradcam_meta.json"
+            if gradcam_meta_file.exists():
+                try:
+                    gc_meta = json.loads(gradcam_meta_file.read_text())
+                    gc_list = []
+                    for g in gc_meta:
+                        item = dict(g)
+                        if "layer_png" in item:
+                            item["layer_url"] = p["blob"].presigned_url(item["layer_png"])
+                        if "heatmap_png" in item:
+                            item["heatmap_url"] = p["blob"].presigned_url(item["heatmap_png"])
+                        if "blended_png" in item:
+                            item["blended_url"] = p["blob"].presigned_url(item["blended_png"])
+                        gc_list.append(item)
+                    evidence["cxr_gradcam_pathologies"] = gc_list
+                    driver = (row.get("triage") or {}).get("driver") or evidence.get("gradcam_finding")
+                    if driver:
+                        driver_match = next((x for x in gc_list if x["name"].lower() == str(driver).lower() or x["slug"] == str(driver).lower()), None)
+                        if driver_match:
+                            evidence_urls["gradcam_layer_png"] = driver_match["layer_url"]
+                            evidence_urls["gradcam_heatmap_png"] = driver_match["heatmap_url"]
+                except Exception:
+                    pass
         return {"disclaimer": DISCLAIMER, "study": view(row), "findings": findings,
                 "top_findings": (row.get("triage") or {}).get("top_findings", []),
                 "decision_reason": (row.get("triage") or {}).get("decision_reason"),

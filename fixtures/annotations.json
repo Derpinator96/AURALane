@@ -548,5 +548,41 @@
     "segmentation_region": "Localized subarachnoid Hemorrhage",
     "viewer_context": {},
     "metadata": {}
+  },
+  {
+    "id": "ann-f6ea2efc11",
+    "annotation_id": "ann-f6ea2efc11",
+    "study": "fixture-cr-ST-042",
+    "study_id": "fixture-cr-ST-042",
+    "series_id": null,
+    "image_instance_id": null,
+    "modality": "CR",
+    "annotation_type": "pinpoint",
+    "note_text": "Pleural effusion blunting costophrenic angle",
+    "created_by": "radiologist@dev.auralane.local",
+    "created_at": "2026-09-28T23:06:41+00:00",
+    "updated_at": "2026-09-28T23:06:41+00:00",
+    "coordinate_space": "IMAGE_NORMALIZED",
+    "coordinate_x": 0.7575000127156576,
+    "coordinate_y": 0.24274357240095662,
+    "coordinate_z": null,
+    "voxel": null,
+    "world_mm": null,
+    "slice_index": 0,
+    "segmentation_region": "Left Lung Field (Pulmonary)",
+    "viewer_context": {
+      "panel": "Main Overlaid",
+      "pixel_coords": {
+        "x": 339,
+        "y": 120
+      },
+      "view_mode": "composite",
+      "isolated_target": 5
+    },
+    "metadata": {
+      "x_pct": 76,
+      "y_pct": 24,
+      "anatomical_structure": "Left Lung Field (Pulmonary)"
+    }
   }
 ]

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import MriViewer3D from "../viewer/MriViewer3D.jsx";
@@ -14,6 +14,24 @@ export default function LatestCasePanel({ studyId, token, onVerdictChange }) {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [showGradcam, setShowGradcam] = useState(true);
+  const [cxrMode, setCxrMode] = useState("segmentation"); // 'segmentation' | 'gradcam' | 'off'
+  const [cxrOpacity, setCxrOpacity] = useState(0.65);
+  const [selectedCxrPathology, setSelectedCxrPathology] = useState(null);
+
+  const ev = detail?.evidence || {};
+  const urls = detail?.evidence_urls || {};
+
+  const activeCxrGradcamUrl = useMemo(() => {
+    if (selectedCxrPathology && ev.cxr_gradcam_pathologies) {
+      const match = ev.cxr_gradcam_pathologies.find(
+        (p) =>
+          p.name?.toLowerCase() === selectedCxrPathology.toLowerCase() ||
+          p.slug === selectedCxrPathology.toLowerCase()
+      );
+      if (match?.layer_url) return match.layer_url;
+    }
+    return urls.gradcam_layer_png;
+  }, [selectedCxrPathology, ev.cxr_gradcam_pathologies, urls.gradcam_layer_png]);
 
   useEffect(() => {
     if (!studyId) return;
@@ -88,8 +106,6 @@ export default function LatestCasePanel({ studyId, token, onVerdictChange }) {
   const isCR = s.modality === "CR" || s.modality === "DX" || s.modality === "X-RAY";
 
   const alz = s.alzheimer || detail.alzheimer;
-  const ev = detail.evidence || {};
-  const urls = detail.evidence_urls || {};
   const v = s.verdict;
 
   return (
@@ -210,33 +226,97 @@ export default function LatestCasePanel({ studyId, token, onVerdictChange }) {
           <div className="viewer-container cxr-view" data-testid="cxr-view">
             <div className="viewer-header-info">
               <span className="viewer-title">Chest Radiography (PA View)</span>
-              <button
-                type="button"
-                className={`btn-gradcam-toggle ${showGradcam ? "active" : ""}`}
-                onClick={() => setShowGradcam(!showGradcam)}
-              >
-                {showGradcam ? "Grad-CAM Heatmap: ON" : "Grad-CAM Heatmap: OFF"}
-              </button>
+              <div className="cxr-panel-mode-buttons" role="group" aria-label="CXR Mode">
+                <button
+                  type="button"
+                  className={`btn-gradcam-toggle ${cxrMode === "segmentation" ? "active" : ""}`}
+                  onClick={() => setCxrMode(cxrMode === "segmentation" ? "off" : "segmentation")}
+                  title="Toggle 14-target anatomical color segmentation"
+                >
+                  🎨 Anatomy: {cxrMode === "segmentation" ? "ON" : "OFF"}
+                </button>
+                <button
+                  type="button"
+                  className={`btn-gradcam-toggle ${cxrMode === "gradcam" ? "active" : ""}`}
+                  onClick={() => setCxrMode(cxrMode === "gradcam" ? "off" : "gradcam")}
+                  title="Toggle Grad-CAM explainability heatmap"
+                >
+                  🔥 Grad-CAM: {cxrMode === "gradcam" ? "ON" : "OFF"}
+                </button>
+              </div>
             </div>
+
+            {cxrMode !== "off" && (
+              <div className="cxr-preview-opacity-row">
+                <span className="preview-label">Overlay Opacity:</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={cxrOpacity}
+                  onChange={(e) => setCxrOpacity(parseFloat(e.target.value))}
+                  className="preview-slider"
+                />
+                <span className="mono preview-val">{Math.round(cxrOpacity * 100)}%</span>
+              </div>
+            )}
 
             <div className="cxr-canvas-wrapper">
               <img
-                src={urls.gradcam_png || "/fixtures/frames/sample_cxr.png"}
+                src={urls.cxr_base_png || urls.gradcam_png || "/fixtures/frames/sample_cxr.png"}
                 alt="Chest Radiograph"
                 className="cxr-base-img"
               />
-              {showGradcam && urls.gradcam_layer_png && (
+              {cxrMode === "segmentation" && (urls.cxr_segmentation_layer_png || urls.cxr_segmentation_composite_png) && (
                 <img
-                  src={urls.gradcam_layer_png}
+                  src={urls.cxr_segmentation_layer_png || urls.cxr_segmentation_composite_png}
+                  alt="Anatomical Segmentation Overlay"
+                  className="cxr-overlay-img"
+                  style={{ opacity: cxrOpacity }}
+                />
+              )}
+              {cxrMode === "gradcam" && activeCxrGradcamUrl && (
+                <img
+                  src={activeCxrGradcamUrl}
                   alt="Grad-CAM Overlay"
                   className="cxr-overlay-img"
+                  style={{ opacity: cxrOpacity }}
                 />
               )}
             </div>
 
+            {cxrMode === "segmentation" && (
+              <div className="cxr-preview-systems">
+                <span className="system-pill pill-pulmonary">🫁 Pulmonary (Lungs/Hila)</span>
+                <span className="system-pill pill-cardio">❤️ Cardio (Heart/Aorta)</span>
+                <span className="system-pill pill-skeletal">🦴 Skeletal (Ribs/Spine)</span>
+                <span className="system-pill pill-diaphragm">〰️ Diaphragm</span>
+              </div>
+            )}
+
+            {cxrMode === "gradcam" && ev.cxr_gradcam_pathologies && ev.cxr_gradcam_pathologies.length > 0 && (
+              <div className="cxr-preview-pathologies">
+                {ev.cxr_gradcam_pathologies.slice(0, 7).map((p) => {
+                  const isSel = (selectedCxrPathology || ev.gradcam_finding || "Edema").toLowerCase() === p.name.toLowerCase();
+                  return (
+                    <button
+                      key={p.name}
+                      type="button"
+                      className={`pathology-preview-chip ${isSel ? "active" : ""}`}
+                      onClick={() => setSelectedCxrPathology(p.name)}
+                      title={`Inspect ${p.name} Grad-CAM heatmap (${p.confidence}%)`}
+                    >
+                      🔥 {p.name} ({p.confidence}%)
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {ev.gradcam_finding && (
               <p className="evidence-caption">
-                <span className="bold">Grad-CAM Explanation:</span> Attention localized around{" "}
+                <span className="bold">DenseNet-121 Attention:</span> Primary driving finding{" "}
                 <span className="highlight-text">{ev.gradcam_finding}</span> ({((ev.gradcam_coverage || 0.12) * 100).toFixed(1)}% coverage).
               </p>
             )}

@@ -40,8 +40,6 @@ export default function CtGradcamView({
   const centroid = evidence.gradcam_centroid || null;
   const finding = evidence.gradcam_finding || "subarachnoid";
   const targetClass = finding.toLowerCase();
-  const targetLayer =
-    evidence.gradcam_target_layer || "vit backbone, last transformer block, layernorm_before";
 
   // Handle clicking on CT frame to place pinpoint note
   const handleFrameClick = (e, panelName) => {
@@ -147,34 +145,6 @@ export default function CtGradcamView({
 
   return (
     <div className={`ct-gradcam-container ${isAddNoteMode ? "pinpoint-active-mode" : ""}`} data-testid="ct-gradcam-view">
-      {/* 1. Terminal / Notebook Diagnostic Metadata Header */}
-      <div className="ct-diagnostic-header mono" data-testid="ct-diagnostic-header">
-        <div className="meta-line">
-          <span className="meta-key">target_class_name:</span>{" "}
-          <span className="meta-val meta-finding">{targetClass}</span>
-        </div>
-        <div className="meta-line">
-          <span className="meta-key">target_layer:</span>{" "}
-          <span className="meta-val">{targetLayer}</span>
-        </div>
-        {viewMode !== "dual" && box && (
-          <div className="meta-line">
-            <span className="meta-key">bounding_box:</span>{" "}
-            <span className="meta-val">
-              {`{'row_min': ${box.row_min}, 'row_max': ${box.row_max}, 'col_min': ${box.col_min}, 'col_max': ${box.col_max}}`}
-            </span>
-          </div>
-        )}
-        {viewMode !== "dual" && centroid && (
-          <div className="meta-line">
-            <span className="meta-key">centroid:</span>{" "}
-            <span className="meta-val">
-              {`{'row': ${centroid.row}, 'col': ${centroid.col}}`}
-            </span>
-          </div>
-        )}
-      </div>
-
       {/* Mode Switcher and Interactive Opacity / Localization Toolbar */}
       <div className="ct-toolbar-strip" data-testid="ct-toolbar-strip">
         <div className="ct-mode-switcher">
@@ -491,14 +461,12 @@ export function CtGradcamCaption({ evidence = {} }) {
   const n = (evidence.gradcam_slice_index ?? 0) + 1;
   const finding = evidence.gradcam_finding || "Subarachnoid";
   const coverage = evidence.gradcam_coverage != null ? (evidence.gradcam_coverage * 100).toFixed(1) : "7.2";
-  const targetLayer =
-    evidence.gradcam_target_layer || "vit backbone, last transformer block, layernorm_before";
 
   return (
     <div className="ct-caption-card" data-testid="ct-gradcam-caption">
       <div className="caption-title-row">
-        <span className="caption-bold">ViT Transformer Localization:</span>
-        <span className="caption-target-chip mono">{targetLayer}</span>
+        <span className="caption-bold">Intracranial Hemorrhage Localization:</span>
+        <span className="caption-target-chip">{finding} Hemorrhage</span>
       </div>
       <p className="caption-text">
         Grad-CAM attention highlighted <strong className="highlight-text">{finding}</strong> hemorrhage on slice{" "}

@@ -51,7 +51,211 @@
    ],
    "gradcam_finding": "Edema",
    "gradcam_coverage": 0.0,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -380,7 +584,211 @@
    ],
    "gradcam_finding": "Edema",
    "gradcam_coverage": 0.0,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -709,7 +1117,211 @@
    ],
    "gradcam_finding": "Edema",
    "gradcam_coverage": 0.0,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -1038,7 +1650,211 @@
    ],
    "gradcam_finding": "Edema",
    "gradcam_coverage": 0.0,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -1367,7 +2183,211 @@
    ],
    "gradcam_finding": "Edema",
    "gradcam_coverage": 0.0,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -1696,7 +2716,211 @@
    ],
    "gradcam_finding": "Pneumonia",
    "gradcam_coverage": 0.0688,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Pneumonia, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Pneumonia, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -2025,7 +3249,211 @@
    ],
    "gradcam_finding": "Edema",
    "gradcam_coverage": 0.0,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Edema, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -2354,7 +3782,211 @@
    ],
    "gradcam_finding": "Effusion",
    "gradcam_coverage": 0.0698,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Effusion, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Effusion, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -2683,7 +4315,211 @@
    ],
    "gradcam_finding": "Nodule",
    "gradcam_coverage": 0.1396,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Nodule, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Nodule, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -3012,7 +4848,211 @@
    ],
    "gradcam_finding": "Pneumonia",
    "gradcam_coverage": 0.0688,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Pneumonia, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Pneumonia, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -3341,7 +5381,211 @@
    ],
    "gradcam_finding": "Effusion",
    "gradcam_coverage": 0.0698,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Effusion, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Effusion, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -3670,7 +5914,211 @@
    ],
    "gradcam_finding": "Mass",
    "gradcam_coverage": 0.1137,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Mass, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Mass, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -3999,7 +6447,211 @@
    ],
    "gradcam_finding": "Atelectasis",
    "gradcam_coverage": 0.0,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Atelectasis, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Atelectasis, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -4328,7 +6980,211 @@
    ],
    "gradcam_finding": "Atelectasis",
    "gradcam_coverage": 0.0,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Atelectasis, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Atelectasis, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
@@ -4657,7 +7513,211 @@
    ],
    "gradcam_finding": "Infiltration",
    "gradcam_coverage": 0.114,
-   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Infiltration, the finding that set this row's lane. Not this study's image."
+   "gradcam_note": "Fixture: Grad-CAM of the public sample image for Infiltration, the finding that set this row's lane. Not this study's image.",
+   "cxr_segmentation_layer_png": "evidence/fixture-sample/cxr_segmentation_layer.png",
+   "cxr_segmentation_composite_png": "evidence/fixture-sample/cxr_segmentation_composite.png",
+   "cxr_segmentation_pulmonary_png": "evidence/fixture-sample/cxr_segmentation_pulmonary.png",
+   "cxr_segmentation_cardiovascular_png": "evidence/fixture-sample/cxr_segmentation_cardiovascular.png",
+   "cxr_segmentation_musculoskeletal_png": "evidence/fixture-sample/cxr_segmentation_musculoskeletal.png",
+   "cxr_segmentation_diaphragmatic_png": "evidence/fixture-sample/cxr_segmentation_diaphragmatic.png",
+   "cxr_segmentation_regions": [
+    {
+     "id": 0,
+     "raw_name": "Left Clavicle",
+     "name": "Left Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      0,
+      255,
+      255
+     ],
+     "color_hex": "#00ffff",
+     "coverage_pct": 0.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_0.png"
+    },
+    {
+     "id": 1,
+     "raw_name": "Right Clavicle",
+     "name": "Right Clavicle",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      165,
+      0
+     ],
+     "color_hex": "#ffa500",
+     "coverage_pct": 0.2,
+     "mask_png": "evidence/fixture-sample/cxr_mask_1.png"
+    },
+    {
+     "id": 2,
+     "raw_name": "Left Scapula",
+     "name": "Left Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      0,
+      255
+     ],
+     "color_hex": "#ff00ff",
+     "coverage_pct": 6.53,
+     "mask_png": "evidence/fixture-sample/cxr_mask_2.png"
+    },
+    {
+     "id": 3,
+     "raw_name": "Right Scapula",
+     "name": "Right Scapula",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      255,
+      20,
+      147
+     ],
+     "color_hex": "#ff1493",
+     "coverage_pct": 6.75,
+     "mask_png": "evidence/fixture-sample/cxr_mask_3.png"
+    },
+    {
+     "id": 4,
+     "raw_name": "Left Lung",
+     "name": "Left Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      0,
+      191,
+      255
+     ],
+     "color_hex": "#00bfff",
+     "coverage_pct": 26.35,
+     "mask_png": "evidence/fixture-sample/cxr_mask_4.png"
+    },
+    {
+     "id": 5,
+     "raw_name": "Right Lung",
+     "name": "Right Lung Field",
+     "system": "Pulmonary",
+     "color_rgb": [
+      30,
+      144,
+      255
+     ],
+     "color_hex": "#1e90ff",
+     "coverage_pct": 26.5,
+     "mask_png": "evidence/fixture-sample/cxr_mask_5.png"
+    },
+    {
+     "id": 6,
+     "raw_name": "Left Hilus Pulmonis",
+     "name": "Left Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      138,
+      43,
+      226
+     ],
+     "color_hex": "#8a2be2",
+     "coverage_pct": 1.04,
+     "mask_png": "evidence/fixture-sample/cxr_mask_6.png"
+    },
+    {
+     "id": 7,
+     "raw_name": "Right Hilus Pulmonis",
+     "name": "Right Pulmonary Hilum",
+     "system": "Pulmonary",
+     "color_rgb": [
+      147,
+      112,
+      219
+     ],
+     "color_hex": "#9370db",
+     "coverage_pct": 1.86,
+     "mask_png": "evidence/fixture-sample/cxr_mask_7.png"
+    },
+    {
+     "id": 8,
+     "raw_name": "Heart",
+     "name": "Cardiac Silhouette",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      69,
+      0
+     ],
+     "color_hex": "#ff4500",
+     "coverage_pct": 12.46,
+     "mask_png": "evidence/fixture-sample/cxr_mask_8.png"
+    },
+    {
+     "id": 9,
+     "raw_name": "Aorta",
+     "name": "Aortic Arch & Knob",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      255,
+      215,
+      0
+     ],
+     "color_hex": "#ffd700",
+     "coverage_pct": 1.44,
+     "mask_png": "evidence/fixture-sample/cxr_mask_9.png"
+    },
+    {
+     "id": 10,
+     "raw_name": "Facies Diaphragmatica",
+     "name": "Diaphragmatic Surface",
+     "system": "Diaphragmatic",
+     "color_rgb": [
+      50,
+      205,
+      50
+     ],
+     "color_hex": "#32cd32",
+     "coverage_pct": 22.54,
+     "mask_png": "evidence/fixture-sample/cxr_mask_10.png"
+    },
+    {
+     "id": 11,
+     "raw_name": "Mediastinum",
+     "name": "Mediastinum",
+     "system": "Cardiovascular",
+     "color_rgb": [
+      0,
+      250,
+      154
+     ],
+     "color_hex": "#00fa9a",
+     "coverage_pct": 6.82,
+     "mask_png": "evidence/fixture-sample/cxr_mask_11.png"
+    },
+    {
+     "id": 12,
+     "raw_name": "Weasand",
+     "name": "Trachea / Main Bronchi",
+     "system": "Pulmonary",
+     "color_rgb": [
+      220,
+      20,
+      60
+     ],
+     "color_hex": "#dc143c",
+     "coverage_pct": 2.65,
+     "mask_png": "evidence/fixture-sample/cxr_mask_12.png"
+    },
+    {
+     "id": 13,
+     "raw_name": "Spine",
+     "name": "Thoracic Spine",
+     "system": "Musculoskeletal",
+     "color_rgb": [
+      124,
+      252,
+      0
+     ],
+     "color_hex": "#7cfc00",
+     "coverage_pct": 10.88,
+     "mask_png": "evidence/fixture-sample/cxr_mask_13.png"
+    }
+   ]
   },
   "error": null,
   "series": [
