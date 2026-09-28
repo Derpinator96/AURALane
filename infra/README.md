@@ -97,10 +97,12 @@ the smoke-test image set `6f7968d2159b0167b2ba896c78bd0533`; the script does not
 create a HealthImaging client. Image sets the pipeline imported stay too, and
 the script says so.
 
-## Unverified until something is deployed
+## Checked against the deployed stack (2026-09-28)
 
-- Browser frame fetch straight from HealthImaging (`AURALANE_FRAME_MODE=presigned`).
-  The API streams frames by default (`proxy`); `scripts/smoke_aws.py` reports
-  whether the presigned URL answers a browser origin with CORS headers.
-- `GetDICOMSeriesMetadata` has not been called on this account.
-- Cold start and warm cost figures are the estimates in `docs/AWS-COSTS.md`.
+- Browser frame fetch straight from HealthImaging works: a presigned
+  GetDICOMInstanceFrames URL answers the CORS preflight for Cornerstone's
+  Accept header (200, allow-origin `*`, allow-headers `accept`) and returns
+  the frame as multipart/related. `presigned` is the default frame mode.
+- HealthImaging split a four-series brain MR into four primary image sets;
+  the provider now tracks every image set of a study.
+- Still estimates: cold start and warm cost figures in `docs/AWS-COSTS.md`.

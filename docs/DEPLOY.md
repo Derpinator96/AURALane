@@ -151,8 +151,10 @@ It ingests one chest, one brain and one head CT study, then reads the
 deployed worklist and prints each study with its lane. `SMOKE PASSED` means
 all three reached it: that is done. It also fetches one frame through the
 viewer's URL and says whether HealthImaging's presigned URL answers a browser
-origin with CORS headers. If it does, `AURALANE_FRAME_MODE=presigned` on
-Render moves frame traffic off the API; otherwise keep `proxy`.
+origin with CORS headers. Frames default to `presigned`: the browser fetches
+them from HealthImaging and the API never reads pixels. Checked live on
+2026-09-28, including the CORS preflight Cornerstone's Accept header triggers.
+`AURALANE_FRAME_MODE=proxy` on Render streams them through the API instead.
 
 More studies: `python -m core.run ingest <study dir>` with the same
 environment (`--state` overrides the site state for one ingest).

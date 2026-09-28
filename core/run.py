@@ -100,12 +100,13 @@ def providers(for_ingest: bool = False) -> dict:
             sys.exit(f"AURALANE_RUNTIME=aws {'ingest' if for_ingest else 'serve'} needs "
                      f"{', '.join(missing)} (the CDK stack's outputs; see infra/README.md)")
         env = {k: os.environ.get(v) for k, v in ENV.items()}
-        # Frames: "proxy" (default) streams decoded pixels through this API, which
-        # signs its own HealthImaging calls. "presigned" hands the browser a SigV4
-        # DICOMweb URL instead; switch to it once scripts/smoke_aws.py shows
-        # HealthImaging answering a browser origin with CORS headers.
-        # TODO: default to presigned if smoke_aws.py shows HealthImaging sends CORS headers.
-        proxy = os.environ.get("AURALANE_FRAME_MODE", "proxy") == "proxy"
+        # Frames: "presigned" (default) hands the browser a SigV4 DICOMweb URL;
+        # the browser fetches pixels from HealthImaging and the API never reads
+        # them. Checked live on 2026-09-28: the CORS preflight for Cornerstone's
+        # Accept header answers 200 (allow-origin *, allow-headers accept), and
+        # the frame comes back as multipart/related, uncompressed. "proxy"
+        # streams decoded pixels through this API instead: the fallback.
+        proxy = os.environ.get("AURALANE_FRAME_MODE", "presigned") == "proxy"
         return {"runtime": runtime, "blob": p.S3Blob(env["bucket"]),
                 "datastore": p.HealthImagingDatastore(
                     env["bucket"], env["import_role_arn"],

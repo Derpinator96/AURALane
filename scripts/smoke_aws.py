@@ -125,7 +125,7 @@ def check_api(api: str, user: str, password: str, ingested: dict[str, dict],
     print(f"\ndeployed worklist, {len(rows)} studies:")
     for r in rows:
         mark = f"  <- {wanted[r['study']]}" if r["study"] in wanted else ""
-        print(f"  {r['lane']:<10} {r.get('modality', ''):<3} {r['study']}{mark}")
+        print(f"  {r['lane']:<10} {(r.get('modality') or ''):<3} {r['study']}{mark}")
     found = {r["study"] for r in rows} & set(wanted)
     missing = [wanted[s] for s in wanted if s not in found]
     if missing:
@@ -165,7 +165,7 @@ def check_presigned(ingested: dict[str, dict], origin: str) -> None:
     print(f"presigned HealthImaging frame: HTTP {status}, {len(data)} bytes, "
           f"CORS allow-origin {cors!r}")
     print("  -> AURALANE_FRAME_MODE=presigned can work from the browser" if status == 200 and cors
-          else "  -> keep AURALANE_FRAME_MODE=proxy")
+          else "  -> set AURALANE_FRAME_MODE=proxy on the API")
 
 
 def main() -> int:

@@ -80,7 +80,10 @@ def aws_env(monkeypatch):
 def test_aws_serve_needs_no_model_and_drafts_from_the_template(aws_env):
     p = run.providers()
     assert p["inference"] is None and isinstance(p["llm"], TemplateLLM)
-    assert p["frame_proxy"] == ""                  # proxy by default; relative in development
+    assert p["frame_proxy"] is None                # presigned by default: the API never reads pixels
+    aws_env.setenv("AURALANE_FRAME_MODE", "proxy")
+    assert run.providers()["frame_proxy"] == ""    # the fallback; relative in development
+    aws_env.delenv("AURALANE_FRAME_MODE")
     with pytest.raises(SystemExit, match="AURALANE_CHEST_FUNCTION"):
         run.providers(for_ingest=True)
     aws_env.setenv("AURALANE_CHEST_FUNCTION", "fn:live")
