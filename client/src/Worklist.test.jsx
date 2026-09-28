@@ -5,8 +5,10 @@ import { MemoryRouter } from "react-router-dom";
 import fixture from "./test/worklist.api.json";
 import Worklist from "./Worklist.jsx";
 
+// The department queue: every study, as the API ordered it.
 async function show() {
   render(<MemoryRouter><Worklist load={() => Promise.resolve(fixture)} /></MemoryRouter>);
+  if (fixture.me) await userEvent.click(await screen.findByTestId("scope-department"));
   await screen.findAllByTestId("study-row");
 }
 // "Pool-LANE" for every section on screen, in display order.
@@ -74,5 +76,26 @@ describe("Worklist", () => {
     await userEvent.selectOptions(screen.getByLabelText("Lane filter"), "ROUTINE");
     expect(sectionLanes("Chest")).toEqual(["ABSTAIN", "ROUTINE"]);
     expect(sectionLanes("Neuro")).toEqual(["ABSTAIN"]);
+  });
+});
+
+describe("Worklist, readers", () => {
+  const me = "radiologist-1@dev.auralane.local";
+  const withReaders = {
+    ...fixture, me,
+    readers: [{ id: me, name: "Reader 1", pools: ["Chest", "Neuro"] },
+              { id: "radiologist-2@dev.auralane.local", name: "Reader 2", pools: ["Chest"] }],
+    studies: fixture.studies.map((s, i) => ({ ...s, assigned_to: i === 0 ? me : null,
+                                              assigned_name: i === 0 ? "Reader 1" : null })),
+  };
+
+  it("shows only my studies by default, the department on request, and the reader on every row", async () => {
+    render(<MemoryRouter><Worklist load={() => Promise.resolve(withReaders)} /></MemoryRouter>);
+    await screen.findAllByTestId("study-row");
+    expect(rowIds()).toEqual([withReaders.studies[0].study]);
+    expect(within(screen.getByTestId("study-row")).getByTestId("assigned")).toHaveTextContent("You");
+    await userEvent.click(screen.getByTestId("scope-department"));
+    expect(rowIds()).toHaveLength(fixture.studies.length);
+    expect(screen.getAllByTestId("assigned").some((el) => el.textContent.includes("Unassigned"))).toBe(true);
   });
 });

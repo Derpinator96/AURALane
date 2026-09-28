@@ -15,18 +15,17 @@ export default function Sidebar({
   counts = {},
 }) {
   const NAV_ITEMS = [
-    { id: "worklist", label: "AI Worklist", icon: <WorklistIcon size={16} />, badge: counts.total },
-    { id: "recent", label: "Recent Cases", icon: <ClockIcon size={16} />, badge: counts.recent },
-    { id: "history", label: "All Cases / Patient History", icon: <HistoryIcon size={16} /> },
-    { id: "reports", label: "Reports & Audits", icon: <ReportsIcon size={16} /> },
+    { id: "worklist", label: "Worklist", icon: <WorklistIcon size={16} />, badge: counts.total },
+    { id: "recent", label: "Read", icon: <ClockIcon size={16} />, badge: counts.recent },
+    { id: "history", label: "By patient", icon: <HistoryIcon size={16} /> },
+    { id: "reports", label: "My activity", icon: <ReportsIcon size={16} /> },
     { id: "settings", label: "Settings", icon: <SettingsIcon size={16} /> },
   ];
 
   const SPECIALTIES = [
-    { id: "ALL", label: "All Modalities", code: "ALL" },
-    { id: "MR_TUMOR", label: "Brain Tumor MRI", code: "MR-T" },
-    { id: "MR_ALZHEIMER", label: "Alzheimer's T1 MRI", code: "MR-AD" },
-    { id: "CR", label: "Chest Radiography", code: "CXR" },
+    { id: "ALL", label: "All modalities", code: "ALL" },
+    { id: "CR", label: "Chest X-ray", code: "CR" },
+    { id: "MR", label: "Brain MR", code: "MR" },
     { id: "CT", label: "Head CT", code: "CT" },
   ];
 
@@ -36,11 +35,11 @@ export default function Sidebar({
         <BrandLogo size={22} className="brand-logo-svg" />
         <div>
           <h1 className="brand-name">AURALane</h1>
-          <span className="brand-badge">Clinician Workstation</span>
+          <span className="brand-badge">Reading worklist</span>
         </div>
       </div>
 
-      <div className="sidebar-section-title">CLINICAL NAVIGATION</div>
+      <div className="sidebar-section-title">VIEW</div>
       <nav className="sidebar-nav">
         {NAV_ITEMS.map((item) => (
           <button
@@ -57,7 +56,7 @@ export default function Sidebar({
         ))}
       </nav>
 
-      <div className="sidebar-section-title">READING SPECIALTY</div>
+      <div className="sidebar-section-title">MODALITY</div>
       <div className="sidebar-specialties">
         {SPECIALTIES.map((spec) => (
           <button
@@ -73,13 +72,6 @@ export default function Sidebar({
         ))}
       </div>
 
-      <div className="sidebar-footer-info">
-        <div className="system-status">
-          <span className="status-dot online"></span>
-          <span>AWS Neural Triage Online</span>
-        </div>
-        <span className="compliance-tag">FDA 510(k) Pre-Market Decision Support</span>
-      </div>
     </aside>
   );
 }

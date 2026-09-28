@@ -64,10 +64,25 @@ export const api = {
     call(`/api/admin/access-requests/${encodeURIComponent(username)}`, { token, method: "POST", body: { decision } }),
   intake: (token) => call("/api/admin/intake", { token }),
   startIntake: (token, count) => call("/api/admin/intake", { token, method: "POST", body: { count } }),
-  volumeUrl: (study, sequence) =>
-    `${BASE}/api/studies/${encodeURIComponent(study)}/volume/${encodeURIComponent(sequence)}`,
-  segmentationUrl: (study) =>
-    `${BASE}/api/studies/${encodeURIComponent(study)}/segmentation`,
+  // 3D viewer: each answers {url, name}, a presigned URL NiiVue loads directly.
+  volume: (token, study, sequence) =>
+    call(`/api/studies/${encodeURIComponent(study)}/volume/${encodeURIComponent(sequence)}`, { token }),
+  segmentation: (token, study) =>
+    call(`/api/studies/${encodeURIComponent(study)}/segmentation`, { token }),
   metrics: (token, study) =>
     call(`/api/studies/${encodeURIComponent(study)}/metrics`, { token }),
+  saveDraft: (token, study, text, reviewed) =>
+    call(`/api/studies/${encodeURIComponent(study)}/draft`, { token, method: "POST", body: { text, reviewed } }),
+  readers: (token) => call("/api/readers", { token }),
+  distribute: (token, readers) => call("/api/distribute", { token, method: "POST", body: { readers } }),
+  simulateInfo: (token) => call("/api/simulate", { token }),
+  simulateEstimate: (token, counts) => call("/api/simulate/estimate", { token, method: "POST", body: counts }),
+  simulate: (token, counts, readers) => call("/api/simulate", { token, method: "POST", body: { counts, readers } }),
+  simulateStatus: (token, batch) => call(`/api/simulate/${encodeURIComponent(batch)}`, { token }),
+  myHistory: (token) => call("/api/me/history", { token }),
+  assignments: (token) => call("/api/admin/assignments", { token }),
+  reassign: (token, study, reader) =>
+    call(`/api/admin/assignments/${encodeURIComponent(study)}`, { token, method: "POST", body: { reader } }),
+  pipeline: (token) => call("/api/admin/pipeline", { token }),
+  pipelineStudy: (token, study) => call(`/api/admin/pipeline/${encodeURIComponent(study)}`, { token }),
 };

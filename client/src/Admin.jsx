@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { timeUTC } from "./worklist.js";
+import { Assignments, Pipeline } from "./AdminOps.jsx";
 
 // Admin screens. They show how the system is configured and what it did; they
 // never open a study. Study IDs in the audit log are plain text, not links, and
@@ -341,11 +342,13 @@ export function AccessRequests({ load, decide }) {
   );
 }
 
-const TABS = [["audit", "Audit log"], ["lanes", "Lane mix"], ["thresholds", "Thresholds"], ["models", "Model registry"],
+const TABS = [["pipeline", "Pipeline"], ["assignments", "Assignments"], ["audit", "Audit log"],
+              ["lanes", "Lane mix"], ["thresholds", "Thresholds"], ["models", "Model registry"],
               ["intake", "Simulated intake"]];
 
 export default function Admin({ loadAudit, loadLaneMix, loadModels, loadIntake, startIntake,
-                                superadmin = false, loadAccess, decideAccess }) {
+                                superadmin = false, loadAccess, decideAccess,
+                                loadPipeline, loadPipelineStudy, loadAssignments, reassign }) {
   const tabs = superadmin ? [...TABS, ["access", "Waitlist"]] : TABS;
   return (
     <main className="adminpage">
@@ -354,14 +357,18 @@ export default function Admin({ loadAudit, loadLaneMix, loadModels, loadIntake, 
       </nav>
       <p className="note">Admins configure and audit the system. Studies are opened by radiologists only.</p>
       <Routes>
-        <Route index element={<Navigate to="audit" replace />} />
+        <Route index element={<Navigate to="pipeline" replace />} />
+        <Route path="pipeline" element={loadPipeline
+          ? <Pipeline load={loadPipeline} loadStudy={loadPipelineStudy} /> : <Navigate to="../audit" replace />} />
+        <Route path="assignments" element={loadAssignments
+          ? <Assignments load={loadAssignments} reassign={reassign} /> : <Navigate to="../audit" replace />} />
         <Route path="audit" element={<Audit load={loadAudit} />} />
         <Route path="lanes" element={<LaneMix load={loadLaneMix} />} />
         <Route path="thresholds" element={<Thresholds load={loadModels} />} />
         <Route path="models" element={<Registry load={loadModels} />} />
         <Route path="intake" element={<Intake load={loadIntake} start={startIntake} />} />
         {superadmin && <Route path="access" element={<AccessRequests load={loadAccess} decide={decideAccess} />} />}
-        <Route path="*" element={<Navigate to="audit" replace />} />
+        <Route path="*" element={<Navigate to="pipeline" replace />} />
       </Routes>
     </main>
   );

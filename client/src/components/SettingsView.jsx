@@ -1,105 +1,57 @@
 import { useState } from "react";
+import { ThemeToggle } from "../Chrome.jsx";
+import { loadSettings, MR_SEQUENCES, REFRESH_CHOICES, saveSettings } from "../settings.js";
 
-export default function SettingsView() {
-  const [defaultSeq, setDefaultSeq] = useState("t1ce");
-  const [audioAlerts, setAudioAlerts] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState("30");
-  const [saved, setSaved] = useState(false);
+// Only settings that take effect. Kept in this browser, not on the server.
+export default function SettingsView({ onChange }) {
+  const [settings, setSettings] = useState(loadSettings);
+  const [status, setStatus] = useState(null);
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const update = (key, value) => {
+    const next = { ...settings, [key]: value };
+    setSettings(next);
+    setStatus(saveSettings(next) ? "Saved in this browser." : "This browser does not allow saving; the setting lasts until reload.");
+    if (onChange) onChange(next);
   };
 
   return (
     <div className="settings-view" data-testid="settings-view">
       <div className="settings-header">
-        <h2 className="center-title">Clinician Workstation Settings</h2>
-        <p className="center-subtitle">
-          Configure local reading preferences, notification thresholds, and PACS ingestion parameters
-        </p>
+        <h2 className="center-title">Settings</h2>
+        <p className="center-subtitle">Kept in this browser only.</p>
       </div>
-
-      <form onSubmit={handleSave} className="settings-form">
+      <div className="settings-form">
         <div className="settings-card">
-          <h3 className="card-section-title">Imaging & Viewer Defaults</h3>
           <div className="settings-row">
             <div>
-              <span className="setting-label">Default Brain Tumor MRI Sequence:</span>
-              <span className="setting-desc">Initial sequence loaded into the 3D multi-planar workstation</span>
+              <span className="setting-label">First MR sequence in the 3D viewer</span>
+              <span className="setting-desc">The sequence NiiVue opens a brain MR study with.</span>
             </div>
-            <select
-              value={defaultSeq}
-              onChange={(e) => setDefaultSeq(e.target.value)}
-              className="settings-select"
-            >
-              <option value="t1ce">T1 Contrast-Enhanced (T1c)</option>
-              <option value="t1">T1 Native</option>
-              <option value="t2">T2 Weighted</option>
-              <option value="flair">FLAIR</option>
+            <select value={settings.mrSequence} onChange={(e) => update("mrSequence", e.target.value)}
+                    className="settings-select" aria-label="First MR sequence">
+              {MR_SEQUENCES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
             </select>
           </div>
-
           <div className="settings-row">
             <div>
-              <span className="setting-label">Worklist Polling Rate:</span>
-              <span className="setting-desc">Interval to check for newly triaged studies from AWS pipeline</span>
+              <span className="setting-label">Worklist refresh</span>
+              <span className="setting-desc">How often the worklist asks the API for new studies.</span>
             </div>
-            <select
-              value={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.value)}
-              className="settings-select"
-            >
-              <option value="15">Every 15 seconds</option>
-              <option value="30">Every 30 seconds</option>
-              <option value="60">Every 60 seconds</option>
-              <option value="0">Manual refresh only</option>
+            <select value={settings.refreshSeconds} onChange={(e) => update("refreshSeconds", Number(e.target.value))}
+                    className="settings-select" aria-label="Worklist refresh">
+              {REFRESH_CHOICES.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
             </select>
           </div>
-        </div>
-
-        <div className="settings-card">
-          <h3 className="card-section-title">Critical Alerts & Audio</h3>
           <div className="settings-row">
             <div>
-              <span className="setting-label">Critical Case Audio Chime:</span>
-              <span className="setting-desc">Play distinct auditory tone when a CRITICAL study (&lt;15 min SLA) enters queue</span>
+              <span className="setting-label">Light or dark</span>
+              <span className="setting-desc">Also in the header.</span>
             </div>
-            <input
-              type="checkbox"
-              checked={audioAlerts}
-              onChange={(e) => setAudioAlerts(e.target.checked)}
-              className="settings-checkbox"
-            />
+            <ThemeToggle />
           </div>
         </div>
-
-        <div className="settings-card">
-          <h3 className="card-section-title">PACS Node Configuration (DICOM C-STORE / DIMSE)</h3>
-          <div className="pacs-grid">
-            <label className="pacs-field">
-              <span>Local AE Title:</span>
-              <input type="text" defaultValue="AURALANE_WL" className="pacs-input mono" />
-            </label>
-            <label className="pacs-field">
-              <span>DICOM Port:</span>
-              <input type="text" defaultValue="11112" className="pacs-input mono" />
-            </label>
-            <label className="pacs-field">
-              <span>Hospital PACS Host:</span>
-              <input type="text" defaultValue="pacs.hospital.internal" className="pacs-input mono" />
-            </label>
-          </div>
-        </div>
-
-        <div className="settings-actions">
-          {saved && <span className="save-toast">Preferences saved to workstation profile</span>}
-          <button type="submit" className="btn-primary">
-            Save Preferences
-          </button>
-        </div>
-      </form>
+        {status && <p className="note" role="status">{status}</p>}
+      </div>
     </div>
   );
 }

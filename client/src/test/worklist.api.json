@@ -69,7 +69,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case MRI-1790070297 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case MRI-1790070297 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-mr-MRI-1790081977",
@@ -91,7 +95,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case MRI-1790081977 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case MRI-1790081977 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-050",
@@ -113,7 +121,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-050 (00001558_018.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-050 (00001558_018.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-042",
@@ -135,7 +147,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-042 (00001373_052.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-042 (00001373_052.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-081",
@@ -157,7 +173,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-081 (00002395_021.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-081 (00002395_021.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-001",
@@ -179,7 +199,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-001 (00000013_005.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-001 (00000013_005.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-016",
@@ -201,7 +225,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-016 (00000468_007.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-016 (00000468_007.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-052",
@@ -223,7 +251,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-052 (00001582_004.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-052 (00001582_004.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-mr-00000057",
@@ -245,7 +277,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case 00000057 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: Shaurya's recorded MONAI output for case 00000057 (metrics.json) through adapters/brats.py and triage.py. No images in fixture mode. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-002",
@@ -267,7 +303,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-002 (00000032_001.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-002 (00000032_001.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-005",
@@ -289,7 +329,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-005 (00000132_002.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-005 (00000132_002.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-028",
@@ -311,7 +355,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-028 (00000997_000.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-028 (00000997_000.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-004",
@@ -333,7 +381,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-004 (00000116_019.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-004 (00000116_019.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-008",
@@ -355,7 +407,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-008 (00000246_016.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-008 (00000246_016.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-006",
@@ -377,7 +433,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-006 (00000231_005.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-006 (00000231_005.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-010",
@@ -399,7 +459,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-010 (00000272_003.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-010 (00000272_003.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-007",
@@ -421,7 +485,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-007 (00000239_003.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-007 (00000239_003.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   {
    "study": "fixture-cr-ST-003",
@@ -443,7 +511,59 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-003 (00000083_000.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-003 (00000083_000.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
+  }
+ ],
+ "me": "radiologist@dev.auralane.local",
+ "readers": [
+  {
+   "id": "radiologist@dev.auralane.local",
+   "username": "radiologist",
+   "name": "Development reader",
+   "pools": [
+    "Chest",
+    "Neuro"
+   ]
+  },
+  {
+   "id": "radiologist-1@dev.auralane.local",
+   "username": "radiologist-1",
+   "name": "Reader 1",
+   "pools": [
+    "Chest",
+    "Neuro"
+   ]
+  },
+  {
+   "id": "radiologist-2@dev.auralane.local",
+   "username": "radiologist-2",
+   "name": "Reader 2",
+   "pools": [
+    "Chest",
+    "Neuro"
+   ]
+  },
+  {
+   "id": "radiologist-3@dev.auralane.local",
+   "username": "radiologist-3",
+   "name": "Reader 3",
+   "pools": [
+    "Chest",
+    "Neuro"
+   ]
+  },
+  {
+   "id": "radiologist-4@dev.auralane.local",
+   "username": "radiologist-4",
+   "name": "Reader 4",
+   "pools": [
+    "Chest",
+    "Neuro"
+   ]
   }
  ]
 }

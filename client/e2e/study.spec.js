@@ -5,11 +5,19 @@ test.beforeEach(async ({ page }) => {
   await page.getByLabel("User").fill("radiologist");
   await page.getByLabel("Password").fill(process.env.AURALANE_DEV_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
+  // The development user has nothing assigned: read from the department queue.
+  await page.getByTestId("scope-department").click();
   await expect(page.getByTestId("study-row").first()).toBeVisible();
 });
 
-test("chest study displays, overlay is off by default and follows zoom", async ({ page }) => {
-  await page.getByTestId("study-row").filter({ hasText: "Nodule" }).first().click();
+// A row selects the study beside the list; Open loads it in full.
+async function open(page, text) {
+  await page.getByTestId("study-row").filter({ hasText: text }).first().click();
+  await page.getByTestId("btn-analyse-header").click();
+}
+
+test("chest study displays, overlay is on when it opens and follows zoom", async ({ page }) => {
+  await open(page, "Nodule");
   const viewport = page.getByTestId("viewport");
   await expect(viewport.locator("canvas").first()).toBeVisible();
   // Rendered pixels, not an empty black box: an X-ray compresses far worse.
@@ -17,10 +25,8 @@ test("chest study displays, overlay is off by default and follows zoom", async (
     .toBeGreaterThan(60_000);
   await expect(page.getByRole("note", { name: "Non-diagnostic notice" })).toBeVisible();
 
-  await expect(page.getByTestId("rationale-toggle")).toHaveText("Triage rationale: off");
-  await expect(page.getByTestId("overlay-layer")).toHaveCount(0);
-
-  await page.getByTestId("rationale-toggle").click();
+  await expect(page.getByTestId("rationale-toggle")).toHaveText("Triage rationale: ON");
+  await expect(page.getByTestId("draft-panel")).toContainText("Draft, template generated, radiologist to review");
   const layer = page.getByTestId("overlay-layer");
   await expect(layer).toBeVisible();
   const before = await layer.boundingBox();
@@ -42,10 +48,10 @@ test("chest study displays, overlay is off by default and follows zoom", async (
 });
 
 test("brain study offers the four series by sequence name", async ({ page }) => {
-  await page.getByTestId("study-row").filter({ hasText: "MR Brain" }).first().click();
+  await open(page, "MR Brain");
   const series = page.getByRole("group", { name: "Series" });
   await expect(series.getByRole("button")).toHaveText(["T1C", "T1", "T2", "FLAIR"]);
-  await expect(page.getByText("No images are available for this series")).toBeVisible();
+  await expect(page.getByText("No images for this study in this runtime.")).toBeVisible();
   await series.getByRole("button", { name: "FLAIR" }).click();
   await expect(series.getByRole("button", { name: "FLAIR" })).toHaveAttribute("aria-pressed", "true");
 });

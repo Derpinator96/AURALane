@@ -37,9 +37,9 @@ export default function PatientHistoryView({ studies = [], onSelectStudy, select
     <div className="patient-history-view" data-testid="patient-history-view">
       <div className="history-header">
         <div>
-          <h2 className="center-title">All Cases & Patient History</h2>
+          <h2 className="center-title">Studies by patient</h2>
           <p className="center-subtitle">
-            Longitudinal patient imaging records across all diagnostic modalities
+            Every study on the worklist, grouped by patient pseudonym
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export default function PatientHistoryView({ studies = [], onSelectStudy, select
         {/* Timeline / Studies Column */}
         <div className="patient-timeline-col">
           <div className="col-heading">
-            {selectedPatient === "ALL" ? "All Diagnostic Studies" : `Imaging History for ${selectedPatient}`}
+            {selectedPatient === "ALL" ? "All studies" : `Studies for ${selectedPatient}`}
           </div>
 
           <div className="timeline-list">
@@ -103,13 +103,13 @@ export default function PatientHistoryView({ studies = [], onSelectStudy, select
                   <div className="timeline-main">
                     <div className="timeline-modality">
                       <span className={`mod-badge mod-${s.modality}`}>
-                        {s.alzheimer ? "MR Brain (Cognitive)" : s.exam || s.modality}
+                        {s.exam || s.modality}
                       </span>
                       <span className="timeline-patient mono">{s.patient_id || s.study}</span>
                     </div>
 
                     <div className="timeline-driver">
-                      <span className="bold">{s.driver_label || s.driver || "Unremarkable"}</span>
+                      <span className="bold">{s.driver_label || s.driver || "--"}</span>
                       {s.acuity != null && <span className="acuity-chip mono">Acuity: {Number(s.acuity).toFixed(1)}</span>}
                     </div>
                   </div>
@@ -123,7 +123,7 @@ export default function PatientHistoryView({ studies = [], onSelectStudy, select
                         onSelectStudy(s.study);
                       }}
                     >
-                      {isSelected ? "Active in Viewer ✓" : "Load in Case Details →"}
+                      {isSelected ? "Selected" : "Select"}
                     </button>
                   </div>
                 </div>

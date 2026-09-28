@@ -16,49 +16,69 @@ vi.mock("./viewer/Viewer.jsx", () => ({
 
 const { detail, series } = fixture;
 
-function show(sendVerdict = vi.fn()) {
+function show(sendVerdict = vi.fn(), saveDraft = vi.fn(), d = detail) {
   render(
-    <MemoryRouter initialEntries={[`/studies/${detail.study.study}`]}>
+    <MemoryRouter initialEntries={[`/studies/${d.study.study}`]}>
       <Routes>
         <Route path="/studies/:id" element={
-          <Study load={() => Promise.resolve(detail)} loadSeries={() => Promise.resolve(series)}
-                 sendVerdict={sendVerdict} />} />
+          <Study load={() => Promise.resolve(d)} loadSeries={() => Promise.resolve(series)}
+                 sendVerdict={sendVerdict} saveDraft={saveDraft} />} />
       </Routes>
     </MemoryRouter>);
   return screen.findByTestId("viewer-stub");
 }
 
 describe("Study", () => {
-  it("opens with the triage rationale off", async () => {
+  it("opens with the Grad-CAM overlay on, the finding named and an opacity slider", async () => {
     const viewer = await show();
     const toggle = screen.getByTestId("rationale-toggle");
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
-    expect(toggle).toHaveTextContent("Triage rationale: off");
-    expect(viewer).toHaveAttribute("data-overlay", "none");
-    expect(screen.queryByTestId("rationale-caption")).toBeNull();
-    expect(viewer).toHaveAttribute("data-count", String(series.instances.length));
-  });
-
-  it("toggles the rationale overlay on and off, labelled as rationale", async () => {
-    const viewer = await show();
-    const toggle = screen.getByTestId("rationale-toggle");
-    await userEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-pressed", "true");
     expect(viewer).toHaveAttribute("data-overlay", detail.evidence_urls.gradcam_layer_png);
     const caption = screen.getByTestId("rationale-caption");
     expect(caption).toHaveTextContent(`Grad-CAM for ${detail.evidence.gradcam_finding}`);
     expect(caption).toHaveTextContent("not a localisation");
-    expect(caption).not.toHaveTextContent(/finding:/i);
+    expect(screen.getByTestId("rationale-opacity")).toBeInTheDocument();
+    expect(viewer).toHaveAttribute("data-count", String(series.instances.length));
+  });
+
+  it("turns the overlay off and on again", async () => {
+    const viewer = await show();
+    const toggle = screen.getByTestId("rationale-toggle");
     await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
     expect(viewer).toHaveAttribute("data-overlay", "none");
+    await userEvent.click(toggle);
+    expect(viewer).toHaveAttribute("data-overlay", detail.evidence_urls.gradcam_layer_png);
+  });
+
+  it("says plainly when Grad-CAM has nothing above threshold, and draws nothing", async () => {
+    const empty = { ...detail, evidence: { ...detail.evidence, gradcam_coverage: 0 } };
+    const viewer = await show(vi.fn(), vi.fn(), empty);
+    expect(screen.getByTestId("rationale-caption"))
+      .toHaveTextContent(`Grad-CAM found no region at or above the display threshold for ${detail.evidence.gradcam_finding}`);
+    expect(viewer).toHaveAttribute("data-overlay", "none");
+  });
+
+  it("shows the draft beside the viewer, labelled, editable, and marks it reviewed", async () => {
+    const save = vi.fn().mockResolvedValue({ draft_review: { text: "x", reviewed: true, by: "r1", at: "t" } });
+    await show(vi.fn(), save);
+    const panel = screen.getByTestId("draft-panel");
+    expect(panel).toHaveTextContent("Draft, template generated, radiologist to review");
+    expect(panel).toHaveTextContent(detail.study.driver_label);
+    const text = screen.getByTestId("draft-text");
+    expect(text.value).toBe(detail.draft);
+    await userEvent.type(text, " Edited.");
+    await userEvent.click(screen.getByTestId("draft-reviewed"));
+    expect(save).toHaveBeenCalledWith(detail.study.study, `${detail.draft} Edited.`, true);
+    expect(screen.getByTestId("draft-status")).toHaveTextContent("Reviewed by r1");
   });
 
   it("shows lane, driver and every finding exactly as the API sent them", async () => {
     await show();
-    expect(screen.getByText(detail.study.lane_label)).toBeInTheDocument();
+    expect(screen.getAllByText(detail.study.lane_label).length).toBeGreaterThan(0);
     const rows = within(screen.getByRole("table")).getAllByRole("row").slice(1);
-    expect(rows.map((r) => r.cells[0].textContent)).toEqual(detail.findings.map((f) => f.label));
-    expect(rows.map((r) => r.cells[1].textContent)).toEqual(
+    expect(rows.map((r) => r.cells[0].textContent.replace("DRIVER", ""))).toEqual(detail.findings.map((f) => f.label));
+    expect(rows.map((r) => r.cells[2].textContent)).toEqual(
       detail.findings.map((f) => f.signal.toFixed(3)));
   });
 
@@ -67,10 +87,10 @@ describe("Study", () => {
     const send = vi.fn().mockResolvedValue({ study: updated });
     await show(send);
     expect(screen.getByTestId("verdict-status")).toHaveTextContent("No verdict yet.");
-    await userEvent.click(screen.getByRole("button", { name: "Agree" }));
+    await userEvent.click(screen.getByRole("button", { name: "Agree with the lane" }));
     expect(send).toHaveBeenCalledWith(detail.study.study, "agree");
     expect(screen.getByTestId("verdict-status")).toHaveTextContent("Agreed by radiologist@dev.auralane.local");
-    expect(screen.getByRole("button", { name: "Agree" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Agree with the lane" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("states the datastore note only when the API sends one", async () => {
@@ -99,7 +119,7 @@ describe("Study, brain and failed rows", () => {
     evidence_urls: { overlay_png: "/api/blob/evidence/x/segmentation_overlay.png?signed" },
   };
 
-  it("brain rationale shows the segmentation image, off by default, and no confidence", async () => {
+  it("brain rationale shows the segmentation image on open, and no confidence", async () => {
     render(
       <MemoryRouter initialEntries={["/studies/x"]}>
         <Routes><Route path="/studies/:id" element={
@@ -107,13 +127,13 @@ describe("Study, brain and failed rows", () => {
                  sendVerdict={vi.fn()} />} /></Routes>
       </MemoryRouter>);
     await screen.findByTestId("viewer-stub");
-    expect(screen.queryByTestId("rationale-image")).toBeNull();
     expect(screen.getByText(/the brain model reports volumes, not a probability/)).toBeInTheDocument();
-    await userEvent.click(screen.getByTestId("rationale-toggle"));
     const fig = screen.getByTestId("rationale-image");
     expect(within(fig).getByRole("img")).toHaveAttribute("src", brain.evidence_urls.overlay_png);
     expect(fig).toHaveTextContent("axial index 75");
     expect(screen.getByTestId("viewer-stub")).toHaveAttribute("data-overlay", "none");
+    await userEvent.click(screen.getByTestId("rationale-toggle"));
+    expect(screen.queryByTestId("rationale-image")).toBeNull();
   });
 
   it("a failed study offers no verdict and says why", async () => {
@@ -127,7 +147,7 @@ describe("Study, brain and failed rows", () => {
                  sendVerdict={vi.fn()} />} /></Routes>
       </MemoryRouter>);
     await screen.findByTestId("viewer-stub");
-    expect(screen.queryByRole("button", { name: "Agree" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Agree with the lane" })).toBeNull();
     expect(screen.getByTestId("no-findings")).toHaveTextContent("did not reach the model output");
     expect(screen.getByTestId("rationale-toggle")).toBeDisabled();
   });

@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api.js";
+import { loadSettings, MR_SEQUENCES } from "../settings.js";
 
 /**
- * MriViewer3D: Advanced 3D Multi-Planar Reconstruction (MPR) & Raymarching Viewer
- * Powered by NiiVue (WebGL 2.0).
- * Displays Axial, Coronal, Sagittal, and 3D Volume rendering with interactive
- * sequence selection, segmentation mask overlays, and volumetric metrics.
+ * MriViewer3D: multi-planar and 3D volume view of a brain MR study, with NiiVue.
+ * The volumes are the model's own NIfTI inputs and its segmentation, stored as
+ * evidence at ingest. The API hands out a short-lived presigned URL for each
+ * (S3 on AWS, a signed /api/blob URL locally); NiiVue fetches it directly.
+ * Volumes shown are the brain model's own measurements (adapters/brats.py).
  */
-export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzheimer = false }) {
-  const isAlz = isAlzheimer || (studyId && studyId.toLowerCase().includes("alz"));
-  const [sequence, setSequence] = useState(isAlz ? "t1" : initialSequence);
-  const [showSeg, setShowSeg] = useState(!isAlz);
-  const [opacity, setOpacity] = useState(0.7);
+export default function MriViewer3D({ studyId, token, onUnavailable }) {
+  const [sequence, setSequence] = useState(() => loadSettings().mrSequence);
+  const [showSeg, setShowSeg] = useState(true);
+  const [opacity, setOpacity] = useState(0.6);
   const [metrics, setMetrics] = useState(null);
   const [viewLayout, setViewLayout] = useState("mpr"); // 'mpr' | '3d' | 'axial'
   const [showCrosshairs, setShowCrosshairs] = useState(true);
@@ -28,20 +29,11 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
   const nvSagittalRef = useRef(null);
   const nv3DRef = useRef(null);
 
-  // Fetch quantitative volumetric metrics (tumor studies)
   useEffect(() => {
-    if (isAlz) return;
     let active = true;
-    fetch(`/api/studies/${encodeURIComponent(studyId)}/metrics`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (active && data) setMetrics(data);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [studyId, isAlz]);
+    api.metrics(token, studyId).then((d) => active && setMetrics(d)).catch(() => {});
+    return () => { active = false; };
+  }, [studyId, token]);
 
   // Handle Opacity Changes Dynamically without reloading full volume
   useEffect(() => {
@@ -90,18 +82,27 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
 
       const Niivue = window.niivue?.Niivue || window.Niivue;
       if (!Niivue) {
-        if (!cancelled) setError("3D Medical Engine (NiiVue) initializing. Please reload if persistent.");
+        if (!cancelled) setError("The 3D viewer library did not load. Reload the page.");
         return;
       }
 
-      const seqFileName = sequence.endsWith(".nii") || sequence.endsWith(".nii.gz") ? sequence : `${sequence}.nii`;
-      const volumeUrl = api.volumeUrl(studyId, seqFileName);
-      const segUrl = showSeg && !isAlz ? `${api.segmentationUrl(studyId)}.nii` : null;
-
-      const volumes = [{ url: volumeUrl, name: seqFileName, colormap: "gray", opacity: 1.0 }];
-      if (segUrl) {
-        volumes.push({ url: segUrl, name: "final_seg.nii", colormap: "red", opacity: opacity });
+      let volumes;
+      try {
+        const vol = await api.volume(token, studyId, sequence);
+        volumes = [{ url: vol.url, name: vol.name, colormap: "gray", opacity: 1.0 }];
+        if (showSeg) {
+          const seg = await api.segmentation(token, studyId).catch(() => null);
+          if (seg) volumes.push({ url: seg.url, name: seg.name, colormap: "red", opacity });
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(`No 3D volume for this study: ${e.message}`);
+          setLoading(false);
+          if (onUnavailable) onUnavailable();
+        }
+        return;
       }
+      const fallbackVol = volumes.slice(0, 1);
 
       try {
         // 1. Axial (SliceType 0)
@@ -156,7 +157,6 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
           console.warn("NiiVue volume loading notice:", err);
           // Fallback load without segmentation if seg fails
           try {
-            const fallbackVol = [{ url: volumeUrl, name: seqFileName, colormap: "gray", opacity: 1.0 }];
             if (nvAxialRef.current) await nvAxialRef.current.loadVolumes(fallbackVol);
             if (nvCoronalRef.current) await nvCoronalRef.current.loadVolumes(fallbackVol);
             if (nvSagittalRef.current) await nvSagittalRef.current.loadVolumes(fallbackVol);
@@ -174,57 +174,35 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
     return () => {
       cancelled = true;
     };
-  }, [studyId, sequence, viewLayout]);
+  }, [studyId, sequence, viewLayout, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="mri-3d-workstation" data-testid="mri-3d-workstation">
       {/* Top Clinical MPR Workstation Toolbar */}
       <div className="mri-toolbar">
-        {isAlz ? (
-          <div className="toolbar-group">
-            <span className="toolbar-label">MR Modality:</span>
-            <div className="segmented-group">
-              <span className="segmented-btn active" style={{ cursor: "default" }}>
-                T1 3D Structural (Cognitive Triage Pipeline)
-              </span>
-            </div>
+        <div className="toolbar-group">
+          <span className="toolbar-label">Sequence:</span>
+          <div className="segmented-group" role="group" aria-label="MR sequence">
+            {MR_SEQUENCES.map(([id, label]) => (
+              <button key={id} type="button"
+                      className={`segmented-btn ${sequence === id ? "active" : ""}`}
+                      onClick={() => setSequence(id)}>{label}</button>
+            ))}
           </div>
-        ) : (
-          <div className="toolbar-group">
-            <span className="toolbar-label">Sequence:</span>
-            <div className="segmented-group" role="group" aria-label="MRI Sequence Channels">
-              {[
-                { id: "t1ce", label: "T1c (ch0)", desc: "Contrast-Enhanced Tumor" },
-                { id: "t1", label: "T1 (ch1)", desc: "Native Anatomy" },
-                { id: "t2", label: "T2 (ch2)", desc: "Edema & Water" },
-                { id: "flair", label: "FLAIR (ch3)", desc: "Peritumoral Boundary" },
-              ].map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  title={s.desc}
-                  className={`segmented-btn ${sequence === s.id ? "active" : ""}`}
-                  onClick={() => setSequence(s.id)}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        </div>
 
-        {!isAlz && (
+        {(
           <div className="toolbar-group segmentation-controls">
-            <span className="toolbar-label">AI Segmentation:</span>
+            <span className="toolbar-label">Model segmentation:</span>
             <button
               type="button"
               className={`btn-toggle ${showSeg ? "active" : ""}`}
               onClick={() => setShowSeg((prev) => !prev)}
               aria-pressed={showSeg}
-              title="Toggle 3D MONAI SegResNet Tumor Mask"
+              title="The brain model's segmentation (MONAI SegResNet)"
             >
               <span className="status-indicator-dot"></span>
-              {showSeg ? "Mask: ACTIVE" : "Mask: HIDDEN"}
+              {showSeg ? "Mask: shown" : "Mask: hidden"}
             </button>
             {showSeg && (
               <label className="slider-label">
@@ -299,7 +277,7 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
       {loading && (
         <div className="mri-loading-indicator">
           <div className="spinner"></div>
-          <span>Rendering 3D Multi-Planar Orthogonal Slices & Volume Shaders...</span>
+          <span>Loading the volumes.</span>
         </div>
       )}
 
@@ -360,54 +338,29 @@ export default function MriViewer3D({ studyId, initialSequence = "t1ce", isAlzhe
         {(viewLayout === "mpr" || viewLayout === "3d") && (
           <div className="viewport-cell cell-3d">
             <div className="viewport-badge">
-              <span className="badge-name">3D Volume Raymarching (Interactive 360°)</span>
+              <span className="badge-name">3D volume</span>
               <span className="badge-coords mono">Az: 120° El: 25°</span>
             </div>
-            <div className="raymarch-hint">Drag to Rotate • Wheel to Zoom</div>
+            <div className="raymarch-hint">Drag to rotate, wheel to zoom</div>
             <canvas ref={canvas3DRef} className="mri-canvas canvas-3d" />
           </div>
         )}
       </div>
 
-      {/* Quantitative Volumetric Measurements HUD Footer */}
-      {metrics && !isAlz && (
-        <div className="mri-metrics-bar">
+      {metrics?.volumes_cm3 && (
+        <div className="mri-metrics-bar" data-testid="mri-volumes">
           <div className="metrics-group">
-            <span className="metrics-bar-label">AI Volumetrics:</span>
-            <div className="metric-chip chip-wt" title="Whole Tumor Volume (Edema + Core + Enhancing)">
-              <span className="metric-dot dot-wt"></span>
-              <span className="metric-title">Whole Tumor (WT):</span>
-              <span className="metric-val mono">{metrics.wt_volume_cm3?.toFixed(2)} cm³</span>
-            </div>
-            <div className="metric-chip chip-tc" title="Tumor Core Volume (Necrotic + Enhancing)">
-              <span className="metric-dot dot-tc"></span>
-              <span className="metric-title">Tumor Core (TC):</span>
-              <span className="metric-val mono">{metrics.tc_volume_cm3?.toFixed(2)} cm³</span>
-            </div>
-            <div className="metric-chip chip-et" title="Active Enhancing Tumor Volume">
-              <span className="metric-dot dot-et"></span>
-              <span className="metric-title">Enhancing (ET):</span>
-              <span className="metric-val mono">{metrics.et_volume_cm3?.toFixed(2)} cm³</span>
-            </div>
+            <span className="metrics-bar-label">Model volumes:</span>
+            {[["whole_tumour", "Whole tumour", "wt"], ["tumour_core", "Tumour core", "tc"],
+              ["enhancing", "Enhancing", "et"], ["edema", "Edema", "wt"]].map(([k, label, dot]) => (
+              <div key={k} className={`metric-chip chip-${dot}`}>
+                <span className={`metric-dot dot-${dot}`}></span>
+                <span className="metric-title">{label}:</span>
+                <span className="metric-val mono">{Number(metrics.volumes_cm3[k]).toFixed(2)} cm3</span>
+              </div>
+            ))}
           </div>
-
-          {metrics.centroid_world_mm && (
-            <div className="metric-chip chip-centroid" title="Stereotactic World Coordinates">
-              <span className="metric-title">Centroid:</span>
-              <span className="metric-val mono">
-                [{metrics.centroid_world_mm.map((c) => Math.round(c)).join(", ")}] mm
-              </span>
-            </div>
-          )}
-
-          {metrics.dice_validation && (
-            <div className="metric-chip validation" title="Ground Truth Validation Dice Overlap">
-              <span className="metric-title">Dice Overlap:</span>
-              <span className="metric-val mono">
-                WT: {metrics.dice_validation.WT_dice} • TC: {metrics.dice_validation.TC_dice} • ET: {metrics.dice_validation.ET_dice}
-              </span>
-            </div>
-          )}
+          <span className="note">{metrics.basis}</span>
         </div>
       )}
     </div>

@@ -32,6 +32,11 @@ export default function App() {
   const loadIntake = useCallback(() => api.intake(token), [token]);
   const startIntake = useCallback((count) => api.startIntake(token, count), [token]);
   const loadAccess = useCallback(() => api.accessRequests(token), [token]);
+  const saveDraft = useCallback((id, text, reviewed) => api.saveDraft(token, id, text, reviewed), [token]);
+  const loadPipeline = useCallback(() => api.pipeline(token), [token]);
+  const loadPipelineStudy = useCallback((id) => api.pipelineStudy(token, id), [token]);
+  const loadAssignments = useCallback(() => api.assignments(token), [token]);
+  const reassign = useCallback((id, reader) => api.reassign(token, id, reader), [token]);
   const decideAccess = useCallback((u, d) => api.decideAccess(token, u, d), [token]);
   const radiologist = session?.user.groups.includes("radiologist");
 
@@ -46,13 +51,16 @@ export default function App() {
         <Route path="/login" element={session ? <Navigate to={home(session)} /> : <Login onLogin={onLogin} />} />
         <Route path="/" element={radiologist ? <Worklist load={loadWorklist} token={token} /> : <Navigate to={home(session)} />} />
         <Route path="/studies/:id" element={radiologist
-          ? <Study load={loadStudy} loadSeries={loadSeries} sendVerdict={sendVerdict} />
+          ? <Study load={loadStudy} loadSeries={loadSeries} sendVerdict={sendVerdict}
+                   saveDraft={saveDraft} token={token} />
           : <Navigate to={home(session)} />} />
         <Route path="/admin/*" element={session && !radiologist
           ? <Admin loadAudit={loadAudit} loadLaneMix={loadLaneMix} loadModels={loadModels}
                    loadIntake={loadIntake} startIntake={startIntake}
                    superadmin={session?.user.groups.includes("superadmin")}
-                   loadAccess={loadAccess} decideAccess={decideAccess} />
+                   loadAccess={loadAccess} decideAccess={decideAccess}
+                   loadPipeline={loadPipeline} loadPipelineStudy={loadPipelineStudy}
+                   loadAssignments={loadAssignments} reassign={reassign} />
           : <Navigate to={home(session)} />} />
         <Route path="*" element={<Navigate to={home(session)} />} />
       </Routes>

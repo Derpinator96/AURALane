@@ -14,14 +14,16 @@ test("a radiologist's verdict appears in the admin audit log; admins cannot open
   const rad = await (await browser.newContext()).newPage();
   await signIn(rad, "radiologist");
   await rad.goto("/studies/fixture-cr-ST-028");
-  await rad.getByRole("button", { name: "Disagree" }).click();
+  await rad.getByRole("button", { name: "Disagree", exact: true }).click();
   await expect(rad.getByText(/^Disagreed by /)).toBeVisible();
   const radToken = await rad.evaluate(() => JSON.parse(sessionStorage.getItem("auralane.session")).token);
   expect((await rad.request.get("/api/admin/audit", { headers: { Authorization: `Bearer ${radToken}` } })).status()).toBe(403);
 
   const page = await (await browser.newContext()).newPage();
   await signIn(page, "admin");
-  await expect(page).toHaveURL(/\/admin\/audit$/);
+  await expect(page).toHaveURL(/\/admin\/pipeline$/);
+  await expect(page.getByTestId("pipe-flow")).toBeVisible();
+  await page.getByRole("link", { name: "Audit log" }).click();
   const audit = page.getByTestId("audit");
   await expect(audit.getByText("fixture-cr-ST-028").first()).toBeVisible();
   await expect(audit.getByText(/verdict=disagree/).first()).toBeVisible();
