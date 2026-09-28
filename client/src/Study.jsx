@@ -1,5 +1,9 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import CtGradcamView, { hasCtGradcam } from "./components/CtGradcamView.jsx";
+import AnnotationsPanel from "./components/AnnotationsPanel.jsx";
+import NoteEditorModal from "./components/NoteEditorModal.jsx";
+import { api, loadSession } from "./api.js";
 import { timeUTC } from "./worklist.js";
 import { CheckIcon, ClockIcon } from "./components/Icons.jsx";
 
@@ -192,7 +196,10 @@ export function RegionalContext({ regional, driver, driverLabel }) {
   );
 }
 
-export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDraft }) {
+export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDraft,
+                             annotations = [], activeAnnotationId = null, onSelectAnnotation = null,
+                             onEditAnnotation = null, onDeleteAnnotation = null,
+                             isAddNoteMode = false, onToggleAddNoteMode = null }) {
   const s = detail.study;
   const brain = s.modality === "MR";
 
@@ -233,6 +240,18 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
       </div>
       <RegionalContext regional={detail.evidence?.regional} driver={s.driver}
                        driverLabel={s.driver_label} />
+
+      {/* Persistent Clinician Pinpoint Annotations Card */}
+      <AnnotationsPanel
+        annotations={annotations}
+        activeAnnotationId={activeAnnotationId}
+        onSelectAnnotation={onSelectAnnotation}
+        onEditAnnotation={onEditAnnotation}
+        onDeleteAnnotation={onDeleteAnnotation}
+        isAddNoteMode={isAddNoteMode}
+        onToggleAddNoteMode={onToggleAddNoteMode}
+      />
+
       {rationaleOn && detail.evidence_urls?.overlay_png && <SegmentationRationale detail={detail} />}
       {s.lane === "FAILED" && <p className="error-banner">Processing failed: {s.error}</p>}
       {s.abstain_reason && (
@@ -294,6 +313,7 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
 
 export default function Study({ load, loadSeries, sendVerdict, saveDraft, token }) {
   const { id } = useParams();
+  const activeToken = token || loadSession()?.token;
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState(null);
   const [seriesUid, setSeriesUid] = useState(null);
@@ -303,6 +323,14 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
   const [busy, setBusy] = useState(false);
   const [view3D, setView3D] = useState(true);
 
+  // Clinician Pinpoint Annotations State
+  const [annotations, setAnnotations] = useState([]);
+  const [selectedAnnotation, setSelectedAnnotation] = useState(null);
+  const [isAddNoteMode, setIsAddNoteMode] = useState(false);
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [editingAnnotationData, setEditingAnnotationData] = useState(null);
+  const [savingNote, setSavingNote] = useState(false);
+
   useEffect(() => {
     load(id).then((d) => {
       setDetail(d);
@@ -310,6 +338,16 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
       setView3D(Boolean(d.evidence?.volumes));
     }).catch(setError);
   }, [id, load]);
+
+  // Load persistent study annotations from backend
+  const refreshAnnotations = useCallback(() => {
+    if (!id) return;
+    api.getAnnotations(activeToken, id)
+      .then((res) => { if (res && res.annotations) setAnnotations(res.annotations); })
+      .catch((err) => { console.warn("Notice: could not load study annotations:", err); });
+  }, [id, activeToken]);
+
+  useEffect(() => { refreshAnnotations(); }, [refreshAnnotations]);
 
   useEffect(() => {
     if (!seriesUid) return;
@@ -329,6 +367,65 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
     }
   }
 
+  // Pinpoint Annotation Handlers
+  const handleRequestNewNote = (draftData) => {
+    setEditingAnnotationData(draftData);
+    setNoteModalOpen(true);
+  };
+
+  const handleEditAnnotation = (ann) => {
+    setEditingAnnotationData(ann);
+    setNoteModalOpen(true);
+  };
+
+  const handleSaveNote = async (data) => {
+    setSavingNote(true);
+    try {
+      if (data.id) {
+        const res = await api.updateAnnotation(activeToken, data.id, {
+          note_text: data.note_text,
+          segmentation_region: data.segmentation_region,
+          metadata: data.metadata,
+        });
+        if (res && res.annotation) {
+          setAnnotations((prev) => prev.map((a) => (a.id === data.id ? res.annotation : a)));
+        }
+      } else {
+        const res = await api.createAnnotation(activeToken, id, data);
+        if (res && res.annotation) {
+          setAnnotations((prev) => [...prev, res.annotation]);
+          setSelectedAnnotation(res.annotation);
+        }
+      }
+      setNoteModalOpen(false);
+      setEditingAnnotationData(null);
+      setIsAddNoteMode(false);
+    } catch (err) {
+      alert("Error saving note: " + (err.message || err));
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const handleDeleteAnnotation = async (annId) => {
+    try {
+      await api.deleteAnnotation(activeToken, annId);
+      setAnnotations((prev) => prev.filter((a) => a.id !== annId && a.annotation_id !== annId));
+      if (selectedAnnotation?.id === annId || selectedAnnotation?.annotation_id === annId) {
+        setSelectedAnnotation(null);
+      }
+    } catch (err) {
+      alert("Error deleting note: " + (err.message || err));
+    }
+  };
+
+  const handleSelectAnnotation = (ann) => setSelectedAnnotation(ann);
+  const noteProps = {
+    annotations, selectedAnnotation, onSelectAnnotation: handleSelectAnnotation,
+    onRequestNewNote: handleRequestNewNote, isAddNoteMode,
+    onToggleAddNoteMode: () => setIsAddNoteMode((v) => !v),
+  };
+
   if (error) {
     return <main className="study-page-layout"><p className="error" role="alert">{String(error.message || error)}</p></main>;
   }
@@ -337,6 +434,7 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
   }
 
   const isMR = detail.study.modality === "MR";
+  const isCT = detail.study.modality === "CT";
   const has3D = Boolean(detail.evidence?.volumes);
   const show3D = isMR && has3D && view3D;
   const ev = detail.evidence || {};
@@ -387,9 +485,13 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
         )}
 
         <div className="viewer-viewport-container">
-          {show3D ? (
+          {isCT && hasCtGradcam(urls) ? (
+            <CtGradcamView evidence={ev} urls={urls} show={rationale} {...noteProps} />
+          ) : show3D ? (
             <Suspense fallback={<p className="note">Loading the 3D viewer.</p>}>
-              <MriViewer3D studyId={id} token={token} onUnavailable={() => setView3D(false)} />
+              <MriViewer3D studyId={id} token={token} onUnavailable={() => setView3D(false)}
+                           onEditAnnotation={handleEditAnnotation}
+                           onDeleteAnnotation={handleDeleteAnnotation} {...noteProps} />
             </Suspense>
           ) : !current || current.instance_count === 0 ? (
             <div className="viewer-empty-placeholder"><p>No images for this study in this runtime.</p></div>
@@ -397,14 +499,27 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
             <p className="note">Loading the series.</p>
           ) : (
             <Suspense fallback={<p className="note">Loading the viewer.</p>}>
-              <Viewer instances={instances} overlay={overlay} label={current.description} />
+              <Viewer instances={instances} overlay={overlay} label={current.description} {...noteProps} />
             </Suspense>
           )}
         </div>
       </div>
 
       <StudyPanel detail={detail} onVerdict={onVerdict} busy={busy} rationaleOn={rationale}
-                  saveDraft={saveDraft} />
+                  saveDraft={saveDraft} annotations={annotations}
+                  activeAnnotationId={selectedAnnotation?.id || selectedAnnotation?.annotation_id}
+                  onSelectAnnotation={handleSelectAnnotation} onEditAnnotation={handleEditAnnotation}
+                  onDeleteAnnotation={handleDeleteAnnotation} isAddNoteMode={isAddNoteMode}
+                  onToggleAddNoteMode={() => setIsAddNoteMode((v) => !v)} />
+
+      {/* Persistent Spatially-Anchored Note Editor Modal */}
+      <NoteEditorModal
+        isOpen={noteModalOpen}
+        initialData={editingAnnotationData}
+        onSave={handleSaveNote}
+        onCancel={() => { setNoteModalOpen(false); setEditingAnnotationData(null); }}
+        busy={savingNote}
+      />
     </main>
   );
 }

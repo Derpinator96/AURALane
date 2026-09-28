@@ -79,6 +79,9 @@ class TablePort(ABC):
     @abstractmethod
     def append_audit(self, event: AuditEvent) -> None: ...
 
+    @abstractmethod
+    def delete_item(self, table: str, key: dict[str, Any]) -> None: ...
+
 
 class AuthPort(ABC):
     @abstractmethod

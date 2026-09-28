@@ -157,7 +157,7 @@ export default function Worklist({ load, token }) {
             <div className="center-header">
               <div>
                 <h2 className="center-title">AI Worklist Queue</h2>
-                <p className="center-subtitle">Reordered by triage acuity within each reading pool. Critical first.</p>
+                <p className="center-subtitle">Grouped by reading pool because a neuroradiologist reads the MRI and a chest radiologist reads the X-ray; studies are ranked within a pool, never across.</p>
               </div>
               <div className="center-action-buttons">
                 <button type="button" className="btn-action-primary" onClick={() => setPanel("simulate")}
@@ -185,7 +185,7 @@ export default function Worklist({ load, token }) {
               <div className="filter-dropdowns">
                 <label className="filter-item"><span>Lane:</span>
                   <select value={lane} onChange={(e) => setLane(e.target.value)} aria-label="Lane filter">
-                    {LANE_FILTERS.map((l) => <option key={l} value={l}>{l === "ALL" ? "All Lanes" : l}</option>)}
+                    {LANE_FILTERS.map((l) => <option key={l} value={l}>{l === "ALL" ? "All lanes" : l}</option>)}
                   </select>
                 </label>
                 <label className="filter-item"><span>Status:</span>
@@ -266,16 +266,16 @@ export default function Worklist({ load, token }) {
                   </div>
                   {p.sections.map((s) => (
                     <section key={s.lane} className={`lane-group lane-${s.lane}`} data-testid={`section-${p.pool}-${s.lane}`}>
-                      <h3 className="lane-heading">
+                      <h3 className="lane-group-heading">
                         <span className="lanename">{s.label}</span>
-                        {s.clock && <span className="clock">{s.clock}</span>}
-                        <span className="mono count">({s.rows.length})</span>
+                        {s.clock && <span className="clock mono"> • {s.clock}</span>}
+                        <span className="mono count"> ({s.rows.length})</span>
                       </h3>
                       {s.lane === "ABSTAIN" && (
-                        <p className="why">Model confidence was not sufficient to assign a lane. A radiologist picks it.</p>
+                        <p className="lane-explain-why">Model confidence was not sufficient to assign a lane. A radiologist picks it.</p>
                       )}
                       {s.lane === "FAILED" && (
-                        <p className="why">Processing did not complete. The study is still in PACS; read it there.</p>
+                        <p className="lane-explain-why">Processing did not complete. The study is still in PACS; read it there.</p>
                       )}
                       {s.rows.map((row) => {
                         const isSelected = row.study === selectedStudyId;

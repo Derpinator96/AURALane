@@ -16,7 +16,17 @@ const MODES = [
 ];
 let counter = 0;
 
-export default function Viewer({ instances, overlay, label }) {
+export default function Viewer({
+  instances,
+  overlay,
+  label,
+  annotations = [],
+  selectedAnnotation = null,
+  onSelectAnnotation = null,
+  onRequestNewNote = null,
+  isAddNoteMode = false,
+  onToggleAddNoteMode = null,
+}) {
   const element = useRef(null);
   const overlayRef = useRef(null);
   const handles = useRef(null);
@@ -109,9 +119,43 @@ export default function Viewer({ instances, overlay, label }) {
 
   const act = (fn) => () => { const h = handles.current; if (h) { fn(h.viewport); h.viewport.render(); } };
 
+  // Handle clicking viewport to add note
+  const handleViewportClick = (e) => {
+    if (!isAddNoteMode && e.type !== "contextmenu") return;
+    if (e.type === "contextmenu") e.preventDefault();
+
+    if (!element.current) return;
+    const rect = element.current.getBoundingClientRect();
+    const normX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const normY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+
+    onRequestNewNote?.({
+      modality: "CR",
+      coordinate_space: "IMAGE_NORMALIZED",
+      coordinate_x: normX,
+      coordinate_y: normY,
+      slice_index: slice.index,
+      segmentation_region: "Chest Radiograph",
+      viewer_context: {
+        slice: slice.index + 1,
+        total_slices: slice.count,
+      },
+    });
+  };
+
   return (
-    <div className="viewer">
+    <div className={`viewer ${isAddNoteMode ? "pinpoint-active-mode" : ""}`}>
       <div className="viewer-tools" role="toolbar" aria-label="Viewer tools">
+        {onToggleAddNoteMode && (
+          <button
+            type="button"
+            className={`btn-pin-mode ${isAddNoteMode ? "active" : ""}`}
+            onClick={onToggleAddNoteMode}
+            title="Click anywhere on the X-Ray to drop a note marker"
+          >
+            📍 {isAddNoteMode ? "Pin Active" : "Add Note"}
+          </button>
+        )}
         {MODES.map(([key, name]) => (
           <button key={key} type="button" aria-pressed={mode === key} onClick={() => setMode(key)}>{name}</button>
         ))}
@@ -127,14 +171,49 @@ export default function Viewer({ instances, overlay, label }) {
         )}
         {label && <span className="viewer-label">{label}</span>}
       </div>
-      <div className="viewport-wrap">
-        <div ref={element} className="viewport" data-testid="viewport"
-             onContextMenu={(e) => e.preventDefault()} />
+
+      {isAddNoteMode && (
+        <div className="cxr-pin-instruction-hud">
+          <span className="pulse-dot"></span>
+          <span><strong>Pinpoint Active:</strong> Click any location on the radiograph to attach a clinical note.</span>
+        </div>
+      )}
+
+      <div
+        className="viewport-wrap"
+        onClick={handleViewportClick}
+        onContextMenu={handleViewportClick}
+      >
+        <div ref={element} className="viewport" data-testid="viewport" />
         {overlay && <img ref={overlayRef} className="overlay-layer" src={overlay.url}
                          style={{ opacity: overlay.opacity ?? 1 }}
                          alt="Triage rationale overlay" data-testid="overlay-layer" />}
+        {annotations.map((ann) => {
+          if (ann.coordinate_x == null || ann.coordinate_y == null) return null;
+          const isSel = ann.id === selectedAnnotation?.id;
+          return (
+            <div
+              key={ann.id || ann.annotation_id}
+              className={`pin-marker-point ${isSel ? "selected" : ""}`}
+              style={{
+                left: `${ann.coordinate_x * 100}%`,
+                top: `${ann.coordinate_y * 100}%`,
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectAnnotation?.(ann);
+              }}
+              title={`${ann.note_text} (${ann.created_by || "radiologist"})`}
+            >
+              <span className="pin-dot"></span>
+              <span className="pin-pulse"></span>
+              {isSel && <div className="pin-tooltip-popover">{ann.note_text}</div>}
+            </div>
+          );
+        })}
         {error && <p className="error viewer-error" role="alert">Viewer could not load this series: {error}</p>}
       </div>
     </div>
   );
 }
+

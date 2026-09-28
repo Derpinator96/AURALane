@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { DraftPanel, rationaleText } from "../Study.jsx";
+import CtGradcamView, { CtGradcamCaption, hasCtGradcam } from "./CtGradcamView.jsx";
 import { WorklistIcon } from "./Icons.jsx";
 
 // Cornerstone (2D) and NiiVue (3D) load only when a study needs them.
@@ -180,10 +181,30 @@ export default function LatestCasePanel({ studyId, token, onVerdictChange }) {
         {isCT && (
           <div className="viewer-container ct-view" data-testid="ct-view">
             <div className="viewer-header-info">
-              <span className="viewer-title">Head CT (axial)</span>
+              <span className="viewer-title">Head CT (Axial Non-Contrast)</span>
+              <button type="button" className={`btn-gradcam-toggle ${showGradcam ? "active" : ""}`}
+                      onClick={() => setShowGradcam(!showGradcam)} disabled={!hasCtGradcam(urls)}
+                      data-testid="ct-gradcam-toggle">
+                {showGradcam ? "Grad-CAM Heatmap: ON" : "Grad-CAM Heatmap: OFF"}
+              </button>
             </div>
-            <SeriesView token={token} detail={detail} overlay={null} />
-            <p className="evidence-caption"><span className="bold">CT AI Finding:</span> {rationaleText(detail)}</p>
+            {hasCtGradcam(urls) ? (
+              <>
+                <CtGradcamView evidence={ev} urls={urls} show={showGradcam} />
+                <CtGradcamCaption evidence={ev} />
+                {detail.decision_reason && <p className="evidence-caption">{detail.decision_reason}</p>}
+              </>
+            ) : (
+              <>
+                <SeriesView token={token} detail={detail} overlay={null} />
+                <p className="note viewer-empty" data-testid="ct-no-gradcam">
+                  {s.lane === "FAILED"
+                    ? "Processing failed, so there is no Grad-CAM for this study."
+                    : "No Grad-CAM image is stored for this study (scored before the CT endpoint drew one)."}
+                </p>
+                <p className="evidence-caption"><span className="bold">CT AI Finding:</span> {rationaleText(detail)}</p>
+              </>
+            )}
           </div>
         )}
       </div>

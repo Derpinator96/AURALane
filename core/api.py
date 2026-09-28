@@ -36,6 +36,7 @@ import os
 import secrets
 import threading
 import time
+import uuid
 from collections import Counter
 from typing import Any, Literal
 from urllib.parse import quote, urlencode
@@ -113,6 +114,30 @@ class DraftIn(BaseModel):
     reviewed: bool = False
 
 
+class AnnotationIn(BaseModel):
+    modality: str | None = None
+    series_id: str | None = None
+    image_instance_id: str | None = None
+    annotation_type: str = "pinpoint"
+    note_text: str
+    coordinate_space: str = "IMAGE_NORMALIZED"  # "NIFTI_WORLD" | "IMAGE_NORMALIZED" | "DICOM_PATIENT"
+    coordinate_x: float | None = None
+    coordinate_y: float | None = None
+    coordinate_z: float | None = None
+    voxel: dict[str, Any] | None = None
+    world_mm: dict[str, Any] | None = None
+    slice_index: int | None = None
+    segmentation_region: str | None = None
+    viewer_context: dict[str, Any] = {}
+    metadata: dict[str, Any] = {}
+
+
+class AnnotationPatch(BaseModel):
+    note_text: str | None = None
+    segmentation_region: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
 UNASSIGNED = "Unassigned"          # no registered model for the study's modality
 CLOCK_MIN = {name: mins for name, _, _, mins in triage.LANES}
 # The NIfTI the 3D viewer can load, by the name the client asks for.
@@ -159,7 +184,7 @@ def create_app(p: dict, registry: Registry | None = None,
     # header, never in a cookie, so credentials stay off; a wildcard origin can
     # therefore never be combined with credentials.
     app.add_middleware(CORSMiddleware, allow_origins=list(cors_origins or DEV_ORIGINS),
-                       allow_credentials=False, allow_methods=["GET", "POST"],
+                       allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
                        allow_headers=["Authorization", "Content-Type"])
 
     def principal(authorization: str = Header(default="")) -> Principal:
@@ -329,7 +354,8 @@ def create_app(p: dict, registry: Registry | None = None,
                 outcome="ok", duration_ms=0.0,
                 detail={"lane": row["lane"], "assigned_at": row.get("assigned_at")}))
         entry = registry.entries.get(row.get("model_id") or "", {})
-        urgency = entry.get("urgency", {})
+        # Models outside the registry (head CT) carry their weights on the row.
+        urgency = entry.get("urgency") or (row.get("triage") or {}).get("urgency_weights") or {}
         findings = sorted(({"name": k, "label": _label(k), "signal": v,
                             "urgency": urgency.get(k)}
                            for k, v in (row.get("findings") or {}).items()),
@@ -348,6 +374,7 @@ def create_app(p: dict, registry: Registry | None = None,
                          if isinstance(v, str) and k.endswith("_png")}
         return {"disclaimer": DISCLAIMER, "study": view(row), "findings": findings,
                 "top_findings": (row.get("triage") or {}).get("top_findings", []),
+                "decision_reason": (row.get("triage") or {}).get("decision_reason"),
                 "evidence": evidence, "evidence_urls": evidence_urls, "series": series,
                 "draft": draft, "draft_review": row.get("draft_review"),
                 # A datastore with no real DICOM behind it says so, and the viewer
@@ -418,6 +445,108 @@ def create_app(p: dict, registry: Registry | None = None,
             detail={"verdict": body.verdict, "lane": row["lane"], "acuity": t.get("acuity"),
                     "driver": t.get("driver"), "model_id": row.get("model_id")}))
         return {"disclaimer": DISCLAIMER, "study": view(row)}
+
+    # -- Clinician Pinpoint Notes / Annotations -------------------------------
+    def find_annotation(annotation_id: str) -> dict:
+        """The table is keyed by (study, annotation_id); a note is addressed by
+        its id alone, so it is found by scan. Notes are few."""
+        for a in p["table"].scan("annotations"):
+            if annotation_id in (a.get("annotation_id"), a.get("id")):
+                return a
+        raise HTTPException(404, "annotation not found")
+
+    @app.get("/api/studies/{study}/annotations")
+    def get_study_annotations(study: str, who: Principal = Depends(radiologist)):
+        """Retrieve all spatially-anchored clinician annotations for a study."""
+        annotations = p["table"].query("annotations", study=study)
+        annotations.sort(key=lambda a: a.get("created_at") or "", reverse=False)
+        return {"disclaimer": DISCLAIMER, "study": study, "annotations": annotations, "total": len(annotations)}
+
+    @app.post("/api/studies/{study}/annotations")
+    def create_study_annotation(study: str, body: AnnotationIn, who: Principal = Depends(radiologist)):
+        """Create a persistent spatially anchored clinician note on a study."""
+        start = time.perf_counter()
+        row = p["table"].get_item("worklist", {"study": study})
+        ann_id = f"ann-{uuid.uuid4().hex[:10]}"
+        at = _now()
+        modality = body.modality or (row.get("modality") if row else "MR")
+
+        ann_item = {
+            "id": ann_id,
+            "annotation_id": ann_id,
+            "study": study,
+            "study_id": study,
+            "series_id": body.series_id,
+            "image_instance_id": body.image_instance_id,
+            "modality": modality,
+            "annotation_type": body.annotation_type,
+            "note_text": body.note_text,
+            "created_by": who.email,
+            "created_at": at,
+            "updated_at": at,
+            "coordinate_space": body.coordinate_space,
+            "coordinate_x": body.coordinate_x,
+            "coordinate_y": body.coordinate_y,
+            "coordinate_z": body.coordinate_z,
+            "voxel": body.voxel,
+            "world_mm": body.world_mm,
+            "slice_index": body.slice_index,
+            "segmentation_region": body.segmentation_region,
+            "viewer_context": body.viewer_context,
+            "metadata": body.metadata,
+        }
+        p["table"].put_item("annotations", ann_item)
+        p["table"].append_audit(AuditEvent(
+            actor=who.email, action="create_annotation", study=study, at=at, outcome="ok",
+            duration_ms=round((time.perf_counter() - start) * 1000, 3),
+            detail={"annotation_id": ann_id, "modality": modality, "coordinate_space": body.coordinate_space,
+                    "segmentation_region": body.segmentation_region}))
+        return {"disclaimer": DISCLAIMER, "annotation": ann_item}
+
+    @app.get("/api/annotations/{annotation_id}")
+    def get_annotation(annotation_id: str, who: Principal = Depends(radiologist)):
+        """Fetch a single annotation by ID."""
+        item = find_annotation(annotation_id)
+        return {"disclaimer": DISCLAIMER, "annotation": item}
+
+    @app.patch("/api/annotations/{annotation_id}")
+    def patch_annotation(annotation_id: str, body: AnnotationPatch, who: Principal = Depends(radiologist)):
+        """Update an existing clinician note's text or metadata."""
+        start = time.perf_counter()
+        item = find_annotation(annotation_id)
+
+        at = _now()
+        if body.note_text is not None:
+            item["note_text"] = body.note_text
+        if body.segmentation_region is not None:
+            item["segmentation_region"] = body.segmentation_region
+        if body.metadata is not None:
+            item["metadata"] = {**(item.get("metadata") or {}), **body.metadata}
+        item["updated_at"] = at
+        item["updated_by"] = who.email
+
+        p["table"].put_item("annotations", item)
+        p["table"].append_audit(AuditEvent(
+            actor=who.email, action="update_annotation", study=item.get("study") or NO_STUDY, at=at, outcome="ok",
+            duration_ms=round((time.perf_counter() - start) * 1000, 3),
+            detail={"annotation_id": annotation_id}))
+        return {"disclaimer": DISCLAIMER, "annotation": item}
+
+    @app.delete("/api/annotations/{annotation_id}")
+    def delete_annotation(annotation_id: str, who: Principal = Depends(radiologist)):
+        """Delete an annotation."""
+        start = time.perf_counter()
+        item = find_annotation(annotation_id)
+
+        study = item.get("study") or item.get("study_id") or NO_STUDY
+        p["table"].delete_item("annotations", {"study": study, "annotation_id": item["annotation_id"]})
+        at = _now()
+        p["table"].append_audit(AuditEvent(
+            actor=who.email, action="delete_annotation", study=study, at=at, outcome="ok",
+            duration_ms=round((time.perf_counter() - start) * 1000, 3),
+            detail={"annotation_id": annotation_id}))
+        return {"disclaimer": DISCLAIMER, "deleted": True, "annotation_id": annotation_id}
+
 
     @app.get("/api/blob/{key:path}")
     def blob(key: str, expires: int, sig: str):

@@ -117,6 +117,12 @@ class AuralaneStack(Stack):
             self, "Access", table_name=f"{TABLE_PREFIX}-access",
             partition_key=ddb.Attribute(name="username", type=ddb.AttributeType.STRING),
             billing_mode=ddb.BillingMode.PAY_PER_REQUEST, removal_policy=RemovalPolicy.DESTROY)
+        # Radiologists' notes pinned to images (core/api.py, annotations routes).
+        annotations = ddb.Table(
+            self, "Annotations", table_name=f"{TABLE_PREFIX}-annotations",
+            partition_key=ddb.Attribute(name="study", type=ddb.AttributeType.STRING),
+            sort_key=ddb.Attribute(name="annotation_id", type=ddb.AttributeType.STRING),
+            billing_mode=ddb.BillingMode.PAY_PER_REQUEST, removal_policy=RemovalPolicy.DESTROY)
         identity = ddb.Table(
             self, "Identity", table_name=f"{TABLE_PREFIX}-identity",
             partition_key=ddb.Attribute(name="k", type=ddb.AttributeType.STRING),
@@ -230,6 +236,9 @@ class AuralaneStack(Stack):
                                 resources=[bucket.arn_for_objects("upload/*")]),
             iam.PolicyStatement(actions=["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Scan",
                                          "dynamodb:DescribeTable"], resources=[access.table_arn]),
+            iam.PolicyStatement(actions=["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query",
+                                         "dynamodb:Scan", "dynamodb:DeleteItem",
+                                         "dynamodb:DescribeTable"], resources=[annotations.table_arn]),
             iam.PolicyStatement(actions=["cognito-idp:AdminConfirmSignUp",
                                          "cognito-idp:AdminAddUserToGroup",
                                          "cognito-idp:AdminDeleteUser",

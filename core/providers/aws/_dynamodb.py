@@ -27,6 +27,7 @@ SCHEMA = {
     "worklist": ("study", None),
     "audit": ("study", "event_id"),
     "access": ("username", None),        # access requests, core/api.py
+    "annotations": ("study", "annotation_id"),
 }
 NO_STUDY = "-"      # audit partition for events that precede a StudyRef
 
@@ -85,6 +86,11 @@ class DynamoDBTable(TablePort):
 
     def get_item(self, table: str, key: dict[str, Any]) -> dict[str, Any] | None:
         return _from_ddb(self._table(table).get_item(Key=key).get("Item"))
+
+    def delete_item(self, table: str, key: dict[str, Any]) -> None:
+        if table == "audit":
+            raise PermissionError("audit is append only")
+        self._table(table).delete_item(Key=key)
 
     def query(self, table: str, **conditions) -> list[dict[str, Any]]:
         pk = SCHEMA[table][0]
