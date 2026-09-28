@@ -128,6 +128,17 @@ each study actually needed a neuroradiologist, and then checked on studies
 held out from that fit. Until then they are not tuned, including to make a
 demonstration case land in a particular lane.
 
+## Regional prior: bounded, after the z-score
+
+Chest only. The four GBD 2023 causes in `models/regional_priors.json` back
+eleven of the eighteen chest findings; the other seven keep their signal.
+Each signal is multiplied by (state prevalence / India's) ^ 0.5, held between
+x0.80 and x1.25 (`core/regional.py`). Bounded because prevalence says how often
+a disease occurs here, not what this image shows: context may nudge a finding,
+never override the image, and a signal of 0 stays 0. Applied after the z-score,
+never folded into the reference distribution, because refitting the reference
+on local data makes a locally common finding less unusual and sorts it down.
+
 ## Why acuity is the maximum, not the sum: a recorded case
 
 Acuity is the largest signal x urgency over a study's findings, not their

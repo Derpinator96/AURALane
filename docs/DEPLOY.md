@@ -1,20 +1,180 @@
-# Deploy: the hosted preview
+# Deploy
 
-Two services on two origins:
+NON-DIAGNOSTIC; DECISION SUPPORT ONLY.
+
+Three pieces, three hosts:
 
 | | where | what it runs |
 |---|---|---|
-| client | Vercel, `https://<project>.vercel.app` | the built React app from `client/` |
-| API | Render free web service, `https://<service>.onrender.com` | `python -m core.run serve` with `AURALANE_RUNTIME=fixture` |
+| client | Vercel, `https://aura-lane.vercel.app` | the built React app from `client/`; unchanged |
+| API | Render, `auralane-api`, virginia | `python -m core.run serve`, `AURALANE_RUNTIME=aws`: HealthImaging, DynamoDB, S3, Cognito. Never runs a model |
+| models | AWS us-east-1 (`infra/`) | chest on Lambda, brain MR and head CT on SageMaker asynchronous endpoints |
+| fallback API | Render, `auralane-preview`, virginia | the fixture runtime, synthetic rows, no AWS. Section "The fixture preview" below |
 
-The hosted API runs the **fixture runtime only**: the committed synthetic rows
-in `fixtures/`, held in memory. No torch, no Orthanc, no DynamoDB, no DICOM
-datastore, no live pipeline. Chest studies show one public sample image and
-brain studies none, and the study screen says so. The live pipeline is the
-local build (docs/RUN.md). Do not try to host it: the imaging data is
-gitignored and the free instance has 512 MB.
+Ingest runs where the studies are (in production the hospital's edge agent;
+here, your machine): it de-identifies locally, then talks to AWS. The
+deployed API only reads the worklist and serves the viewer.
 
-## Order, and why
+## The AWS runtime, in order
+
+Every command from the repository root unless it says `cd infra`. Region
+us-east-1 throughout. Costs per resource: `docs/AWS-COSTS.md`; the totals are
+in the table at the end of this section.
+
+### 1. Build the three images locally (no AWS)
+
+```
+docker build --platform linux/amd64 -f infra/lambda/chest/Dockerfile   -t auralane-chest .
+docker build --platform linux/amd64 -f infra/containers/brain/Dockerfile -t auralane-brain .
+docker build --platform linux/amd64 -f infra/containers/ct/Dockerfile    -t auralane-ct .
+```
+
+Check: each ends with `naming to docker.io/library/auralane-...`. The three
+images are 7.6 GB, and with the build cache Docker's disk grew to 18 GB on the
+build machine, leaving C: with 1.2 GB. Before building, move Docker's disk to a
+drive with 25 GB free: Docker Desktop, Settings, Resources, Advanced, Disk
+image location. The brain image needs `_external/brainmri` with its Git LFS
+weights; the CT image needs `_external/triagelane-ct`.
+
+### 2. Bootstrap CDK, once per account and region
+
+```
+pip install -r infra/requirements.txt
+cd infra && npx cdk bootstrap aws://294488969610/us-east-1
+```
+
+Check: a `CDKToolkit` stack in CloudFormation, status `CREATE_COMPLETE`.
+
+### 3. Deploy the stack
+
+```
+cd infra && npx cdk deploy Auralane
+```
+
+Flags, all optional: `-c brain=false`, `-c ct=false` leave an endpoint out;
+`-c chest_provisioned=1` keeps one chest environment warm (presentation day
+only). `cdk deploy` rebuilds the images and pushes them to ECR, then creates
+everything. Check: it prints the outputs, one per environment variable.
+
+Save the outputs as a file you will source (never commit it):
+
+```
+aws cloudformation describe-stacks --stack-name Auralane --query "Stacks[0].Outputs[].[Description,OutputValue]" --output text
+```
+
+Each line is `NAME value`. Keep `AURALANE_APP_POLICY_ARN` for step 5.
+
+### 4. Cognito users
+
+```
+aws cognito-idp admin-create-user --user-pool-id <AURALANE_COGNITO_POOL_ID> --username radiologist --message-action SUPPRESS
+aws cognito-idp admin-set-user-password --user-pool-id <AURALANE_COGNITO_POOL_ID> --username radiologist --password <password> --permanent
+aws cognito-idp admin-add-user-to-group --user-pool-id <AURALANE_COGNITO_POOL_ID> --username radiologist --group-name radiologist
+```
+
+Then the same three for `admin` with `--group-name admin`. The password must
+meet the pool's default policy (8 or more characters, upper and lower case, a
+number, a symbol).
+
+### 5. A scoped IAM user for the API
+
+```
+aws iam create-user --user-name auralane-api
+aws iam attach-user-policy --user-name auralane-api --policy-arn <AURALANE_APP_POLICY_ARN>
+aws iam create-access-key --user-name auralane-api
+```
+
+The policy holds exactly what `core/` calls, nothing else. The access key is
+shown once; it goes into Render (step 6) and into your shell for ingest
+(step 7). Never your admin key.
+
+### 6. Moving the API to virginia, and pointing it at AWS
+
+Render cannot change a service's region in place, so the singapore service is
+replaced. Copy these from the old service before deleting it: nothing else on
+it matters (the fixture rows live in the repository).
+
+| copy | from | to |
+|---|---|---|
+| custom domain, if you added one | old service, Settings | new `auralane-api` |
+| the uptime monitor's URL | UptimeRobot | new service URL |
+| `AURALANE_DEV_PASSWORD` | old service | new `auralane-preview` (the fallback) |
+
+Then:
+
+1. Delete the old singapore `auralane-api` service (Settings, Delete Service),
+   so its name and URL are free.
+2. Dashboard, New, Blueprint, this repository. `render.yaml` creates both
+   `auralane-api` (aws) and `auralane-preview` (fixture), both in virginia.
+3. At the prompts for `auralane-api`: `AWS_ACCESS_KEY_ID` and
+   `AWS_SECRET_ACCESS_KEY` from step 5, `AWS_REGION` = `us-east-1`, and every
+   `AURALANE_*` value from the stack outputs in step 3. For
+   `auralane-preview`: the development password.
+4. If Render gives either service a different URL than the one in
+   `render.yaml` (`AURALANE_PUBLIC_URL`), change it there and push.
+
+Check: `https://auralane-api.onrender.com/api/health` returns
+`{"runtime":"aws"}`, and `https://auralane-preview.onrender.com/api/health`
+returns `{"runtime":"fixture"}`. A deploy log ending in
+`AURALANE_RUNTIME=aws serve needs ...` names the missing output.
+
+Vercel stays as it is: its `VITE_API_BASE` already points at
+`https://auralane-api.onrender.com`. If the URL changed in step 4, update
+`VITE_API_BASE` and redeploy. To demo the fallback, point `VITE_API_BASE` at
+`auralane-preview` and redeploy (about a minute).
+
+### 7. Ingest, and the end-to-end smoke test
+
+In your shell, with the scoped key and the stack outputs exported:
+
+```
+export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_REGION=us-east-1
+export AURALANE_RUNTIME=aws AURALANE_BUCKET=... AURALANE_IMPORT_ROLE_ARN=... \
+       AURALANE_COGNITO_POOL_ID=... AURALANE_COGNITO_CLIENT_ID=... \
+       AURALANE_CHEST_FUNCTION=... AURALANE_BRAIN_ENDPOINT=... AURALANE_CT_ENDPOINT=...
+export AURALANE_SITE_STATE=Chhattisgarh        # the site's state, for the chest regional prior
+python scripts/smoke_aws.py --api https://auralane-api.onrender.com --user radiologist --password <password>
+```
+
+It ingests one chest, one brain and one head CT study, then reads the
+deployed worklist and prints each study with its lane. `SMOKE PASSED` means
+all three reached it: that is done. It also fetches one frame through the
+viewer's URL and says whether HealthImaging's presigned URL answers a browser
+origin with CORS headers. If it does, `AURALANE_FRAME_MODE=presigned` on
+Render moves frame traffic off the API; otherwise keep `proxy`.
+
+More studies: `python -m core.run ingest <study dir>` with the same
+environment (`--state` overrides the site state for one ingest).
+
+Expect the first brain and CT jobs after idle to wait for an instance: the
+endpoints scale from 0, and a cold start takes several minutes.
+
+### What it costs
+
+| state | cost | from |
+|---|---|---|
+| deployed, idle, endpoints at 0 | pennies a month plus ECR image storage at $0.10 per GB-month (about 6 GB, so about $0.60) | docs/AWS-COSTS.md |
+| the smoke test | three HealthImaging imports, one Lambda call (seconds at $0.000049 per second), one wake of each endpoint (about 20 to 30 minutes billed: $0.15 to $0.23 brain, $0.08 to $0.12 CT) | docs/AWS-COSTS.md, estimate |
+| right after `cdk deploy` | each endpoint starts with 1 instance until it scales in: about 30 minutes at $0.461 and $0.23 per hour | docs/AWS-COSTS.md |
+| presentation day, `-c chest_provisioned=1` | about $1.04 per day ($31.72 per month) | docs/AWS-COSTS.md |
+| Render, Vercel | free tiers | |
+
+### Tearing down
+
+```
+python infra/teardown.py              # dry run
+python infra/teardown.py --yes        # bucket emptied, stack and endpoint log groups deleted
+```
+
+The HealthImaging datastore and every image set in it stay.
+
+---
+
+## The fixture preview: `auralane-preview`, the fallback
+
+The fixture runtime: the committed synthetic rows in `fixtures/`, held in memory. No AWS, no datastore, no model. Created by the same Blueprint (step 6 above); the steps below are what it needs on its own, and how to check it.
+
+### Order, and why
 
 1. **Render first.** Vite writes `VITE_API_BASE` into the client bundle at build
    time, so the API's URL has to exist before the client is built.
@@ -23,7 +183,7 @@ gitignored and the free instance has 512 MB.
    reads it at start, so fixing it is an edit plus a redeploy, no rebuild of
    anything.
 
-## 1. Render (the API)
+### 1. Render (the API)
 
 Dashboard, New, Blueprint, pick this repository. Render reads `render.yaml` at
 the repo root:
@@ -31,8 +191,8 @@ the repo root:
 | setting | value |
 |---|---|
 | type, runtime, plan | `web`, `python`, `free` |
-| name | `auralane-api` |
-| region | `singapore` (nearest to the presenters; the data is synthetic) |
+| name | `auralane-preview` |
+| region | `virginia` |
 | build command | `pip install -r requirements-deploy.txt` |
 | start command | `python -m core.run serve --host 0.0.0.0 --port $PORT` |
 | health check path | `/api/health` |
@@ -46,7 +206,7 @@ Environment variables:
 | `AURALANE_RUNTIME` | `fixture` | committed |
 | `AURALANE_DEV_PASSWORD` | the sign-in password for both users | **prompted**, never committed. Anyone holding it can sign in as either role |
 | `AURALANE_DEV_JWT_SECRET` | random 256-bit value | generated once by Render and kept, so sessions survive sleep and restarts |
-| `AURALANE_PUBLIC_URL` | `https://auralane-api.onrender.com` | **prompted**. Evidence image URLs are built from it |
+| `AURALANE_PUBLIC_URL` | `https://auralane-preview.onrender.com` | **prompted**. Evidence image URLs are built from it |
 | `AURALANE_CORS_ORIGINS` | `https://<project>.vercel.app` | **prompted**. Enter the Vercel URL you intend to use; step 3 corrects it if needed |
 
 `PORT` is set by Render (default 10000) and is not ours to set.
@@ -62,7 +222,7 @@ Environment variables:
 - `https://<service>.onrender.com/api/health` in a browser returns
   `{"runtime":"fixture"}`. No token needed.
 
-## 2. Vercel (the client)
+### 2. Vercel (the client)
 
 Dashboard, Add New, Project, import this repository.
 
@@ -79,7 +239,7 @@ Variables) for Production:
 
 | key | value |
 |---|---|
-| `VITE_API_BASE` | the Render URL, e.g. `https://auralane-api.onrender.com` (no path) |
+| `VITE_API_BASE` | the Render URL, e.g. `https://auralane-preview.onrender.com` (no path) |
 
 It is not in `vercel.json` because Vercel deprecates `build.env` there in favour
 of Project Settings. If it is missing, the build fails on purpose with
@@ -96,7 +256,7 @@ Changing it later needs a redeploy, because it is baked in at build time.
   URL differs from what you entered at the Render prompt. That is the CORS
   symptom below, and expected.
 
-## 3. Render again: CORS
+### 3. Render again: CORS
 
 Set `AURALANE_CORS_ORIGINS` on the Render service to the exact Vercel origin:
 scheme and host, no trailing slash, no path. Several are comma-separated.
@@ -115,7 +275,7 @@ switched off anyway because the token travels in a header, not a cookie.
 - Sign out, sign in as `admin`: audit log, lane mix, thresholds and model
   registry load. A study link sends admin back to the audit log.
 
-## When CORS is wrong
+### When CORS is wrong
 
 Measured against this build with an origin the API does not allow:
 
@@ -133,7 +293,7 @@ slashes are stripped, paths are not), `http` against `https`, or a Vercel
 **preview** deployment, whose URL differs from production. Add a preview URL
 to the list if you need it.
 
-## Sleep, and the uptime monitor
+### Sleep, and the uptime monitor
 
 A free Render service spins down after 15 minutes without traffic; the next
 request waits about a minute while it starts. Everything held in memory is
@@ -154,7 +314,7 @@ still spinning up. Render shows browsers a loading page during spin-up, and
 that page may not carry CORS headers, so the first sign-in after a sleep may
 show Failed to fetch once. The monitor avoids the question.
 
-## Not in the hosted preview
+### Not in the hosted preview
 
 - The live pipeline: de-identification, the datastore, inference, scoring.
   Run it locally (docs/RUN.md).

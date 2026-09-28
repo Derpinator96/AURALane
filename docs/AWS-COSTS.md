@@ -20,7 +20,9 @@ Calculator before deploying; prices change.
 | IAM roles (import, SageMaker), managed policy | $0 | $0 | IAM has no charge |
 | Chest Lambda, container image, 3,008 MB, x86, no provisioned concurrency | $0 | $0.20 per million requests plus $0.0000166667 per GB-second: at 3,008 MB (2.9375 GB) that is $0.0000490 per second of run time | aws.amazon.com/lambda/pricing |
 | Chest Lambda log group, 1-week retention | stored logs only | $0.50 per GB ingested | CloudWatch pricing ("Application & custom logs") |
-| Brain SageMaker async endpoint, ml.g4dn.xlarge, scaling 0 to 1 | $0 per hour at 0 instances | **$0.7364 per hour while one instance is up**, plus $0.14 per GB-month for its attached volume and $0.02 per GB of request and response data | SageMaker pricing page: $0.7364 is the ml.g4dn.xlarge rate in its JupyterLab example; the hosting table itself did not render in the fetch, so confirm the inference rate in the calculator. $0.14 and $0.02 from its asynchronous inference example (#11) |
+| Brain SageMaker async endpoint, ml.m5.2xlarge (CPU image), scaling 0 to 1 | $0 per hour at 0 instances | **$0.461 per hour while one instance is up**, plus $0.14 per GB-month for its attached volume and $0.02 per GB of request and response data | $0.461: AWS Price List API, AmazonSageMaker, usage type USE1-Host:ml.m5.2xlarge, read 2026-09-28. $0.14 and $0.02 from the SageMaker pricing page's asynchronous inference example (#11) |
+| Head CT SageMaker async endpoint, ml.m5.xlarge (CPU image), scaling 0 to 1 | $0 per hour at 0 instances | **$0.23 per hour while one instance is up**, plus the same volume and data charges | AWS Price List API, USE1-Host:ml.m5.xlarge, read 2026-09-28 |
+| CloudWatch alarms for the CT endpoint: 1 in the stack, 2 from its target tracking | about $0.30 per month | same | as the brain alarms below |
 | CloudWatch alarms: 1 in the stack, plus the 2 that target-tracking scaling creates for itself | $0.10 per alarm per month each, so about $0.30 | same | NOT re-read in this build; CloudWatch's billing guide confirms alarms are billed per alarm-metric but the page fetched did not show the rate |
 
 ### What a brain job costs, and why "scale to zero" is not free per job
@@ -30,10 +32,16 @@ it: the step policy adds one instance when `HasBacklogWithoutCapacity` fires,
 and target tracking removes it once the backlog has been empty long enough
 (scale-in cooldown 600 s in the stack; target tracking also waits for its own
 low alarm). Estimate, not measured: each wake keeps an instance up for roughly
-20 to 30 minutes including start-up, about $0.25 to $0.37 at $0.7364 per hour.
+20 to 30 minutes including start-up, about $0.15 to $0.23 at $0.461 per hour
+for brain and $0.08 to $0.12 at $0.23 per hour for CT.
 Back-to-back jobs share one wake.
 
-After `cdk deploy` the endpoint starts with 1 instance (SageMaker creates the
+The brain endpoint was ml.g4dn.xlarge ($0.7364 per hour) until the image
+became CPU-only: the CUDA base does not fit the build machine's Docker disk
+(infra/containers/brain/Dockerfile). `-c brain_instance=ml.g4dn.xlarge` still
+deploys it on a GPU instance, where the CPU image runs without using the GPU.
+
+After `cdk deploy` each endpoint starts with 1 instance (SageMaker creates the
 variant with an initial count of 1) and only scales in to 0 once the idle
 policy fires, so expect the first 20 to 30 minutes after a deploy to be billed.
 
@@ -96,6 +104,7 @@ smoke test: a chest study stored 458,999 bytes of HTJ2K but is billed at the
 - Idle, with nothing provisioned: pennies per month. S3 and DynamoDB storage for
   a demo-sized worklist, ECR image storage (the largest line, at $0.10 per GB),
   and about $0.30 of alarms.
-- The brain endpoint: $0.7364 per hour while warm, 0 while scaled in.
+- The brain endpoint: $0.461 per hour while warm, 0 while scaled in.
+- The head CT endpoint: $0.23 per hour while warm, 0 while scaled in.
 - The chest Lambda: per invocation only, unless provisioned concurrency is
   chosen ($31.72 per month for one warm environment).

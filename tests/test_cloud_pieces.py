@@ -1,0 +1,121 @@
+"""Smoke tests for the pieces added for the end-to-end AWS path: the regional
+prior, the head CT adapter, the aws runtime's variable requirements and the
+API's signed frame stream. No AWS call is made (moto)."""
+import json
+
+import numpy as np
+import pytest
+from fastapi.testclient import TestClient
+
+import core.run as run
+from core import regional
+from core.api import create_app
+from core.pipeline import _regional
+from core.providers.fixture import BLOB, WORKLIST, FixtureDatastore, FixtureTable
+from core.providers.local import DevAuth, FileBlob, TemplateLLM
+from core.registry import Registry, rank
+from core.types import Findings
+
+
+# -- regional prior ----------------------------------------------------------
+def test_regional_prior_is_bounded_and_never_overrides_the_image():
+    priors = regional.load()
+    for state in regional.states(priors):
+        adjusted, ev = regional.apply({"Pneumonia": 0.5, "Mass": 0.0, "Edema": 0.7}, state, priors)
+        assert all(0.8 <= f["factor"] <= 1.25 for f in ev["factors"].values())
+        assert adjusted["Mass"] == 0.0            # nothing from nothing
+        assert adjusted["Edema"] == 0.7           # no GBD cause behind it: unchanged
+    backed = [f for fs in priors["causes"].values() for f in fs]
+    assert len(priors["causes"]) == 4 and len(backed) == 11
+
+
+def test_regional_prior_switch_off_changes_nothing_and_says_so():
+    f = Findings(findings={"Pneumonia": 0.5}, evidence={}, meta={})
+    out = _regional(f, regional.RegionalSetting(state="Kerala", enabled=False), {})
+    assert out.findings == {"Pneumonia": 0.5}
+    assert out.evidence["regional"] == {"state": "Kerala", "applied": False,
+                                        "reason": "off (AURALANE_REGIONAL_PRIOR=off)"}
+    on = _regional(f, regional.RegionalSetting(state="Kerala", enabled=True), {})
+    assert on.evidence["regional"]["factors"]["Pneumonia"]["signal_before"] == 0.5
+
+
+def test_unknown_state_is_refused(monkeypatch):
+    monkeypatch.setenv("AURALANE_SITE_STATE", "Atlantis")
+    with pytest.raises(ValueError, match="unknown state"):
+        regional.setting()
+
+
+# -- head CT ------------------------------------------------------------------
+@pytest.mark.parametrize("likelihood, lane", [(0.2, "ROUTINE"), (0.6, "ABSTAIN"), (0.95, "CRITICAL")])
+def test_ct_adapter_converts_her_scale_and_our_triage_assigns_the_lane(likelihood, lane):
+    reg = Registry()
+    entry = reg.get("ct-ich-vit-v1")
+    assert entry["reading_pool"] == "Neuro" and entry["runtime"] == "sagemaker-async"
+    out = {"raw_score": likelihood, "study_score": likelihood, "dominant_subtype": "epidural",
+           "k_used": 3, "n_slices": 9, "top_slice_index": 4, "subtype_scores": {}}
+    findings = reg.adapter(entry).adapt(out, {"entry": entry})
+    assert list(findings.findings) == ["epidural_hemorrhage"]
+    assert rank(findings, entry)["lane"] == lane
+
+
+# -- aws runtime: serve needs no model, ingest needs the chest function -------
+AWS_BASE = {"AURALANE_BUCKET": "b", "AURALANE_IMPORT_ROLE_ARN": "arn:aws:iam::1:role/r",
+            "AURALANE_COGNITO_POOL_ID": "us-east-1_x", "AURALANE_COGNITO_CLIENT_ID": "c"}
+
+
+@pytest.fixture
+def aws_env(monkeypatch):
+    moto = pytest.importorskip("moto")
+    monkeypatch.setenv("AURALANE_RUNTIME", "aws")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+    for k in ("AURALANE_CHEST_FUNCTION", "AURALANE_BRAIN_ENDPOINT", "AURALANE_CT_ENDPOINT",
+              "AURALANE_FRAME_MODE", "AURALANE_PUBLIC_URL"):
+        monkeypatch.delenv(k, raising=False)
+    for k, v in AWS_BASE.items():
+        monkeypatch.setenv(k, v)
+    with moto.mock_aws():
+        yield monkeypatch
+
+
+def test_aws_serve_needs_no_model_and_drafts_from_the_template(aws_env):
+    p = run.providers()
+    assert p["inference"] is None and isinstance(p["llm"], TemplateLLM)
+    assert p["frame_proxy"] == ""                  # proxy by default; relative in development
+    with pytest.raises(SystemExit, match="AURALANE_CHEST_FUNCTION"):
+        run.providers(for_ingest=True)
+    aws_env.setenv("AURALANE_CHEST_FUNCTION", "fn:live")
+    assert run.providers(for_ingest=True)["inference"].ct_endpoint is None
+
+
+def test_aws_serve_names_a_missing_base_variable(aws_env):
+    aws_env.delenv("AURALANE_COGNITO_POOL_ID")
+    with pytest.raises(SystemExit, match="AURALANE_COGNITO_POOL_ID"):
+        run.providers()
+
+
+# -- frames streamed by the API ------------------------------------------------
+class _FrameStore(FixtureDatastore):
+    pixels = np.arange(12, dtype=np.uint16).reshape(3, 4)
+
+    def frame_pixels(self, ref, series_uid, instance_uid, frame=1):
+        return self.pixels
+
+
+def test_api_streams_signed_frames_and_refuses_tampered_links():
+    table = FixtureTable()
+    study = next(r for r in json.loads(open(WORKLIST).read()) if r["modality"] == "CR")
+    app = create_app({"runtime": "aws", "blob": FileBlob(BLOB, url_base="/api/blob"),
+                      "table": table, "datastore": _FrameStore(table),
+                      "auth": DevAuth(password="pw"), "llm": TemplateLLM(),
+                      "frame_proxy": "http://testserver"})
+    c = TestClient(app)
+    token = c.post("/api/auth/login", json={"username": "radiologist", "password": "pw"}).json()["token"]
+    s = study["series"][0]
+    url = c.get(f"/api/studies/{study['study']}/frame-url?series={s['series_uid']}"
+                f"&instance={s['instance_uids'][0]}",
+                headers={"Authorization": f"Bearer {token}"}).json()["url"]
+    assert url.startswith("http://testserver/api/frames/") and "sig=" in url
+    r = c.get(url)                                           # no bearer token: the URL signs
+    assert r.status_code == 200 and r.content == _FrameStore.pixels.tobytes()
+    assert r.headers["content-type"] == "application/octet-stream"
+    assert c.get(url.replace("sig=", "sig=0")).status_code == 403
