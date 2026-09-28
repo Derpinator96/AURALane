@@ -82,7 +82,8 @@
      "Emphysema": 0.18,
      "Fibrosis": 0.16,
      "Hernia": 0.12
-    }
+    },
+    "regional_prior": true
    },
    {
     "id": "brain-brats-monai-v0.5.4",
@@ -133,6 +134,36 @@
      "enhancing_tumor": 0.95,
      "tumor_burden": 0.6,
      "edema_volume": 0.55
+    }
+   },
+   {
+    "id": "ct-ich-vit-v1",
+    "modality": "CT",
+    "body_part": "Head",
+    "reading_pool": "Neuro",
+    "input": {
+     "format": "dicom-series",
+     "dims": 3,
+     "series": 1
+    },
+    "runtime": "sagemaker-async",
+    "output_type": "ct-hemorrhage",
+    "adapter": "adapters.ct_hemorrhage",
+    "source": "github.com/MehakGupta23/triagelane-ct (preprocessing, model, aggregation); weights huggingface.co/DifeiT/rsna-intracranial-hemorrhage-detection (ViT, Apache-2.0)",
+    "hf_model": "DifeiT/rsna-intracranial-hemorrhage-detection",
+    "anchors": {
+     "hemorrhage_likelihood": [
+      0.35,
+      0.85
+     ]
+    },
+    "anchors_provisional": true,
+    "urgency": {
+     "epidural_hemorrhage": 1.0,
+     "subdural_hemorrhage": 0.92,
+     "subarachnoid_hemorrhage": 0.92,
+     "intraparenchymal_hemorrhage": 0.84,
+     "intraventricular_hemorrhage": 0.8
     }
    }
   ],

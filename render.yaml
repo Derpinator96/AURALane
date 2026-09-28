@@ -1,13 +1,73 @@
-# Render Blueprint for the hosted preview API: the fixture runtime only.
-# No torch, no Orthanc, no DynamoDB, no DICOM datastore (docs/DEPLOY.md).
-# Create this service BEFORE the Vercel client: the client bakes the API's URL
-# in at build time.
+# Render Blueprint: two services (docs/DEPLOY.md).
+#
+#   auralane-api      the AWS runtime: HealthImaging, DynamoDB, S3, Cognito.
+#                     Never runs a model; ingest does that, from the edge.
+#   auralane-preview  the fixture runtime: synthetic rows, no AWS, no datastore.
+#                     The fallback URL if anything on AWS is down.
+#
+# Both in virginia, next to us-east-1. Render cannot move a service between
+# regions, so the old singapore service is deleted and recreated
+# (docs/DEPLOY.md, "Moving the API to virginia").
 services:
   - type: web
     name: auralane-api
     runtime: python
     plan: free
-    region: singapore          # nearest Render region to the presenters; all data here is synthetic
+    region: virginia           # AWS calls go to us-east-1; keep them local
+    buildCommand: pip install -r requirements-deploy.txt
+    startCommand: python -m core.run serve --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.3
+      - key: AURALANE_RUNTIME
+        value: aws
+      # The scoped IAM user the stack's AppPolicy is attached to. Never a
+      # root or admin key. Set in the dashboard, never committed.
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      # The CDK stack's outputs (cdk deploy prints them; infra/README.md).
+      # Every name in core/providers/aws/config.py. serve needs the first four;
+      # the model names are declared so ingest from this environment also works.
+      - key: AURALANE_BUCKET
+        sync: false
+      - key: AURALANE_IMPORT_ROLE_ARN
+        sync: false
+      - key: AURALANE_COGNITO_POOL_ID
+        sync: false
+      - key: AURALANE_COGNITO_CLIENT_ID
+        sync: false
+      - key: AURALANE_TABLE_PREFIX
+        sync: false
+      - key: AURALANE_DATASTORE_ID
+        sync: false
+      - key: AURALANE_CHEST_FUNCTION
+        sync: false
+      - key: AURALANE_BRAIN_ENDPOINT
+        sync: false
+      - key: AURALANE_CT_ENDPOINT
+        sync: false
+      # proxy: the API streams decoded frames. presigned: the browser fetches
+      # from HealthImaging directly, once scripts/smoke_aws.py shows it can.
+      - key: AURALANE_FRAME_MODE
+        value: proxy
+      # This service's own URL; frame and evidence links are built from it.
+      # If Render assigns a different URL on recreation, change it here.
+      - key: AURALANE_PUBLIC_URL
+        value: https://auralane-api.onrender.com
+      - key: AURALANE_CORS_ORIGINS
+        value: https://aura-lane.vercel.app
+
+  - type: web
+    name: auralane-preview
+    runtime: python
+    plan: free
+    region: virginia
     buildCommand: pip install -r requirements-deploy.txt
     startCommand: python -m core.run serve --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
@@ -25,10 +85,7 @@ services:
       # survive the free tier's sleep and every restart.
       - key: AURALANE_DEV_JWT_SECRET
         generateValue: true
-      # This service's own URL, e.g. https://auralane-api.onrender.com. Signed
-      # evidence URLs are built from it so the Vercel page can load them.
       - key: AURALANE_PUBLIC_URL
-        value: https://auralane-api.onrender.com
-      # The Vercel client's origin(s), comma-separated, scheme and host only.
+        value: https://auralane-preview.onrender.com
       - key: AURALANE_CORS_ORIGINS
         value: https://aura-lane.vercel.app

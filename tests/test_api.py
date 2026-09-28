@@ -235,7 +235,7 @@ def test_lane_mix_counts_real_rows(client):
 
 def test_models_lists_the_registry(client):
     body = client.get("/api/admin/models", headers=client.admin).json()
-    assert {m["id"] for m in body["models"]} == {"cxr-densenet-v1", "brain-brats-monai-v0.5.4"}
+    assert {m["id"] for m in body["models"]} == {"cxr-densenet-v1", "brain-brats-monai-v0.5.4", "ct-ich-vit-v1"}
     assert body["abstain_band"] == [0.35, 0.60]
 
 

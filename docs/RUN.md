@@ -6,6 +6,12 @@ has no datastore and no model; everything below needs this machine.
 PowerShell, from the repo root, with `.venv` activated and Tesseract on PATH
 (docs/SETUP.md steps 4 and 8). Four terminals, in this order.
 
+Head CT needs `transformers` and `pyyaml` (requirements.txt) and the CQ500
+studies in `data\ct\raw\` (data/ct/SOURCE.md). The chest regional prior reads
+`$env:AURALANE_SITE_STATE` (for example `Chhattisgarh`, or `--state` per
+ingest); `$env:AURALANE_REGIONAL_PRIOR = "off"` turns it off for a
+side-by-side.
+
 | what | port |
 |---|---|
 | Orthanc (DICOMweb) | 8042 |
@@ -63,6 +69,7 @@ Tesseract must be on PATH in this terminal (the de-identification OCR).
     $env:AURALANE_RUNTIME = "local"
     Get-ChildItem data\chest\studies -Directory | ForEach-Object { python -m core.run ingest $_.FullName }
     Get-ChildItem data\brain\dicom -Directory | ForEach-Object { python -m core.run ingest $_.FullName }
+    Get-ChildItem data\ct\raw -Directory | ForEach-Object { python -m core.run ingest $_.FullName }
 
 Each study prints its lane and the per-step audit durations. Refresh the
 worklist to see it. One study at a time is fine; the worklist sorts itself.
@@ -76,6 +83,8 @@ machine, a measurement, not a benchmark):
 | chest, model already loaded in the process | 1.8 s | docs/LATENCY.md, run 2 |
 | brain (620 instances), first study in a process | 168.0 s | docs/LATENCY.md, run 1 |
 | brain, model already loaded | 122.7 s, of which de-identification 86.5 s | docs/LATENCY.md, run 2 |
+| head CT, CQ500-CT-419 (36 slices), first ever run: includes downloading the 343 MB ViT | model 101.9 s | timed 2026-09-28, with a Docker build running |
+| head CT, CQ500-CT-5 (53 slices), weights cached | model 32.0 s, de-identification 9.7 s | timed 2026-09-28 |
 
 The loop starts a new process per study, so every chest study pays for loading
 torch and the model again; that is the gap between the first two rows. The

@@ -2,6 +2,7 @@
   "app": "python app.py",
   "context": {
     "brain": "true",
+    "ct": "true",
     "chest_provisioned": "0"
   }
 }

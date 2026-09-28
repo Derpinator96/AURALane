@@ -47,7 +47,7 @@ def test_synthesises_without_credentials_and_never_creates_a_datastore(template)
     types = Counter(r["Type"] for r in template["Resources"].values())
     assert not any(k.startswith("AWS::HealthImaging") for k in types)
     assert types["AWS::S3::Bucket"] == 1 and types["AWS::DynamoDB::Table"] == 2
-    assert types["AWS::Lambda::Function"] == 1 and types["AWS::SageMaker::Endpoint"] == 1
+    assert types["AWS::Lambda::Function"] == 1 and types["AWS::SageMaker::Endpoint"] == 2
     policy = json.dumps(_of(template, "AWS::IAM::ManagedPolicy"))
     assert f"datastore/{KEPT_DATASTORE}" in policy and "us-east-1" in policy
 
@@ -76,20 +76,22 @@ def test_cognito_has_the_two_groups_and_password_auth(template):
     assert pool["UserPoolTier"] == "LITE"
 
 
-def test_brain_endpoint_is_async_and_scales_to_zero(template):
-    (config,) = _of(template, "AWS::SageMaker::EndpointConfig")
-    assert "AsyncInferenceConfig" in config
-    assert config["ProductionVariants"][0]["InstanceType"] == "ml.g4dn.xlarge"
-    (target,) = _of(template, "AWS::ApplicationAutoScaling::ScalableTarget")
-    assert (target["MinCapacity"], target["MaxCapacity"]) == (0, 1)
-    kinds = {p["PolicyType"] for p in _of(template, "AWS::ApplicationAutoScaling::ScalingPolicy")}
-    assert kinds == {"TargetTrackingScaling", "StepScaling"}       # scale in to 0, wake from 0
-    (alarm,) = _of(template, "AWS::CloudWatch::Alarm")
-    assert alarm["MetricName"] == "HasBacklogWithoutCapacity"
+def test_brain_and_ct_endpoints_are_async_and_scale_to_zero(template):
+    configs = _of(template, "AWS::SageMaker::EndpointConfig")
+    assert all("AsyncInferenceConfig" in c for c in configs)
+    assert sorted(c["ProductionVariants"][0]["InstanceType"] for c in configs) == [
+        "ml.m5.2xlarge", "ml.m5.xlarge"]                           # brain, CT: CPU images
+    targets = _of(template, "AWS::ApplicationAutoScaling::ScalableTarget")
+    assert [(x["MinCapacity"], x["MaxCapacity"]) for x in targets] == [(0, 1), (0, 1)]
+    kinds = [p["PolicyType"] for p in _of(template, "AWS::ApplicationAutoScaling::ScalingPolicy")]
+    assert sorted(kinds) == ["StepScaling"] * 2 + ["TargetTrackingScaling"] * 2
+    alarms = _of(template, "AWS::CloudWatch::Alarm")
+    assert [a["MetricName"] for a in alarms] == ["HasBacklogWithoutCapacity"] * 2
 
 
 def test_chest_lambda_has_no_provisioned_concurrency_by_default(template):
-    assert not _of(template, "AWS::Lambda::Alias")
+    (alias,) = _of(template, "AWS::Lambda::Alias")         # invoked through "live" always
+    assert alias["Name"] == "live" and "ProvisionedConcurrencyConfig" not in alias
     (fn,) = _of(template, "AWS::Lambda::Function")
     assert fn["MemorySize"] == 3008 and fn["PackageType"] == "Image"
 
@@ -100,8 +102,8 @@ def test_outputs_are_the_environment_core_run_reads(template):
     assert set(ENV.values()) <= described
 
 
-def test_brain_can_be_left_out(tmp_path):
-    t = _synth(tmp_path, "brain=false")
+def test_brain_and_ct_can_be_left_out(tmp_path):
+    t = _synth(tmp_path, "brain=false", "ct=false")
     assert not _of(t, "AWS::SageMaker::Endpoint")
     assert not _of(t, "AWS::ApplicationAutoScaling::ScalableTarget")
 

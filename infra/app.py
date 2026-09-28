@@ -12,5 +12,6 @@ app = cdk.App()
 # Account left unresolved on purpose, so synth never looks anything up.
 AuralaneStack(app, "Auralane", env=cdk.Environment(region=REGION),
               description="AURALane PoC: S3, DynamoDB, Cognito, HealthImaging import role, "
-                          "chest Lambda, brain SageMaker async endpoint. Non-diagnostic.")
+                          "chest Lambda, brain MR and head CT SageMaker async endpoints. "
+                          "Non-diagnostic.")
 app.synth()

@@ -1,6 +1,6 @@
-# The hosted preview: AURALANE_RUNTIME=fixture, python -m core.run serve.
-# Only what that process imports. No torch, no monai, no Orthanc, no DynamoDB:
-# the fixture runtime has no model and no datastore (see docs/DEPLOY.md).
+# The hosted API: python -m core.run serve, AURALANE_RUNTIME=aws (auralane-api)
+# or fixture (auralane-preview). Only what serve imports. No torch, no monai,
+# no transformers: the deployed API never runs a model (see docs/DEPLOY.md).
 # Verified by installing exactly this file into an empty Python 3.14 venv over
 # a copy of the committed tree, starting the API and calling every route.
 #
@@ -12,6 +12,9 @@
 #   boto3               core/providers/local/dynamo.py, imported by the local
 #                       package the fixture runtime reuses (never called)
 #   httpx, pydicom      core/providers/local/orthanc.py, same reason
+#   cryptography        aws runtime: Cognito tokens are RS256 (PyJWT needs it)
+#   pylibjpeg-openjpeg  aws runtime: decodes HealthImaging's HTJ2K frames for
+#                       the API's frame stream (AURALANE_FRAME_MODE=proxy)
 #
 # Not here: python-multipart. No route takes form data (no Form or UploadFile
 # in core/api.py). scipy is imported inside core/mask_check.check only, which
@@ -25,3 +28,5 @@ nibabel==5.4.2
 boto3==1.43.101
 httpx==0.28.1
 pydicom==3.0.2
+cryptography==50.0.1
+pylibjpeg-openjpeg==2.6.0

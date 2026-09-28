@@ -1,0 +1,11 @@
+# Build context for `docker build -f infra/lambda/chest/Dockerfile .`: the same
+# exclude list infra/auralane_stack.py gives cdk deploy. Keep the two in step.
+*
+!core
+!adapters
+!models
+!imaging.py
+!triage.py
+!reference.json
+!infra/lambda/chest
+**/__pycache__
