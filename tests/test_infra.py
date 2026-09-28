@@ -155,4 +155,6 @@ def test_people_can_request_access_but_get_nothing_until_approved(template):
     actions = {a for p in _of(template, "AWS::IAM::ManagedPolicy")
                for s in p["PolicyDocument"]["Statement"]
                for a in ([s["Action"]] if isinstance(s["Action"], str) else s["Action"])}
-    assert {"cognito-idp:AdminConfirmSignUp", "cognito-idp:AdminAddUserToGroup", "sns:Publish"} <= actions
+    assert {"cognito-idp:AdminConfirmSignUp", "cognito-idp:AdminAddUserToGroup", "sns:Publish",
+            "cognito-idp:ListUsersInGroup",              # readers, for distribution
+            "sagemaker:InvokeEndpointAsync"} <= actions   # simulated ingest from the API

@@ -27,6 +27,7 @@ NO_STUDY = "-"
 
 class FixtureTable(TablePort):
     """In-memory worklist seeded from the fixture file. Audit is append only."""
+    service = "in-memory fixture table"
 
     def __init__(self, path: Path = WORKLIST):
         rows = json.loads(Path(path).read_text())

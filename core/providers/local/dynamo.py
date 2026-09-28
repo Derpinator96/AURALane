@@ -7,6 +7,7 @@ from core.providers.aws._dynamodb import DynamoDBTable
 
 
 class DynamoLocalTable(DynamoDBTable):
+    service = "DynamoDB Local"
     def __init__(self, endpoint: str = "http://localhost:8001", prefix: str = "auralane"):
         # DynamoDB Local accepts any credentials; these never leave the host.
         super().__init__(prefix=prefix, endpoint_url=endpoint, region_name="us-east-1",

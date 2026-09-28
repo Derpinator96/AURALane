@@ -4,8 +4,10 @@ Port 8000 belongs to the round-2 demo (server.py), which is the fallback and
 must run alongside this.
 
 Access control is enforced here, per route, never by hiding a button:
-    radiologist   worklist, studies, frame URLs, verdicts
-    admin         audit log, lane mix, model registry
+    radiologist   worklist, studies, frame URLs, verdicts, drafts, simulated
+                  ingest, distributing the worklist, their own history
+    admin         audit log, lane mix, model registry, assignments, pipeline
+                  view, /metrics (or AURALANE_METRICS_TOKEN)
 An admin token on a study route is 403: admins configure the system, they do
 not read patient studies. A radiologist token on an admin route is 403.
 
@@ -30,7 +32,9 @@ from __future__ import annotations
 import datetime
 import hashlib
 import hmac
+import os
 import secrets
+import threading
 import time
 from collections import Counter
 from typing import Any, Literal
@@ -38,10 +42,12 @@ from urllib.parse import quote, urlencode
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, PlainTextResponse, Response
 from pydantic import BaseModel, Field
 
 import triage
+from core import assign as assignment
+from core import pipeline_view
 from core.registry import Registry
 from core.types import AuditEvent, Principal, StudyRef
 
@@ -83,7 +89,34 @@ class VerdictIn(BaseModel):
     verdict: Literal["agree", "disagree"]
 
 
+class Counts(BaseModel):
+    chest: int = Field(0, ge=0, le=10)
+    brain: int = Field(0, ge=0, le=3)
+    ct: int = Field(0, ge=0, le=3)
+
+
+class SimulateIn(BaseModel):
+    counts: Counts
+    readers: list[str] = Field(default_factory=list, max_length=50)
+
+
+class DistributeIn(BaseModel):
+    readers: list[str] = Field(min_length=1, max_length=50)
+
+
+class ReassignIn(BaseModel):
+    reader: str | None
+
+
+class DraftIn(BaseModel):
+    text: str = Field(max_length=20000)
+    reviewed: bool = False
+
+
 UNASSIGNED = "Unassigned"          # no registered model for the study's modality
+CLOCK_MIN = {name: mins for name, _, _, mins in triage.LANES}
+# The NIfTI the 3D viewer can load, by the name the client asks for.
+SEQUENCES = {"t1c": "T1c", "t1ce": "T1c", "t1": "T1", "t2": "T2", "flair": "FLAIR"}
 
 # Origins allowed to call the API from a browser when none are configured: the
 # Vite dev server and vite preview. In development the proxy makes every call
@@ -102,6 +135,20 @@ def _label(name: str | None) -> str | None:
 
 def _now() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+
+
+def overdue(row: dict, now: datetime.datetime | None = None) -> bool:
+    """A critical study, assigned, not opened by its reader within the lane's
+    clock (triage.LANES), counted from arrival. No automatic reassignment.
+    TODO: reassign automatically once this is agreed with the readers."""
+    if row.get("lane") != "CRITICAL" or not row.get("assigned_to") or row.get("opened_at"):
+        return False
+    try:
+        arrived = datetime.datetime.fromisoformat(row["created_at"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    return now - arrived > datetime.timedelta(minutes=CLOCK_MIN["CRITICAL"])
 
 
 def create_app(p: dict, registry: Registry | None = None,
@@ -132,6 +179,29 @@ def create_app(p: dict, registry: Registry | None = None,
 
     radiologist, admin = require("radiologist"), require("admin")
     superadmin = require("superadmin")
+
+    # Readers: every radiologist account, with display name and reading pools
+    # (core/assign.py). Cognito is asked at most once a minute.
+    _readers: dict[str, Any] = {"at": -1e9, "value": []}
+
+    def readers() -> list[dict]:
+        if time.monotonic() - _readers["at"] > 60:
+            try:
+                _readers["value"] = assignment.directory(p["auth"])
+            except Exception:                # e.g. no ListUsersInGroup permission yet
+                _readers["value"] = []
+            _readers["at"] = time.monotonic()
+        return _readers["value"]
+
+    def pick_readers(ids: list[str]) -> list[dict]:
+        known = {r["id"]: r for r in readers()}
+        unknown = [i for i in ids if i not in known]
+        if unknown:
+            raise HTTPException(400, f"not a radiologist account: {', '.join(unknown)}")
+        return [known[i] for i in ids]
+
+    def blob_url(key: str | None) -> str | None:
+        return p["blob"].presigned_url(key) if key else None
 
     # Frames. With p["frame_proxy"] set (the aws runtime's default), frame URLs
     # point back at this API, which reads the frame from the datastore with its
@@ -198,6 +268,10 @@ def create_app(p: dict, registry: Registry | None = None,
             "verdict": row.get("verdict"),
             "error": row.get("error"),
             "source": row.get("source"),
+            "assigned_to": row.get("assigned_to"),
+            "assigned_name": row.get("assigned_name"),
+            "opened_at": row.get("opened_at"),
+            "overdue": overdue(row),
         }
 
     def ordered(rows: list[dict]) -> list[dict]:
@@ -240,11 +314,20 @@ def create_app(p: dict, registry: Registry | None = None,
         names = {e["reading_pool"] for e in registry.entries.values()}
         names |= {s["pool"] for s in studies}
         pools = [{"pool": n, "label": n} for n in sorted(names, key=lambda n: (n == UNASSIGNED, n))]
-        return {"disclaimer": DISCLAIMER, "pools": pools, "lanes": lanes, "studies": studies}
+        return {"disclaimer": DISCLAIMER, "pools": pools, "lanes": lanes, "studies": studies,
+                "me": who.email, "readers": readers()}
 
     @app.get("/api/studies/{study}")
     def study(study: str, who: Principal = Depends(radiologist)):
         row = row_or_404(study)
+        if row.get("assigned_to") == who.email and not row.get("opened_at"):
+            # The assigned reader opened it: this stops the critical clock alarm.
+            row["opened_at"] = _now()
+            p["table"].put_item("worklist", row)
+            p["table"].append_audit(AuditEvent(
+                actor=who.email, action="open", study=study, at=row["opened_at"],
+                outcome="ok", duration_ms=0.0,
+                detail={"lane": row["lane"], "assigned_at": row.get("assigned_at")}))
         entry = registry.entries.get(row.get("model_id") or "", {})
         urgency = entry.get("urgency", {})
         findings = sorted(({"name": k, "label": _label(k), "signal": v,
@@ -266,7 +349,7 @@ def create_app(p: dict, registry: Registry | None = None,
         return {"disclaimer": DISCLAIMER, "study": view(row), "findings": findings,
                 "top_findings": (row.get("triage") or {}).get("top_findings", []),
                 "evidence": evidence, "evidence_urls": evidence_urls, "series": series,
-                "draft": draft,
+                "draft": draft, "draft_review": row.get("draft_review"),
                 # A datastore with no real DICOM behind it says so, and the viewer
                 # shows it. Orthanc and HealthImaging have no note.
                 "datastore_note": getattr(p["datastore"], "note", None)}
@@ -352,6 +435,141 @@ def create_app(p: dict, registry: Registry | None = None,
         except (FileNotFoundError, ValueError):
             raise HTTPException(404, "no such object")
         return FileResponse(path, headers={"Cache-Control": "private, max-age=300"})
+
+
+    @app.post("/api/studies/{study}/draft")
+    def save_draft(study: str, body: DraftIn, who: Principal = Depends(radiologist)):
+        """The radiologist's edit of the template draft, and whether they marked
+        it reviewed. Stored on the row; audited without the text."""
+        row = row_or_404(study)
+        at = _now()
+        row["draft_review"] = {"text": body.text, "reviewed": body.reviewed,
+                               "by": who.email, "at": at}
+        p["table"].put_item("worklist", row)
+        p["table"].append_audit(AuditEvent(
+            actor=who.email, action="draft_reviewed" if body.reviewed else "draft_saved",
+            study=study, at=at, outcome="ok", duration_ms=0.0,
+            detail={"lane": row["lane"], "chars": len(body.text)}))
+        return {"disclaimer": DISCLAIMER, "draft_review": row["draft_review"]}
+
+    # 3D viewer (NiiVue). The volumes are the model's own NIfTI inputs and its
+    # segmentation, stored under evidence/ at ingest (core/pipeline.py). The
+    # route answers with a presigned URL (S3, or this API's signed /api/blob),
+    # never the bytes, the same rule as every other evidence image.
+    def _evidence(study: str) -> dict:
+        return row_or_404(study).get("evidence") or {}
+
+    @app.get("/api/studies/{study}/volume/{sequence}")
+    def study_volume(study: str, sequence: str, who: Principal = Depends(radiologist)):
+        name = sequence.lower().split(".nii")[0].replace("-", "").replace("_", "")
+        channel = SEQUENCES.get(name)
+        key = (_evidence(study).get("volumes") or {}).get(channel)
+        if not key:
+            raise HTTPException(404, f"no {sequence} volume stored for this study; volumes are "
+                                     f"kept for brain MR ingested by this build")
+        return {"url": blob_url(key), "name": f"{channel.lower()}.nii.gz", "sequence": channel}
+
+    @app.get("/api/studies/{study}/segmentation")
+    def study_segmentation(study: str, who: Principal = Depends(radiologist)):
+        key = _evidence(study).get("segmentation")
+        if not key:
+            raise HTTPException(404, "no segmentation stored for this study")
+        return {"url": blob_url(key), "name": "segmentation.nii.gz"}
+
+    @app.get("/api/studies/{study}/metrics")
+    def study_metrics(study: str, who: Principal = Depends(radiologist)):
+        """Volumes from the brain model's own metrics (adapters/brats.py)."""
+        ev = _evidence(study)
+        if not ev.get("volumes_cm3"):
+            raise HTTPException(404, "no volumetry for this study")
+        return {"volumes_cm3": ev["volumes_cm3"], "axial_index": ev.get("axial_index"),
+                "basis": "the brain model's own segmentation (MONAI SegResNet), in cm3"}
+
+    # -- readers and distribution ---------------------------------------------
+    @app.get("/api/readers")
+    def list_readers(who: Principal = Depends(principal)):
+        if not ({"radiologist", "admin"} & set(who.groups)):
+            raise HTTPException(403, "radiologist or admin group required")
+        return {"readers": readers(), "pools": list(assignment.POOLS)}
+
+    @app.post("/api/distribute")
+    def distribute(body: DistributeIn, who: Principal = Depends(radiologist)):
+        """Deal every unread study in priority order among the chosen readers.
+        Refused, naming the pool, if a pool on the list has no chosen reader."""
+        chosen = pick_readers(body.readers)
+        rows = [r for r in ordered(p["table"].scan("worklist")) if not r.get("verdict")]
+        items = [{"study": r["study"], "pool": pool_of(r), "lane": r["lane"], "row": r}
+                 for r in rows]
+        items = [i for i in items if i["pool"] != UNASSIGNED]
+        try:
+            dealt = assignment.deal(items, chosen)
+        except LookupError as e:
+            raise HTTPException(409, str(e))
+        at = _now()
+        for item, reader in dealt:
+            row = item["row"]
+            if row.get("assigned_to") != reader["id"]:
+                assignment.assign_row(p["table"], row, reader, who.email, at,
+                                      action="reassign" if row.get("assigned_to") else "assign")
+        counts = Counter(r["id"] for _, r in dealt)
+        critical = Counter(r["id"] for i, r in dealt if i["lane"] == "CRITICAL")
+        return {"disclaimer": DISCLAIMER, "dealt": len(dealt),
+                "readers": [{"id": r["id"], "name": r["name"], "studies": counts[r["id"]],
+                             "critical": critical[r["id"]]} for r in chosen]}
+
+    # -- simulated ingest --------------------------------------------------------
+    def simulator():
+        sim = p.get("simulate")
+        if sim is None:
+            raise HTTPException(409, "simulated ingest is not configured on this API")
+        return sim
+
+    @app.get("/api/simulate")
+    def simulate_info(who: Principal = Depends(radiologist)):
+        sim = p.get("simulate")
+        if sim is None:
+            return {"available": False, "reason": "not configured on this API",
+                    "runtime": p.get("runtime")}
+        return sim.info()
+
+    @app.post("/api/simulate/estimate")
+    def simulate_estimate(body: Counts, who: Principal = Depends(radiologist)):
+        from core.simulate import estimate
+        return estimate(body.model_dump(), p.get("runtime"))
+
+    @app.post("/api/simulate", status_code=202)
+    def simulate_start(body: SimulateIn, who: Principal = Depends(radiologist)):
+        """Starts a batch in the background and returns its id at once. Studies
+        reach the worklist one by one as each finishes. Audited."""
+        sim = simulator()
+        chosen = pick_readers(body.readers)
+        try:
+            state = sim.start(body.counts.model_dump(), chosen, who.email)
+        except (ValueError, RuntimeError) as e:
+            raise HTTPException(409, str(e))
+        p["table"].append_audit(AuditEvent(
+            actor=who.email, action="simulate_ingest", study=NO_STUDY, at=_now(), outcome="ok",
+            duration_ms=0.0, detail={"batch": state["batch"], "counts": body.counts.model_dump(),
+                                     "readers": body.readers,
+                                     "estimate_usd": state["estimate"]["total_usd"]}))
+        return state
+
+    @app.get("/api/simulate/{batch}")
+    def simulate_status(batch: str, who: Principal = Depends(radiologist)):
+        try:
+            return simulator().status(batch)
+        except KeyError:
+            raise HTTPException(404, "no such batch")
+
+    @app.get("/api/me/history")
+    def my_history(limit: int = 100, who: Principal = Depends(radiologist)):
+        """This reader's own audit events (verdicts, opens, drafts, assignments
+        they made). The full audit log stays admin only."""
+        studies = {r["study"] for r in p["table"].scan("worklist")} | {NO_STUDY}
+        events = [e for s in studies for e in p["table"].query("audit", study=s)
+                  if e.get("actor") == who.email]
+        events.sort(key=lambda e: e["event_id"], reverse=True)
+        return {"disclaimer": DISCLAIMER, "total": len(events), "events": events[:limit]}
 
     # -- admin ----------------------------------------------------------------
     @app.get("/api/admin/audit")
@@ -465,6 +683,147 @@ def create_app(p: dict, registry: Registry | None = None,
             detail={"requested": body.count, "studies": state.get("total"),
                     "runtime": p.get("runtime")}))
         return {**state, "runtime": p.get("runtime")}
+
+    # -- assignments (admin) -----------------------------------------------------
+    @app.get("/api/admin/assignments")
+    def assignments(who: Principal = Depends(admin)):
+        """Per reader: studies by lane, unread, and critical studies not opened
+        within the lane clock. Study ids and lanes only: admins do not read studies."""
+        rows = ordered(p["table"].scan("worklist"))
+        per: dict[str, dict] = {}
+        for r in readers():
+            per[r["id"]] = {"id": r["id"], "name": r["name"], "pools": r["pools"],
+                            "lanes": Counter(), "unread": 0, "overdue": 0, "total": 0}
+        studies = []
+        for row in rows:
+            rid = row.get("assigned_to")
+            late = overdue(row)
+            studies.append({"study": row["study"], "lane": row["lane"],
+                            "lane_label": LANE_LABEL.get(row["lane"], row["lane"]),
+                            "modality": row.get("modality"), "pool": pool_of(row),
+                            "arrived": row.get("created_at"), "assigned_to": rid,
+                            "assigned_name": row.get("assigned_name"),
+                            "assigned_at": row.get("assigned_at"),
+                            "opened_at": row.get("opened_at"),
+                            "read": bool(row.get("verdict")), "overdue": late})
+            if rid is None:
+                continue
+            e = per.setdefault(rid, {"id": rid, "name": row.get("assigned_name") or rid,
+                                     "pools": [], "lanes": Counter(), "unread": 0,
+                                     "overdue": 0, "total": 0})
+            e["lanes"][row["lane"]] += 1
+            e["total"] += 1
+            e["unread"] += 0 if row.get("verdict") else 1
+            e["overdue"] += 1 if late else 0
+        return {"disclaimer": DISCLAIMER, "lanes": list(LANE_ORDER),
+                "lane_labels": {k: LANE_LABEL.get(k, k) for k in LANE_ORDER},
+                "readers": [{**e, "lanes": dict(e["lanes"])} for e in per.values()],
+                "unassigned": sum(1 for s in studies if not s["assigned_to"]),
+                "studies": studies,
+                "clock": f"A critical study turns red when its reader has not opened it within "
+                         f"{CLOCK_MIN['CRITICAL']} minutes of arrival. Nothing is reassigned "
+                         f"automatically."}
+
+    @app.post("/api/admin/assignments/{study}")
+    def reassign(study: str, body: ReassignIn, who: Principal = Depends(admin)):
+        row = row_or_404(study)
+        reader = pick_readers([body.reader])[0] if body.reader else None
+        if reader and pool_of(row) not in reader["pools"]:
+            raise HTTPException(409, f"{reader['name']} does not read the {pool_of(row)} pool")
+        row = assignment.assign_row(p["table"], row, reader, who.email, _now(),
+                                    action="reassign")
+        return {"disclaimer": DISCLAIMER, "study": study, "assigned_to": row["assigned_to"],
+                "assigned_name": row["assigned_name"]}
+
+    # -- pipeline view (admin) and /metrics ---------------------------------------
+    # Built from the audit trail only (core/pipeline_view.py). The whole picture
+    # is recomputed at most every 10 seconds (one audit query per study); studies
+    # in a simulate batch are read fresh on every call.
+    _pipe: dict[str, Any] = {"at": -1e9, "value": None}
+    _pipe_lock = threading.Lock()
+
+    def _study_events(studies) -> dict[str, list[dict]]:
+        return {s: p["table"].query("audit", study=s) for s in studies}
+
+    def _snapshot() -> dict[str, Any]:
+        with _pipe_lock:
+            if _pipe["value"] is None or time.monotonic() - _pipe["at"] > 10:
+                rows = p["table"].scan("worklist")
+                events = _study_events({r["study"] for r in rows})
+                study_runs = {s: pipeline_view.latest_run(evs) for s, evs in events.items()}
+                all_runs = [r for evs in events.values()
+                            for r in pipeline_view.runs(evs).values()]
+                _pipe["value"] = {"rows": rows, "study_runs": study_runs, "all_runs": all_runs}
+                _pipe["at"] = time.monotonic()
+            return _pipe["value"]
+
+    @app.get("/api/admin/pipeline")
+    def pipeline(who: Principal = Depends(admin)):
+        snap = _snapshot()
+        rows = snap["rows"]
+        by_study = {r["study"]: r for r in rows}
+        sim = p.get("simulate")
+        flight = sim.in_flight() if sim is not None else {}
+        live_events = _study_events(flight)
+        live = []
+        for study, item in flight.items():
+            run = sorted((e for e in live_events[study]
+                          if (e.get("detail") or {}).get("run_id") == item["run_id"]),
+                         key=lambda e: e["event_id"])
+            pos = pipeline_view.position(run)
+            live.append({"study": study, "batch": item["batch"], "type": item["type"],
+                         "modality": item["modality"], "status": item["status"],
+                         "stage": pos["stage"],
+                         "failed": pos["failed"] or item["status"] == "failed",
+                         "done": item["status"] in ("done", "failed"),
+                         "lane": pos.get("lane") or item.get("lane"),
+                         "assigned_to": item.get("assigned_to"),
+                         "end_to_end_ms": pipeline_view.end_to_end_ms(run)})
+        recent = sorted(((s, r) for s, r in snap["study_runs"].items() if r),
+                        key=lambda sr: sr[1][-1]["event_id"], reverse=True)[:20]
+        late = [{"study": r["study"], "assigned_to": r.get("assigned_to"),
+                 "assigned_name": r.get("assigned_name"), "arrived": r.get("created_at")}
+                for r in rows if overdue(r)]
+        return {"disclaimer": DISCLAIMER, "runtime": p.get("runtime"),
+                "stages": pipeline_view.stages(snap["all_runs"]),
+                "live": live,
+                "batches": [{k: b[k] for k in ("batch", "running", "started_at",
+                                               "finished_at", "by")}
+                            for b in (sim.batches() if sim is not None else [])],
+                "recent": [{"study": s, "modality": by_study.get(s, {}).get("modality"),
+                            "lane": by_study.get(s, {}).get("lane"),
+                            "end_to_end_ms": pipeline_view.end_to_end_ms(r),
+                            "failed": any(e["outcome"] != "ok" for e in r)}
+                           for s, r in recent],
+                "totals": pipeline_view.totals(rows, snap["study_runs"], _now()[:10]),
+                "overdue": late,
+                "basis": "Every figure is counted from audit events the pipeline steps wrote "
+                         "themselves. Nothing is estimated."}
+
+    @app.get("/api/admin/pipeline/{study}")
+    def pipeline_study(study: str, who: Principal = Depends(admin)):
+        run = pipeline_view.latest_run(p["table"].query("audit", study=study))
+        if not run:
+            raise HTTPException(404, "no pipeline run recorded for this study")
+        row = p["table"].get_item("worklist", {"study": study}) or {}
+        return {"disclaimer": DISCLAIMER, "study": study, "modality": row.get("modality"),
+                "lane": row.get("lane"), "model_id": row.get("model_id"),
+                **pipeline_view.timeline(run)}
+
+    metrics_token = os.environ.get("AURALANE_METRICS_TOKEN")
+
+    @app.get("/metrics")
+    def metrics(authorization: str = Header(default="")):
+        """Prometheus text format. A scraper sends AURALANE_METRICS_TOKEN as a
+        bearer token; otherwise an admin's token is required."""
+        token = authorization.removeprefix("Bearer ") if authorization.startswith("Bearer ") else ""
+        if not (metrics_token and token and hmac.compare_digest(token, metrics_token)):
+            who = principal(authorization)
+            if "admin" not in who.groups:
+                raise HTTPException(403, "admin group or the metrics token required")
+        snap = _snapshot()
+        return PlainTextResponse(pipeline_view.prometheus(snap["all_runs"], snap["rows"]),
+                                 media_type="text/plain; version=0.0.4")
 
     @app.get("/api/admin/models")
     def models(who: Principal = Depends(admin)):

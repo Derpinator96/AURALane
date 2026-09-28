@@ -209,6 +209,32 @@ Each person has their own password, held by Cognito. Nobody, including the
 super admin, can read it; a forgotten one is reset with
 `aws cognito-idp admin-set-user-password`.
 
+### 9. Readers, the pool, simulated ingest
+
+`scripts/deploy_aws.ps1` runs the deploy (push_images.py, cdk deploy), creates
+Cognito users radiologist-1 to radiologist-4 in the radiologist group (it asks
+for each password at a hidden prompt; nothing is stored or printed), then
+de-identifies the local corpora and uploads them to `pool/`
+(`scripts/stage_pool.py --stack Auralane`). Display names and reading pools are
+in `models/readers.json`. The API lists readers with cognito-idp:ListUsersInGroup,
+which this build adds to the app policy.
+
+Simulated ingest runs in the API process on Render, orchestration only: it
+reads `pool/`, imports into HealthImaging, invokes the chest Lambda and the
+SageMaker async endpoints, and writes DynamoDB and `evidence/`, all with the
+app policy the stack already grants. It needs AURALANE_CHEST_FUNCTION,
+AURALANE_BRAIN_ENDPOINT and AURALANE_CT_ENDPOINT set on Render. Brain MR is
+the memory peak (620 instances read, four NIfTI volumes built): on Render's
+512 MB free instance that is not measured and may not fit; if a brain study
+fails with an out-of-memory restart, send brain studies through the Fargate
+path (step 7) instead. NOT VERIFIED on Render.
+
+### 10. Pipeline view and /metrics
+
+Admin, "Pipeline", is drawn from the audit trail. `GET /metrics` answers
+Prometheus text to an admin token, or to AURALANE_METRICS_TOKEN if that is set
+on the API (docs/OBSERVABILITY.md).
+
 ### What it costs
 
 | state | cost | from |

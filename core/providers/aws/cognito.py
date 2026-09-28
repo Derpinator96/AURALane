@@ -84,5 +84,17 @@ class CognitoAuth(AuthPort):
         self.idp.admin_confirm_sign_up(UserPoolId=self.pool, Username=username)
         self.idp.admin_add_user_to_group(UserPoolId=self.pool, Username=username, GroupName=group)
 
+    def readers(self) -> list[tuple[str, str]]:
+        """(username, reader id) for every user in the radiologist group. The
+        reader id is the email attribute, else the username: the same choice
+        verify() makes for Principal.email."""
+        out = []
+        for page in self.idp.get_paginator("list_users_in_group").paginate(
+                UserPoolId=self.pool, GroupName="radiologist"):
+            for u in page["Users"]:
+                attrs = {a["Name"]: a["Value"] for a in u.get("Attributes", [])}
+                out.append((u["Username"], attrs.get("email") or u["Username"]))
+        return out
+
     def reject(self, username: str) -> None:
         self.idp.admin_delete_user(UserPoolId=self.pool, Username=username)

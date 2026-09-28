@@ -11,11 +11,13 @@ key_file (created with a random key on first use), so a token printed by
 `python -m core.run token` verifies in a separate `serve` process. With none of
 the three, the key is random per instance.
 
-Two seeded users, both synthetic:
-    radiologist@dev.auralane.local   group radiologist
-    admin@dev.auralane.local         group admin
+Seeded users, all synthetic:
+    radiologist@dev.auralane.local     group radiologist (the original development user)
+    radiologist-1..4@dev.auralane.local group radiologist (readers for distribution;
+                                       names and reading pools in models/readers.json)
+    admin@dev.auralane.local           group admin
 
-login() accepts either seeded user (by key or email) with the development
+login() accepts any seeded user (by key or email) with the development
 password, resolved the same way as the key: the password argument, else
 AURALANE_DEV_PASSWORD, else password_file (created with a random value on first
 use), else random per instance. No password is written in this repository.
@@ -38,6 +40,9 @@ AUDIENCE = "auralane-local"
 SEEDED = {
     "radiologist": Principal("dev-radiologist-1", "radiologist@dev.auralane.local",
                              ("radiologist",)),
+    **{f"radiologist-{n}": Principal(f"dev-radiologist-r{n}",
+                                     f"radiologist-{n}@dev.auralane.local", ("radiologist",))
+       for n in range(1, 5)},
     "admin": Principal("dev-admin-1", "admin@dev.auralane.local", ("admin",)),
 }
 
@@ -75,6 +80,11 @@ class DevAuth(AuthPort):
         return jwt.encode({"sub": p.subject, "email": p.email, "groups": list(p.groups),
                            "iss": ISSUER, "aud": AUDIENCE, "iat": now, "exp": now + ttl},
                           self._key, algorithm="HS256")
+
+    def readers(self) -> list[tuple[str, str]]:
+        """(username, reader id) for every seeded radiologist. The reader id is
+        what verify() puts in Principal.email, so assignments match sign-ins."""
+        return [(k, p.email) for k, p in SEEDED.items() if "radiologist" in p.groups]
 
     def verify(self, token: str) -> Principal:
         c = jwt.decode(token, self._key, algorithms=["HS256"], audience=AUDIENCE,

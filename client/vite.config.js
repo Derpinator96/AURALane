@@ -6,8 +6,9 @@ import react from "@vitejs/plugin-react";
 // origin; frame URLs the API returns are fetched directly, never through /api.
 // /dicom-web goes to Orthanc (local runtime): the browser fetches frames from
 // the datastore, never through the API, and Orthanc sends no CORS headers.
+// AURALANE_API_PROXY points /api at another port when 8100 is taken.
 const api = {
-  "/api": "http://127.0.0.1:8100",
+  "/api": process.env.AURALANE_API_PROXY || "http://127.0.0.1:8100",
   "/dicom-web": "http://127.0.0.1:8042",
 };
 

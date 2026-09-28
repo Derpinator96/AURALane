@@ -10,6 +10,7 @@ async function signIn(page, user) {
 
 test("radiologist sees the worklist in lane order with the abstention group", async ({ page }) => {
   await signIn(page, "radiologist");
+  await page.getByTestId("scope-department").click();
   await expect(page.getByTestId("study-row").first()).toBeVisible();
   const lanes = await page.getByTestId(/^section-/).evaluateAll(
     (els) => els.map((e) => e.dataset.testid.replace("section-", "")));
@@ -28,9 +29,9 @@ test("radiologist sees the worklist in lane order with the abstention group", as
 
 test("admin lands on admin screens and the API refuses it the worklist", async ({ page }) => {
   await signIn(page, "admin");
-  await expect(page).toHaveURL(/\/admin\/audit$/);
+  await expect(page).toHaveURL(/\/admin\/pipeline$/);
   await page.goto("/");
-  await expect(page).toHaveURL(/\/admin\/audit$/);
+  await expect(page).toHaveURL(/\/admin\/pipeline$/);
   const token = await page.evaluate(() => JSON.parse(sessionStorage.getItem("auralane.session")).token);
   const res = await page.request.get("/api/worklist", { headers: { Authorization: `Bearer ${token}` } });
   expect(res.status()).toBe(403);

@@ -15,10 +15,15 @@
 #   cryptography        aws runtime: Cognito tokens are RS256 (PyJWT needs it)
 #   pylibjpeg-openjpeg  aws runtime: decodes HealthImaging's HTJ2K frames for
 #                       the API's frame stream (AURALANE_FRAME_MODE=proxy)
+#   pillow, scipy       simulated ingest (core/simulate.py): the API orchestrates
+#                       the pipeline, which imports sim/edge/deid.py (Pillow),
+#                       renders the brain overlay (Pillow) and runs the brain
+#                       mask check (scipy). No model: those run on Lambda and
+#                       SageMaker. No pytesseract: staged studies arrive already
+#                       de-identified and are checked, not OCRed again.
 #
 # Not here: python-multipart. No route takes form data (no Form or UploadFile
-# in core/api.py). scipy is imported inside core/mask_check.check only, which
-# runs during ingest, never in the fixture runtime.
+# in core/api.py).
 fastapi==0.141.1
 pydantic==2.13.5
 uvicorn==0.53.0
@@ -30,3 +35,5 @@ httpx==0.28.1
 pydicom==3.0.2
 cryptography==50.0.1
 pylibjpeg-openjpeg==2.6.0
+pillow==12.3.0
+scipy==1.18.1

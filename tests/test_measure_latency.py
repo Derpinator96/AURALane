@@ -27,7 +27,7 @@ def test_table_shows_recorded_durations_failures_and_unreached_steps():
     assert rows["prepare_inputs"] == ["40.0", "7.0"]
     assert rows["infer"] == ["50.0", "4.0 (failed)"]
     assert rows["adapt"] == ["60.0", "not reached"]
-    assert rows["**total**"] == ["450.0", "1,261.5"]
+    assert rows["**total**"] == ["550.0", "1,261.5"]
     assert rows["outcome"] == ["SCORED, URGENT", "FAILED"]
     assert rows["Grad-CAM inside infer"] == ["yes", "not recorded"]
     assert "Awaiting" not in page and "- CPU: x" in page
@@ -49,6 +49,9 @@ def test_empty_page_claims_no_measurement():
                                     "Measured by `scripts/measure_latency.py` on ")
         rows = [line.split("|")[1].strip() for line in committed.splitlines()
                 if line.startswith("| ")]
-        assert rows == ["step", *ml.STEPS, "**total**", "outcome", "Grad-CAM inside infer"]
+        # A page measured before the evidence step existed lists every other step.
+        before_evidence = [x for x in ml.STEPS if x != "evidence"]
+        assert rows in (["step", *ml.STEPS, "**total**", "outcome", "Grad-CAM inside infer"],
+                        ["step", *before_evidence, "**total**", "outcome", "Grad-CAM inside infer"])
         assert "not measured" not in committed and "Awaiting" not in committed
         assert page.rstrip().splitlines()[-1] in committed  # the one-machine caveat

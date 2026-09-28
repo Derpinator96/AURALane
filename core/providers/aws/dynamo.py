@@ -12,6 +12,7 @@ from core.providers.aws.config import REGION
 
 
 class DynamoTable(DynamoDBTable):
+    service = "Amazon DynamoDB"
     def __init__(self, prefix: str = "auralane", region: str = REGION, **boto_kwargs):
         super().__init__(prefix=prefix, region_name=region, **boto_kwargs)
 

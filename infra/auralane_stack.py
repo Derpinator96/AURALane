@@ -202,6 +202,10 @@ class AuralaneStack(Stack):
             resources=[f"arn:aws:sagemaker:{REGION}:{self.account}:endpoint/*"])]
              if endpoints else [])
         # The API may start arrivals (write upload/) but never read a raw upload.
+        # Simulated ingest (core/simulate.py) uses exactly `common` from the API:
+        # it reads the de-identified pool/ prefix, imports into HealthImaging,
+        # invokes the chest Lambda and the async endpoints (InvokeEndpointAsync,
+        # above) and writes evidence/ and the tables.
         # Access requests: a topic that emails the super admin (-c admin_email=...),
         # and what the API needs to record and decide requests.
         topic = sns.Topic(self, "AccessRequests", display_name="AURALANE access requests")
@@ -218,7 +222,9 @@ class AuralaneStack(Stack):
                                          "dynamodb:DescribeTable"], resources=[access.table_arn]),
             iam.PolicyStatement(actions=["cognito-idp:AdminConfirmSignUp",
                                          "cognito-idp:AdminAddUserToGroup",
-                                         "cognito-idp:AdminDeleteUser"],
+                                         "cognito-idp:AdminDeleteUser",
+                                         # The reader list for distributing the worklist.
+                                         "cognito-idp:ListUsersInGroup"],
                                 resources=[pool.user_pool_arn]),
             iam.PolicyStatement(actions=["sns:Publish"], resources=[topic.topic_arn])])
 

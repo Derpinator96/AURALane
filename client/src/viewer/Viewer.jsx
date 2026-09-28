@@ -5,7 +5,7 @@ import { core, initCornerstone, registerFrame, tools } from "./cornerstone.js";
 // level, zoom, pan); the mouse wheel scrolls slices. The pixels come from the
 // datastore through the frame URLs the API returned.
 //
-// overlay: { url, box: [x, y, size] } pins an image (the Grad-CAM heat layer)
+// overlay: { url, box: [x, y, size], opacity } pins an image (the Grad-CAM heat layer)
 // to that box in frame pixels. It is repositioned on every render, so it
 // follows pan and zoom. Nothing is drawn unless the caller passes it.
 
@@ -131,6 +131,7 @@ export default function Viewer({ instances, overlay, label }) {
         <div ref={element} className="viewport" data-testid="viewport"
              onContextMenu={(e) => e.preventDefault()} />
         {overlay && <img ref={overlayRef} className="overlay-layer" src={overlay.url}
+                         style={{ opacity: overlay.opacity ?? 1 }}
                          alt="Triage rationale overlay" data-testid="overlay-layer" />}
         {error && <p className="error viewer-error" role="alert">Viewer could not load this series: {error}</p>}
       </div>

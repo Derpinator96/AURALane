@@ -21,7 +21,11 @@
    "status": "SCORED",
    "verdict": null,
    "error": null,
-   "source": "Fixture. Numbers: scores.json ST-028 (00000997_000.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py."
+   "source": "Fixture. Numbers: scores.json ST-028 (00000997_000.png, NIH ChestX-ray14), TorchXRayVision scored by triage.py; top 3 of 18 signals stored. Image shown: public sample, not this study. Arrival time and patient ID assigned by make_fixtures.py.",
+   "assigned_to": null,
+   "assigned_name": null,
+   "opened_at": null,
+   "overdue": false
   },
   "findings": [
    {
@@ -91,6 +95,7 @@
    }
   ],
   "draft": "NON-DIAGNOSTIC; DECISION SUPPORT ONLY\nStudy: fixture-cr-ST-028\nModel: cxr-densenet-v1\nQueue lane: ABSTAIN (a human picks the lane)\nModel abstained: no lane assigned, a human picks the lane.\nSignals (0 to 1, relative to the model's operating point, not a probability of disease):\n  Nodule: 0.351\n  Mass: 0.094\n  Fibrosis: 0.086\nImpression: to be written by the reading radiologist.",
+  "draft_review": null,
   "datastore_note": "No DICOM datastore is connected to this preview. Chest studies show one public sample image, not the study's own, and brain studies have no images here. The live pipeline, from de-identification through the datastore to scoring, runs locally."
  },
  "series": {

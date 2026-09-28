@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 STEPS = ["deidentify", "blob_put", "import", "prepare_inputs", "infer", "adapt", "triage",
-         "persist", "blob_delete"]
+         "evidence", "persist", "blob_delete"]
 OUT = ROOT / "docs" / "LATENCY.md"
 
 

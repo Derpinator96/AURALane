@@ -154,6 +154,7 @@ def require_monai() -> None:
 
 
 class InProcessInference(InferencePort):
+    service = "in-process PyTorch"
     def __init__(self, blob=None):
         """blob: a BlobPort for the Grad-CAM overlay. Without one, chest
         inference returns outputs only."""

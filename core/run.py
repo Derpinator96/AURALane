@@ -223,6 +223,68 @@ def _intake(runtime: str):
     return IntakeSimulator(ingest_one, catalogue(), workers=3 if runtime == "aws" else 1)
 
 
+def _simulator(prov: dict):
+    """Simulate ingest (radiologist screen): staged, edge-de-identified studies
+    through the real pipeline. Unavailable, with the reason, where there is no
+    pipeline or no pool."""
+    import datetime
+    import threading
+    from core.assign import assign_row
+    from core.simulate import LocalPool, S3Pool, Simulator
+    runtime, table = prov["runtime"], prov["table"]
+
+    def on_study(row, reader, actor):
+        if reader is not None:
+            assign_row(table, row, reader, actor,
+                       datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
+
+    if runtime == "fixture":
+        return Simulator(None, None, table, runtime, unavailable=(
+            "this preview serves fixed rows and has no pipeline; simulated ingest runs on "
+            "the AWS runtime and locally"))
+    from core.pipeline import ingest
+    from core.regional import setting
+    from core.registry import Registry
+    try:
+        regional = setting()
+    except ValueError as e:
+        return Simulator(None, None, table, runtime, unavailable=str(e))
+    registry = Registry()
+    if runtime == "aws":
+        import boto3
+        from core.providers.aws.config import REGION
+        missing = [v for v in ("AURALANE_BUCKET", "AURALANE_CHEST_FUNCTION")
+                   if not os.environ.get(v)]
+        if missing:
+            return Simulator(None, None, table, runtime,
+                             unavailable=f"{', '.join(missing)} not set on this API")
+        pool = S3Pool(boto3.client("s3", region_name=REGION), os.environ["AURALANE_BUCKET"])
+        local = threading.local()        # boto3 resources are per thread
+
+        def ingest_one(paths, **kw):
+            if not hasattr(local, "p"):
+                local.p = providers(for_ingest=True)
+            p = local.p
+            return ingest(paths, blob=p["blob"], datastore=p["datastore"], table=p["table"],
+                          inference=p["inference"], registry=registry, identity=None,
+                          regional=regional, **kw)
+        # Two in flight: the models are remote. Brain MR is the memory peak here
+        # (620 instances read, four volumes built), which is why not more.
+        return Simulator(pool, ingest_one, table, runtime, on_study=on_study, workers=2)
+
+    shared = {}
+
+    def ingest_local(paths, **kw):
+        if "p" not in shared:           # the models load once, on first use
+            shared["p"] = providers(for_ingest=True)
+        p = shared["p"]
+        return ingest(paths, blob=p["blob"], datastore=p["datastore"], table=p["table"],
+                      inference=p["inference"], registry=registry, identity=None,
+                      regional=regional, **kw)
+    # Local models share this process: one study at a time.
+    return Simulator(LocalPool(), ingest_local, table, runtime, on_study=on_study, workers=1)
+
+
 def cmd_serve(args) -> int:
     # Checked before providers(): DevAuth would otherwise create a random
     # password file on this host before anyone saw the error.
@@ -236,6 +298,7 @@ def cmd_serve(args) -> int:
     from core.api import create_app
     prov = providers()
     prov["intake"] = _intake(prov["runtime"])
+    prov["simulate"] = _simulator(prov)
     if prov["runtime"] != "aws" and not os.environ.get("AURALANE_DEV_PASSWORD"):
         print(f"dev sign-in password: {DEV_PASSWORD_FILE.relative_to(ROOT)}")
     origins = cors_origins()
@@ -315,7 +378,8 @@ def main(argv=None) -> int:
         sp.add_argument("--stack", default=None,
                         help="read the aws runtime's settings from this CloudFormation stack's outputs")
     t = sub.add_parser("token", help="a development bearer token (local runtime only)")
-    t.add_argument("user", choices=["radiologist", "admin"])
+    t.add_argument("user", choices=["radiologist", "radiologist-1", "radiologist-2",
+                                    "radiologist-3", "radiologist-4", "admin"])
     u = sub.add_parser("upload", help="send one study to the cloud pipeline (the edge's only step)")
     u.add_argument("path", help="a study directory or one .dcm file")
     u.add_argument("--state", default=None, help="the site's state for the chest regional prior")

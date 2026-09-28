@@ -128,6 +128,33 @@ API on this machine:
 On the Render API and the fixture runtime the tab says why it is unavailable:
 no corpus on that host, or no pipeline.
 
+## Simulate ingest: the radiologist screen
+
+Radiologist screen, "Simulate ingest". Choose how many chest X-rays (up to 10),
+brain MRs and head CTs (up to 3 each) to send, and which readers get them. The
+panel shows the estimated AWS cost, itemised with what each line assumes, before
+you confirm. The studies come from a staged pool, already de-identified at the
+edge, and each runs through the real pipeline in the background (receive, a
+check of the edge de-identification, store, prepare, infer, adapt, regional
+prior, triage, evidence, persist). Each lands on the worklist, assigned, as it
+finishes. Admin, "Pipeline" shows them crossing the stages.
+
+Stage the pool once, on this machine (the edge):
+
+```
+python scripts/stage_pool.py --local                 # data/pool/, for the local runtime
+python scripts/stage_pool.py --stack Auralane        # s3://<bucket>/pool/, for AWS
+```
+
+De-identification happens there and nowhere else: the pipeline refuses any
+staged instance without PatientIdentityRemoved YES and a
+DeidentificationMethod. New BraTS cases: put them in data/brain/raw/<case>/,
+run `python scripts/convert_brain.py`, then stage again (already-staged studies
+are skipped).
+
+"Distribute worklist" deals every unread study, critical first, round robin
+among the readers you choose. The fixture preview has no pipeline and says so.
+
 ## Reset after any change to de-identification
 
     docker compose -f docker-compose.local.yml down
