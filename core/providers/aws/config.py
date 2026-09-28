@@ -21,4 +21,12 @@ ENV = {
     "client_id": "AURALANE_COGNITO_CLIENT_ID",
     "chest_function": "AURALANE_CHEST_FUNCTION",
     "brain_endpoint": "AURALANE_BRAIN_ENDPOINT",
+    "ct_endpoint": "AURALANE_CT_ENDPOINT",
 }
+
+# What each command needs. The deployed API never runs a model, so serve needs
+# none of the inference names; ingest needs the chest function. The brain and
+# CT endpoints are optional because the stack can leave them out (-c brain=false,
+# -c ct=false); a study that needs a missing one fails naming the variable.
+REQUIRED = ("bucket", "import_role_arn", "user_pool_id", "client_id")
+REQUIRED_FOR_INGEST = REQUIRED + ("chest_function",)

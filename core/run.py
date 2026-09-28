@@ -46,7 +46,13 @@ def _blob_url() -> str:
     proxy shares one origin. When the client is hosted elsewhere, absolute from
     AURALANE_PUBLIC_URL: evidence overlays go straight into <img src>, so a
     relative URL would resolve against the client's host, which has no API."""
-    return os.environ.get("AURALANE_PUBLIC_URL", "").rstrip("/") + BLOB_URL
+    return _public_url() + BLOB_URL
+
+
+def _public_url() -> str:
+    """This API's own URL when hosted (AURALANE_PUBLIC_URL), else empty: in
+    development the Vite proxy puts client and API on one origin."""
+    return os.environ.get("AURALANE_PUBLIC_URL", "").rstrip("/")
 
 
 def cors_origins() -> list[str] | None:
@@ -65,7 +71,7 @@ def cors_origins() -> list[str] | None:
     return origins or None
 
 
-def providers() -> dict:
+def providers(for_ingest: bool = False) -> dict:
     runtime = os.environ.get("AURALANE_RUNTIME", "local")
     if runtime == "local":
         from core.providers import local as p
@@ -85,22 +91,34 @@ def providers() -> dict:
                 "auth": p.DevAuth(key_file=DEV_KEY, password_file=DEV_PASSWORD_FILE), "llm": p.TemplateLLM()}
     if runtime == "aws":
         from core.providers import aws as p
-        from core.providers.aws.config import ENV, EXISTING_DATASTORE_ID
-        missing = [v for k, v in ENV.items()
-                   if k not in ("datastore_id", "table_prefix") and not os.environ.get(v)]
+        from core.providers.aws.config import (ENV, EXISTING_DATASTORE_ID, REQUIRED,
+                                               REQUIRED_FOR_INGEST)
+        from core.providers.local.llm import TemplateLLM
+        need = REQUIRED_FOR_INGEST if for_ingest else REQUIRED
+        missing = [ENV[k] for k in need if not os.environ.get(ENV[k])]
         if missing:
-            sys.exit(f"AURALANE_RUNTIME=aws needs {', '.join(missing)} (the CDK stack's "
-                     f"outputs; see infra/README.md)")
+            sys.exit(f"AURALANE_RUNTIME=aws {'ingest' if for_ingest else 'serve'} needs "
+                     f"{', '.join(missing)} (the CDK stack's outputs; see infra/README.md)")
         env = {k: os.environ.get(v) for k, v in ENV.items()}
+        # Frames: "proxy" (default) streams decoded pixels through this API, which
+        # signs its own HealthImaging calls. "presigned" hands the browser a SigV4
+        # DICOMweb URL instead; switch to it once scripts/smoke_aws.py shows
+        # HealthImaging answering a browser origin with CORS headers.
+        # TODO: default to presigned if smoke_aws.py shows HealthImaging sends CORS headers.
+        proxy = os.environ.get("AURALANE_FRAME_MODE", "proxy") == "proxy"
         return {"runtime": runtime, "blob": p.S3Blob(env["bucket"]),
                 "datastore": p.HealthImagingDatastore(
                     env["bucket"], env["import_role_arn"],
                     datastore_id=env["datastore_id"] or EXISTING_DATASTORE_ID),
                 "table": p.DynamoTable(prefix=env["table_prefix"] or "auralane"),
                 "inference": p.LambdaSageMakerInference(
-                    env["bucket"], env["chest_function"], env["brain_endpoint"]),
+                    env["bucket"], env["chest_function"], env["brain_endpoint"],
+                    ct_endpoint=env["ct_endpoint"]) if for_ingest else None,
                 "auth": p.CognitoAuth(env["user_pool_id"], env["client_id"]),
-                "llm": p.BedrockLLM()}
+                # Bedrock is blocked at the account level; drafting ships on the
+                # template everywhere, as decided on 2026-09-25.
+                "llm": TemplateLLM(),
+                "frame_proxy": _public_url() if proxy else None}
     sys.exit(f"AURALANE_RUNTIME must be local, fixture or aws, got {runtime!r}")
 
 
@@ -111,15 +129,26 @@ def _identity():
     return identity.IdentityMap(str(IDENTITY_DB))
 
 
+def regional_setting(state: str | None):
+    """AURALANE_SITE_STATE (or --state) and AURALANE_REGIONAL_PRIOR, checked
+    before anything is ingested: a mistyped state stops here, naming the valid
+    ones."""
+    from core.regional import setting
+    try:
+        return setting(state)
+    except ValueError as e:
+        sys.exit(str(e))
+
+
 def cmd_ingest(args) -> int:
     from core.pipeline import ingest
     from core.registry import Registry
-    p = providers()
+    p = providers(for_ingest=True)
     target = Path(args.path)
     files = sorted(target.rglob("*.dcm")) if target.is_dir() else [target]
     v = ingest(files, blob=p["blob"], datastore=p["datastore"], table=p["table"],
                inference=p["inference"], registry=Registry(), identity=_identity(),
-               ocr_workers=args.ocr_workers)
+               ocr_workers=args.ocr_workers, regional=regional_setting(args.state))
     study = v.ref.study_uid if v.ref else None
     rows = p["table"].query("audit", study=study) if study else []
     print(DISCLAIMER)
@@ -171,6 +200,9 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     i = sub.add_parser("ingest", help="de-identify, store, score and queue one study")
     i.add_argument("path", help="a study directory or one .dcm file")
+    i.add_argument("--state", default=None,
+                   help="the site's Indian state for the chest regional prior; overrides "
+                        "AURALANE_SITE_STATE for this ingest (never read from DICOM)")
     i.add_argument("--ocr-workers", type=int, default=None,
                    help="threads for de-identification OCR (default: CPU count)")
     s = sub.add_parser("serve", help="the worklist API")

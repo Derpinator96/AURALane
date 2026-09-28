@@ -207,6 +207,14 @@ class HealthImagingDatastore(DatastorePort):
                                     imageFrameInformation={"imageFrameId": frame_id})
         return r["imageFrameBlob"].read()
 
+    def frame_pixels(self, ref, series_uid, instance_uid, frame=1):
+        """The frame decoded to its stored pixel values, for the API's streaming
+        route (AURALANE_FRAME_MODE=proxy). HTJ2K decodes losslessly with
+        OpenJPEG: the smoke test measured max absolute difference 0 against
+        the source."""
+        from openjpeg import decode       # pylibjpeg-openjpeg
+        return decode(self.get_frame(ref, series_uid, instance_uid, frame))
+
     def _wado(self, ref, path: str) -> str:
         return (f"{self.dicomweb}/datastore/{self.datastore_id}/studies/{quote(ref.study_uid)}"
                 f"{path}?{urlencode({'imageSetId': ref.datastore_id})}")

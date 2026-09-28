@@ -28,13 +28,17 @@ NON-DIAGNOSTIC; DECISION SUPPORT ONLY.
 from __future__ import annotations
 
 import datetime
+import hashlib
+import hmac
+import secrets
 import time
 from collections import Counter
 from typing import Any, Literal
+from urllib.parse import quote, urlencode
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 import triage
@@ -112,6 +116,27 @@ def create_app(p: dict, registry: Registry | None = None,
         return dep
 
     radiologist, admin = require("radiologist"), require("admin")
+
+    # Frames. With p["frame_proxy"] set (the aws runtime's default), frame URLs
+    # point back at this API, which reads the frame from the datastore with its
+    # own credentials and streams the decoded pixels. The URL carries a
+    # five-minute HMAC signature, like a presigned URL, because the viewer's
+    # loader sends no bearer token. The key is per process: a restart only
+    # expires links early. Without frame_proxy the datastore's own URL is used.
+    frame_proxy = p.get("frame_proxy")
+    # TODO: a shared key (environment) if the API ever runs more than one instance.
+    frame_key = secrets.token_bytes(32)
+
+    def _frame_sig(path: str, expires: int) -> str:
+        return hmac.new(frame_key, f"{path}|{expires}".encode(), hashlib.sha256).hexdigest()
+
+    def frame_link(ref: StudyRef, series_uid: str, sop: str, frame: int = 1) -> str:
+        if frame_proxy is None:
+            return p["datastore"].frame_url(ref, series_uid, sop, frame)
+        path = (f"/api/frames/{quote(ref.study_uid, safe='')}/{quote(series_uid, safe='')}/"
+                f"{quote(sop, safe='')}/{int(frame)}")
+        expires = int(time.time()) + 300
+        return f"{frame_proxy}{path}?{urlencode({'expires': expires, 'sig': _frame_sig(path, expires)})}"
 
     def row_or_404(study: str) -> dict:
         row = p["table"].get_item("worklist", {"study": study})
@@ -244,20 +269,40 @@ def create_app(p: dict, registry: Registry | None = None,
         for meta in items:
             sop = meta["00080018"]["Value"][0]
             instances.append({"sop": sop, "metadata": meta,
-                              "frame_url": p["datastore"].frame_url(ref, series_uid, sop)})
+                              "frame_url": frame_link(ref, series_uid, sop)})
         return {"series_uid": series_uid, "instances": instances}
 
     @app.get("/api/studies/{study}/frame-url")
     def frame_url(study: str, series: str, instance: str, frame: int = 1,
                   who: Principal = Depends(radiologist)):
-        """A URL the browser fetches pixels from directly. The API never proxies them."""
+        """A URL the browser fetches pixels from: the datastore's own, or, with
+        frame_proxy, this API's signed streaming route."""
         row = row_or_404(study)
         try:
-            url = p["datastore"].frame_url(StudyRef(study, row["datastore_id"]),
-                                           series, instance, frame)
+            url = frame_link(StudyRef(study, row["datastore_id"]), series, instance, frame)
         except LookupError as e:
             raise HTTPException(404, str(e))
         return {"url": url}
+
+    @app.get("/api/frames/{study}/{series_uid}/{sop}/{frame}")
+    def frame_pixels(study: str, series_uid: str, sop: str, frame: int, expires: int, sig: str):
+        """Decoded pixels for one frame, uncompressed little-endian, which the
+        viewer's loader reads as application/octet-stream. The signature in the
+        URL is the credential. Only exists in use with frame_proxy."""
+        if frame_proxy is None:
+            raise HTTPException(404, "frames are not proxied by this API")
+        path = (f"/api/frames/{quote(study, safe='')}/{quote(series_uid, safe='')}/"
+                f"{quote(sop, safe='')}/{int(frame)}")
+        if expires < time.time() or not hmac.compare_digest(sig, _frame_sig(path, expires)):
+            raise HTTPException(403, "frame link expired or not signed by this API")
+        row = row_or_404(study)
+        try:
+            pixels = p["datastore"].frame_pixels(StudyRef(study, row["datastore_id"]),
+                                                 series_uid, sop, frame)
+        except (LookupError, KeyError, IndexError) as e:
+            raise HTTPException(404, f"no such frame: {e}")
+        return Response(pixels.tobytes(), media_type="application/octet-stream",
+                        headers={"Cache-Control": "private, max-age=300"})
 
     @app.post("/api/studies/{study}/verdict")
     def verdict(study: str, body: VerdictIn, who: Principal = Depends(radiologist)):
