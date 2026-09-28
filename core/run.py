@@ -130,6 +130,18 @@ def _identity():
     return identity.IdentityMap(str(IDENTITY_DB))
 
 
+def load_stack(name: str) -> None:
+    """AURALANE_RUNTIME=aws and every stack output not already set, read from the
+    CloudFormation stack (each output's description is the variable name), so
+    `serve --stack Auralane` and `ingest --stack Auralane` need nothing exported."""
+    import boto3
+    os.environ["AURALANE_RUNTIME"] = "aws"
+    os.environ.setdefault("AWS_REGION", "us-east-1")
+    cfn = boto3.client("cloudformation", region_name=os.environ["AWS_REGION"])
+    for o in cfn.describe_stacks(StackName=name)["Stacks"][0].get("Outputs", []):
+        os.environ.setdefault(o["Description"], o["OutputValue"])
+
+
 def regional_setting(state: str | None):
     """AURALANE_SITE_STATE (or --state) and AURALANE_REGIONAL_PRIOR, checked
     before anything is ingested: a mistyped state stops here, naming the valid
@@ -168,6 +180,42 @@ def cmd_ingest(args) -> int:
     return 0 if v.status == "SCORED" else 1
 
 
+def _intake(runtime: str):
+    """The admin screen's simulated intake: real studies from this machine's
+    corpus, ingested in a shuffled order. Unavailable, with the reason, where
+    there is nothing to ingest or no pipeline to ingest with."""
+    import threading
+    from core.intake import IntakeSimulator, catalogue
+    if runtime == "fixture":
+        return IntakeSimulator(None, {}, unavailable="the fixture runtime has no pipeline")
+    if runtime == "aws":
+        from core.providers.aws.config import ENV, REQUIRED_FOR_INGEST
+        missing = [ENV[k] for k in REQUIRED_FOR_INGEST if not os.environ.get(ENV[k])]
+        if missing:
+            return IntakeSimulator(None, {}, unavailable=f"ingest needs {', '.join(missing)}")
+    from core.pipeline import ingest
+    from core.regional import setting
+    from core.registry import Registry
+    try:
+        regional = setting()
+    except ValueError as e:
+        return IntakeSimulator(None, {}, unavailable=str(e))
+    local = threading.local()        # boto3 resources and SQLite are per thread
+
+    def ingest_one(study_dir: Path):
+        if not hasattr(local, "p"):
+            local.p, local.identity, local.registry = (providers(for_ingest=True), _identity(),
+                                                       Registry())
+        p = local.p
+        return ingest(sorted(study_dir.rglob("*.dcm")), blob=p["blob"], datastore=p["datastore"],
+                      table=p["table"], inference=p["inference"], registry=local.registry,
+                      identity=local.identity, regional=regional)
+
+    # Local models share this process, so one study at a time; on AWS the
+    # models are remote and three in flight keep the endpoints busy.
+    return IntakeSimulator(ingest_one, catalogue(), workers=3 if runtime == "aws" else 1)
+
+
 def cmd_serve(args) -> int:
     # Checked before providers(): DevAuth would otherwise create a random
     # password file on this host before anyone saw the error.
@@ -180,6 +228,7 @@ def cmd_serve(args) -> int:
     import uvicorn
     from core.api import create_app
     prov = providers()
+    prov["intake"] = _intake(prov["runtime"])
     if prov["runtime"] != "aws" and not os.environ.get("AURALANE_DEV_PASSWORD"):
         print(f"dev sign-in password: {DEV_PASSWORD_FILE.relative_to(ROOT)}")
     origins = cors_origins()
@@ -209,9 +258,14 @@ def main(argv=None) -> int:
     s = sub.add_parser("serve", help="the worklist API")
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--port", type=int, default=8100)
+    for sp in (i, s):
+        sp.add_argument("--stack", default=None,
+                        help="read the aws runtime's settings from this CloudFormation stack's outputs")
     t = sub.add_parser("token", help="a development bearer token (local runtime only)")
     t.add_argument("user", choices=["radiologist", "admin"])
     args = ap.parse_args(argv)
+    if getattr(args, "stack", None):
+        load_stack(args.stack)
     return {"ingest": cmd_ingest, "serve": cmd_serve, "token": cmd_token}[args.cmd](args)
 
 

@@ -54,15 +54,8 @@ _LOCAL = None     # a TestClient on the real API app, for --api local
 
 
 def _load_stack(stack: str) -> None:
-    """Fill every AURALANE_* variable not already set from the stack's outputs
-    (each output's description is the variable name), so the only thing to type
-    is the command."""
-    import boto3
-    os.environ.setdefault("AURALANE_RUNTIME", "aws")
-    os.environ.setdefault("AWS_REGION", "us-east-1")
-    cfn = boto3.client("cloudformation", region_name=os.environ["AWS_REGION"])
-    for o in cfn.describe_stacks(StackName=stack)["Stacks"][0].get("Outputs", []):
-        os.environ.setdefault(o["Description"], o["OutputValue"])
+    import core.run as run
+    run.load_stack(stack)
 
 
 def _http(url: str, *, method="GET", body=None, token=None, origin=None):

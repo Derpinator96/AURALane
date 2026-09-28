@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import fixture from "./test/admin.api.json";
-import Admin from "./Admin.jsx";
+import Admin, { Intake } from "./Admin.jsx";
+import userEvent from "@testing-library/user-event";
 
 // Test data for the audit screen only: the fixture API has no audit events
 // until someone records a verdict, and real ones carry the time they ran.
@@ -65,5 +66,31 @@ describe("Admin", () => {
     expect(cards.map((c) => within(c).getByRole("heading").textContent))
       .toEqual(fixture.models.models.map((m) => m.id));
     expect(cards[0]).toHaveTextContent("Pneumothorax1.00");
+  });
+});
+
+describe("Intake", () => {
+  it("says why it is unavailable and keeps the button off", async () => {
+    const load = () => Promise.resolve({ available: false, reason: "no study corpus on this host",
+                                         running: false, catalogue: { CR: 0, MR: 0, CT: 0 }, runtime: "aws" });
+    render(<Intake load={load} start={vi.fn()} />);
+    expect(await screen.findByTestId("intake-unavailable")).toHaveTextContent("no study corpus on this host");
+    expect(screen.getByTestId("intake-start")).toBeDisabled();
+  });
+
+  it("starts a run and shows each study's real result", async () => {
+    const running = { available: true, running: false, catalogue: { CR: 40, MR: 2, CT: 2 }, runtime: "local",
+                      total: 2, done: 1, failed: 1, by: "admin@dev.auralane.local", started_at: "2026-09-28T10:00:00+00:00",
+                      items: [{ modality: "CT", source: "CQ500CT419", status: "SCORED", lane: "URGENT", seconds: 92.5 },
+                              { modality: "MR", source: "x", status: "FAILED", lane: "FAILED", error: "LookupError: y", seconds: 3 }] };
+    // As the API does: after a start, polling returns the run's state.
+    let current = { ...running, total: undefined, items: [] };
+    const start = vi.fn(async () => (current = running));
+    render(<Intake load={() => Promise.resolve(current)} start={start} />);
+    await userEvent.click(await screen.findByTestId("intake-start"));
+    expect(start).toHaveBeenCalledWith(30);
+    expect(await screen.findByTestId("intake-progress")).toHaveTextContent("1 scored, 1 failed, of 2");
+    expect(screen.getByText("URGENT")).toBeInTheDocument();
+    expect(screen.getByText(/FAILED: LookupError: y/)).toBeInTheDocument();
   });
 });

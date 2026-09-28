@@ -122,3 +122,57 @@ def test_api_streams_signed_frames_and_refuses_tampered_links():
     assert r.status_code == 200 and r.content == _FrameStore.pixels.tobytes()
     assert r.headers["content-type"] == "application/octet-stream"
     assert c.get(url.replace("sig=", "sig=0")).status_code == 403
+
+
+# -- simulated intake ----------------------------------------------------------
+def test_intake_picks_every_mr_and_ct_then_chest_in_a_shuffled_order(tmp_path):
+    import random
+    from core.intake import pick
+    studies = {"CR": [tmp_path / f"c{i}" for i in range(40)],
+               "MR": [tmp_path / "m1", tmp_path / "m2"], "CT": [tmp_path / "t1", tmp_path / "t2"]}
+    order = pick(studies, 30, random.Random(1))
+    kinds = [m for m, _ in order]
+    assert len(order) == 30 and kinds.count("MR") == 2 and kinds.count("CT") == 2
+    assert len({p for _, p in order}) == 30                     # no study twice
+    assert kinds != sorted(kinds)                               # mixed, not grouped
+
+
+def test_intake_route_runs_real_ingests_is_admin_only_and_audited(tmp_path):
+    import time as _time
+    from types import SimpleNamespace
+    from core.intake import IntakeSimulator
+    seen = []
+
+    def ingest_one(path):
+        seen.append(path.name)
+        return SimpleNamespace(status="SCORED", lane="ROUTINE", error=None,
+                               ref=SimpleNamespace(study_uid=f"uid-{path.name}"))
+
+    sim = IntakeSimulator(ingest_one, {"CR": [tmp_path / "a", tmp_path / "b"], "MR": [], "CT": []})
+    table = FixtureTable()
+    app = create_app({"runtime": "local", "blob": FileBlob(BLOB, url_base="/api/blob"), "table": table,
+                      "datastore": FixtureDatastore(table), "auth": DevAuth(password="pw"),
+                      "llm": TemplateLLM(), "intake": sim})
+    c = TestClient(app)
+    tok = {u: c.post("/api/auth/login", json={"username": u, "password": "pw"}).json()["token"]
+           for u in ("admin", "radiologist")}
+    h = {u: {"Authorization": f"Bearer {t}"} for u, t in tok.items()}
+    assert c.post("/api/admin/intake", json={"count": 2}, headers=h["radiologist"]).status_code == 403
+    r = c.post("/api/admin/intake", json={"count": 2}, headers=h["admin"])
+    assert r.status_code == 202 and r.json()["total"] == 2
+    for _ in range(50):
+        s = c.get("/api/admin/intake", headers=h["admin"]).json()
+        if not s["running"]:
+            break
+        _time.sleep(0.05)
+    assert (s["done"], s["failed"]) == (2, 0) and sorted(seen) == ["a", "b"]
+    assert [i["lane"] for i in s["items"]] == ["ROUTINE", "ROUTINE"]
+    events = c.get("/api/admin/audit", headers=h["admin"]).json()["events"]
+    assert any(e["action"] == "intake_simulation" and e["actor"] == "admin@dev.auralane.local"
+               for e in events)
+
+
+def test_intake_without_a_corpus_says_why():
+    from core.intake import IntakeSimulator
+    s = IntakeSimulator(None, {"CR": [], "MR": [], "CT": []}).status()
+    assert s["available"] is False and s["reason"] == "no study corpus on this host"

@@ -28,6 +28,8 @@ export default function App() {
   const loadAudit = useCallback(() => api.audit(token), [token]);
   const loadLaneMix = useCallback(() => api.laneMix(token), [token]);
   const loadModels = useCallback(() => api.models(token), [token]);
+  const loadIntake = useCallback(() => api.intake(token), [token]);
+  const startIntake = useCallback((count) => api.startIntake(token, count), [token]);
   const radiologist = session?.user.groups.includes("radiologist");
 
   return (
@@ -42,7 +44,8 @@ export default function App() {
           ? <Study load={loadStudy} loadSeries={loadSeries} sendVerdict={sendVerdict} />
           : <Navigate to={home(session)} />} />
         <Route path="/admin/*" element={session && !radiologist
-          ? <Admin loadAudit={loadAudit} loadLaneMix={loadLaneMix} loadModels={loadModels} />
+          ? <Admin loadAudit={loadAudit} loadLaneMix={loadLaneMix} loadModels={loadModels}
+                   loadIntake={loadIntake} startIntake={startIntake} />
           : <Navigate to={home(session)} />} />
         <Route path="*" element={<Navigate to={home(session)} />} />
       </Routes>
