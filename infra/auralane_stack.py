@@ -9,8 +9,9 @@ Creates:
   - the HealthImaging import role, assumable by medical-imaging.amazonaws.com
   - the chest inference Lambda, a container image built from
     infra/lambda/chest/Dockerfile
-  - the brain SageMaker asynchronous endpoint (ml.g4dn.xlarge), its model and
-    execution role, scaling between 0 and 1 instances
+  - two SageMaker asynchronous endpoints, each with its model and execution
+    role, scaling between 0 and 1 instances: brain MR (ml.m5.2xlarge, CPU
+    image) and head CT (ml.m5.xlarge, CPU image)
   - one managed policy with exactly what core/ needs, to attach to whoever runs
     the API with AURALANE_RUNTIME=aws
 
@@ -23,7 +24,10 @@ lookups are made. Container images are hashed at synth and built only at
 deploy time. Every billable resource is in docs/AWS-COSTS.md.
 
 Context flags (cdk synth/deploy -c key=value):
-  brain=false               leave the SageMaker endpoint out entirely
+  brain=false               leave the brain SageMaker endpoint out entirely
+  ct=false                  leave the head CT SageMaker endpoint out entirely
+  brain_instance=TYPE       default ml.m5.2xlarge
+  ct_instance=TYPE          default ml.m5.xlarge
   chest_provisioned=N       provisioned concurrency for the chest Lambda
                             (default 0: the cold-start trade-off is a decision,
                             see docs/AWS-COSTS.md)
@@ -43,7 +47,9 @@ REPO = Path(__file__).resolve().parents[1]
 REGION = "us-east-1"
 EXISTING_DATASTORE_ID = "293abea3292b4e888cbdf60e3a9ff283"
 TABLE_PREFIX = "auralane"
-BRAIN_INSTANCE = "ml.g4dn.xlarge"
+# CPU: see infra/containers/brain/Dockerfile for why the brain image is CPU.
+BRAIN_INSTANCE = "ml.m5.2xlarge"
+CT_INSTANCE = "ml.m5.xlarge"
 WORKING_PREFIXES = ("transient/", "import/", "inference/")
 
 # Build contexts are the repository root; these keep them to what the images
@@ -51,15 +57,20 @@ WORKING_PREFIXES = ("transient/", "import/", "inference/")
 CHEST_CONTEXT = ["*", "!core", "!adapters", "!models", "!imaging.py", "!triage.py",
                  "!reference.json", "!infra/lambda/chest", "**/__pycache__"]
 BRAIN_CONTEXT = ["*", "!core", "!adapters", "!models", "!imaging.py", "!triage.py",
-                 "!reference.json", "!infra/containers/brain",
+                 "!reference.json", "!infra/containers/brain", "!infra/containers/sagemaker_http.py",
                  "!_external/brainmri/backend", "!_external/brainmri/brats_mri_segmentation",
                  "**/__pycache__"]
+CT_CONTEXT = ["*", "!core", "!adapters", "!models", "!imaging.py", "!triage.py",
+              "!reference.json", "!infra/containers/ct", "!infra/containers/sagemaker_http.py",
+              "!_external/triagelane-ct/src", "!_external/triagelane-ct/configs",
+              "**/__pycache__"]
 
 
 class AuralaneStack(Stack):
     def __init__(self, scope: Construct, cid: str, **kwargs) -> None:
         super().__init__(scope, cid, **kwargs)
         with_brain = str(self.node.try_get_context("brain") or "true").lower() != "false"
+        with_ct = str(self.node.try_get_context("ct") or "true").lower() != "false"
         chest_provisioned = int(self.node.try_get_context("chest_provisioned") or 0)
 
         # -- S3 ----------------------------------------------------------------
@@ -120,76 +131,20 @@ class AuralaneStack(Stack):
             log_group=logs.LogGroup(self, "ChestLogs", retention=logs.RetentionDays.ONE_WEEK,
                                     removal_policy=RemovalPolicy.DESTROY))
         bucket.grant_read_write(chest)
-        if chest_provisioned > 0:
-            chest.add_alias("live", provisioned_concurrent_executions=chest_provisioned)
+        # Invocations go to the alias "live", so provisioned concurrency, when
+        # chosen (-c chest_provisioned=1 on presentation day), is what answers.
+        live = chest.add_alias("live", provisioned_concurrent_executions=chest_provisioned or None)
 
-        # -- Brain inference: SageMaker asynchronous endpoint ------------------
-        endpoint_name = None
+        # -- Brain MR and head CT: SageMaker asynchronous endpoints ------------
+        endpoints = {}
         if with_brain:
-            image = ecr_assets.DockerImageAsset(
-                self, "BrainImage", directory=str(REPO), file="infra/containers/brain/Dockerfile",
-                exclude=BRAIN_CONTEXT, ignore_mode=IgnoreMode.DOCKER,
-                platform=ecr_assets.Platform.LINUX_AMD64)
-            sm_role = iam.Role(self, "BrainRole",
-                               assumed_by=iam.ServicePrincipal("sagemaker.amazonaws.com"))
-            image.repository.grant_pull(sm_role)
-            bucket.grant_read_write(sm_role, "inference/*")
-            sm_role.add_to_policy(iam.PolicyStatement(
-                actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents",
-                         "cloudwatch:PutMetricData"], resources=["*"]))
-            model = sm.CfnModel(self, "BrainModel", execution_role_arn=sm_role.role_arn,
-                                primary_container=sm.CfnModel.ContainerDefinitionProperty(
-                                    image=image.image_uri))
-            model.node.add_dependency(sm_role)
-            config = sm.CfnEndpointConfig(
-                self, "BrainEndpointConfig",
-                production_variants=[sm.CfnEndpointConfig.ProductionVariantProperty(
-                    variant_name="AllTraffic", model_name=model.attr_model_name,
-                    instance_type=BRAIN_INSTANCE, initial_instance_count=1)],
-                async_inference_config=sm.CfnEndpointConfig.AsyncInferenceConfigProperty(
-                    output_config=sm.CfnEndpointConfig.AsyncInferenceOutputConfigProperty(
-                        s3_output_path=f"s3://{bucket.bucket_name}/inference/async-out/",
-                        s3_failure_path=f"s3://{bucket.bucket_name}/inference/async-failed/"),
-                    client_config=sm.CfnEndpointConfig.AsyncInferenceClientConfigProperty(
-                        max_concurrent_invocations_per_instance=1)))
-            endpoint = sm.CfnEndpoint(self, "BrainEndpoint",
-                                      endpoint_config_name=config.attr_endpoint_config_name)
-            endpoint_name = endpoint.attr_endpoint_name
-
-            # Scale to zero when idle, back to one when work is waiting. Target
-            # tracking on backlog per instance handles scale-in to 0; it cannot
-            # scale out from 0, so a step policy on HasBacklogWithoutCapacity
-            # adds the first instance.
-            resource_id = f"endpoint/{endpoint_name}/variant/AllTraffic"
-            target = aas.CfnScalableTarget(
-                self, "BrainScaling", service_namespace="sagemaker", resource_id=resource_id,
-                scalable_dimension="sagemaker:variant:DesiredInstanceCount",
-                min_capacity=0, max_capacity=1)
-            target.add_resource_dependency(endpoint)
-            aas.CfnScalingPolicy(
-                self, "BrainBacklogTracking", policy_name="auralane-brain-backlog",
-                policy_type="TargetTrackingScaling", scaling_target_id=target.ref,
-                target_tracking_scaling_policy_configuration=aas.CfnScalingPolicy.TargetTrackingScalingPolicyConfigurationProperty(
-                    target_value=1.0, scale_in_cooldown=600, scale_out_cooldown=60,
-                    customized_metric_specification=aas.CfnScalingPolicy.CustomizedMetricSpecificationProperty(
-                        metric_name="ApproximateBacklogSizePerInstance", namespace="AWS/SageMaker",
-                        statistic="Average",
-                        dimensions=[aas.CfnScalingPolicy.MetricDimensionProperty(
-                            name="EndpointName", value=endpoint_name)])))
-            wake = aas.CfnScalingPolicy(
-                self, "BrainWakeFromZero", policy_name="auralane-brain-wake",
-                policy_type="StepScaling", scaling_target_id=target.ref,
-                step_scaling_policy_configuration=aas.CfnScalingPolicy.StepScalingPolicyConfigurationProperty(
-                    adjustment_type="ChangeInCapacity", cooldown=300,
-                    metric_aggregation_type="Average",
-                    step_adjustments=[aas.CfnScalingPolicy.StepAdjustmentProperty(
-                        metric_interval_lower_bound=0, scaling_adjustment=1)]))
-            cw.CfnAlarm(
-                self, "BrainBacklogWithoutCapacity", metric_name="HasBacklogWithoutCapacity",
-                namespace="AWS/SageMaker", statistic="Average", period=60, evaluation_periods=1,
-                threshold=1, comparison_operator="GreaterThanOrEqualToThreshold",
-                dimensions=[cw.CfnAlarm.DimensionProperty(name="EndpointName", value=endpoint_name)],
-                treat_missing_data="notBreaching", alarm_actions=[wake.attr_arn])
+            endpoints["AURALANE_BRAIN_ENDPOINT"] = self._async_endpoint(
+                "Brain", "infra/containers/brain/Dockerfile", BRAIN_CONTEXT, bucket,
+                self.node.try_get_context("brain_instance") or BRAIN_INSTANCE)
+        if with_ct:
+            endpoints["AURALANE_CT_ENDPOINT"] = self._async_endpoint(
+                "Ct", "infra/containers/ct/Dockerfile", CT_CONTEXT, bucket,
+                self.node.try_get_context("ct_instance") or CT_INSTANCE)
 
         # -- What core/ needs, as one policy -----------------------------------
         app_policy = iam.ManagedPolicy(self, "AppPolicy", statements=[
@@ -208,11 +163,12 @@ class AuralaneStack(Stack):
                                          "medical-imaging:GetDICOMSeriesMetadata"],
                                 resources=[datastore_arn, f"{datastore_arn}/*"]),
             iam.PolicyStatement(actions=["iam:PassRole"], resources=[import_role.role_arn]),
-            iam.PolicyStatement(actions=["lambda:InvokeFunction"], resources=[chest.function_arn]),
+            iam.PolicyStatement(actions=["lambda:InvokeFunction"],
+                                resources=[chest.function_arn, live.function_arn]),
         ] + ([iam.PolicyStatement(
             actions=["sagemaker:InvokeEndpointAsync"],
             resources=[f"arn:aws:sagemaker:{REGION}:{self.account}:endpoint/*"])]
-             if with_brain else []))
+             if endpoints else []))
 
         # -- The environment core/run.py reads ----------------------------------
         outputs = {"AURALANE_BUCKET": bucket.bucket_name,
@@ -221,10 +177,80 @@ class AuralaneStack(Stack):
                    "AURALANE_IMPORT_ROLE_ARN": import_role.role_arn,
                    "AURALANE_COGNITO_POOL_ID": pool.user_pool_id,
                    "AURALANE_COGNITO_CLIENT_ID": client.user_pool_client_id,
-                   "AURALANE_CHEST_FUNCTION": chest.function_name,
+                   "AURALANE_CHEST_FUNCTION": f"{chest.function_name}:live",
                    "AURALANE_APP_POLICY_ARN": app_policy.managed_policy_arn}
-        if endpoint_name:
-            outputs["AURALANE_BRAIN_ENDPOINT"] = endpoint_name
+        outputs.update(endpoints)
         for name, value in outputs.items():
             CfnOutput(self, name.replace("_", ""), key=name.replace("_", ""), value=value,
                       description=name)
+
+    def _async_endpoint(self, name: str, dockerfile: str, context: list[str], bucket: s3.Bucket,
+                        instance_type: str) -> str:
+        """A SageMaker asynchronous endpoint for one model image, scaling between
+        0 and 1 instances. Returns the endpoint name."""
+        low = name.lower()
+        image = ecr_assets.DockerImageAsset(
+            self, f"{name}Image", directory=str(REPO), file=dockerfile,
+            exclude=context, ignore_mode=IgnoreMode.DOCKER,
+            platform=ecr_assets.Platform.LINUX_AMD64)
+        role = iam.Role(self, f"{name}Role",
+                        assumed_by=iam.ServicePrincipal("sagemaker.amazonaws.com"))
+        image.repository.grant_pull(role)
+        bucket.grant_read_write(role, "inference/*")
+        role.add_to_policy(iam.PolicyStatement(
+            actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents",
+                     "cloudwatch:PutMetricData"], resources=["*"]))
+        model = sm.CfnModel(self, f"{name}Model", execution_role_arn=role.role_arn,
+                            primary_container=sm.CfnModel.ContainerDefinitionProperty(
+                                image=image.image_uri))
+        model.node.add_dependency(role)
+        config = sm.CfnEndpointConfig(
+            self, f"{name}EndpointConfig",
+            production_variants=[sm.CfnEndpointConfig.ProductionVariantProperty(
+                variant_name="AllTraffic", model_name=model.attr_model_name,
+                instance_type=instance_type, initial_instance_count=1)],
+            async_inference_config=sm.CfnEndpointConfig.AsyncInferenceConfigProperty(
+                output_config=sm.CfnEndpointConfig.AsyncInferenceOutputConfigProperty(
+                    s3_output_path=f"s3://{bucket.bucket_name}/inference/async-out/",
+                    s3_failure_path=f"s3://{bucket.bucket_name}/inference/async-failed/"),
+                client_config=sm.CfnEndpointConfig.AsyncInferenceClientConfigProperty(
+                    max_concurrent_invocations_per_instance=1)))
+        endpoint = sm.CfnEndpoint(self, f"{name}Endpoint",
+                                  endpoint_config_name=config.attr_endpoint_config_name)
+        endpoint_name = endpoint.attr_endpoint_name
+
+        # Scale to zero when idle, back to one when work is waiting. Target
+        # tracking on backlog per instance handles scale-in to 0; it cannot
+        # scale out from 0, so a step policy on HasBacklogWithoutCapacity
+        # adds the first instance.
+        target = aas.CfnScalableTarget(
+            self, f"{name}Scaling", service_namespace="sagemaker",
+            resource_id=f"endpoint/{endpoint_name}/variant/AllTraffic",
+            scalable_dimension="sagemaker:variant:DesiredInstanceCount",
+            min_capacity=0, max_capacity=1)
+        target.add_resource_dependency(endpoint)
+        aas.CfnScalingPolicy(
+            self, f"{name}BacklogTracking", policy_name=f"auralane-{low}-backlog",
+            policy_type="TargetTrackingScaling", scaling_target_id=target.ref,
+            target_tracking_scaling_policy_configuration=aas.CfnScalingPolicy.TargetTrackingScalingPolicyConfigurationProperty(
+                target_value=1.0, scale_in_cooldown=600, scale_out_cooldown=60,
+                customized_metric_specification=aas.CfnScalingPolicy.CustomizedMetricSpecificationProperty(
+                    metric_name="ApproximateBacklogSizePerInstance", namespace="AWS/SageMaker",
+                    statistic="Average",
+                    dimensions=[aas.CfnScalingPolicy.MetricDimensionProperty(
+                        name="EndpointName", value=endpoint_name)])))
+        wake = aas.CfnScalingPolicy(
+            self, f"{name}WakeFromZero", policy_name=f"auralane-{low}-wake",
+            policy_type="StepScaling", scaling_target_id=target.ref,
+            step_scaling_policy_configuration=aas.CfnScalingPolicy.StepScalingPolicyConfigurationProperty(
+                adjustment_type="ChangeInCapacity", cooldown=300,
+                metric_aggregation_type="Average",
+                step_adjustments=[aas.CfnScalingPolicy.StepAdjustmentProperty(
+                    metric_interval_lower_bound=0, scaling_adjustment=1)]))
+        cw.CfnAlarm(
+            self, f"{name}BacklogWithoutCapacity", metric_name="HasBacklogWithoutCapacity",
+            namespace="AWS/SageMaker", statistic="Average", period=60, evaluation_periods=1,
+            threshold=1, comparison_operator="GreaterThanOrEqualToThreshold",
+            dimensions=[cw.CfnAlarm.DimensionProperty(name="EndpointName", value=endpoint_name)],
+            treat_missing_data="notBreaching", alarm_actions=[wake.attr_arn])
+        return endpoint_name

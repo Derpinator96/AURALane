@@ -4,9 +4,9 @@ NON-DIAGNOSTIC; DECISION SUPPORT ONLY.
 
 Creates what the AWS providers in `core/providers/aws/` talk to. us-east-1 only:
 HealthImaging is not offered in Mumbai. Costs per resource: `docs/AWS-COSTS.md`.
+The full deploy procedure, in order, is `docs/DEPLOY.md` ("The AWS runtime").
 
-Nothing here has been deployed. Synth needs no AWS credentials and makes no
-AWS call:
+Synth needs no AWS credentials and makes no AWS call:
 
 ```
 pip install -r infra/requirements.txt
@@ -17,64 +17,69 @@ cd infra && python app.py            # writes cdk.out/; tests/test_infra.py does
 
 Creates: one S3 bucket, the tables `auralane-worklist` and `auralane-audit`, a
 Cognito user pool (Lite) with groups `radiologist` and `admin`, the
-HealthImaging import role, the chest inference Lambda (container image), the
-brain SageMaker asynchronous endpoint (ml.g4dn.xlarge, scaling 0 to 1) with its
-model, role, scaling policies and alarm, and one managed policy holding exactly
-what `core/` needs.
+HealthImaging import role, the chest inference Lambda (container image), two
+SageMaker asynchronous endpoints scaling 0 to 1 (brain MR on ml.m5.2xlarge,
+head CT on ml.m5.xlarge) with their models, roles, scaling policies and
+alarms, and one managed policy holding exactly what `core/` needs.
 
 Does not create: the HealthImaging datastore. The existing
 `293abea3292b4e888cbdf60e3a9ff283` is referenced by ID, so there is nothing
 for the stack to collide with and nothing for teardown to delete. Nor does it
-host the API or the web app; those are outside this stack.
+host the API or the web app (Render and Vercel, `docs/DEPLOY.md`).
 
-Context flags: `-c brain=false` leaves the SageMaker endpoint out.
-`-c chest_provisioned=N` adds N provisioned environments to the chest Lambda
-(default 0; see the cold-start section of `docs/AWS-COSTS.md`).
+## Context flags
 
-## Deploying: the commands, what each creates, what it costs
+| flag | default | effect |
+|---|---|---|
+| `-c brain=false` | true | leave the brain endpoint out |
+| `-c ct=false` | true | leave the head CT endpoint out |
+| `-c brain_instance=TYPE` | ml.m5.2xlarge | brain endpoint instance |
+| `-c ct_instance=TYPE` | ml.m5.xlarge | CT endpoint instance |
+| `-c chest_provisioned=N` | 0 | N always-warm chest Lambda environments on alias `live` |
 
-Run none of these without deciding to. Credentials: the IAM user that owns the
-account's AWS resources, region us-east-1.
+On presentation day, one warm chest environment:
+`npx cdk deploy Auralane -c chest_provisioned=1`, and back to 0 afterwards
+(`-c chest_provisioned=0`). The function is always invoked through its alias
+`live` (the `AURALANE_CHEST_FUNCTION` output is `<name>:live`), so the
+provisioned environment is the one that answers.
 
-1. `npx cdk bootstrap aws://<account>/us-east-1`
-   Creates the CDKToolkit stack: an S3 staging bucket, an ECR repository for
-   container assets, and the roles CDK deploys with. Costs S3 and ECR storage
-   for whatever assets are pushed ($0.10 per GB-month for images).
+## The three images: build locally before `cdk deploy`
 
-2. `cd _external/brainmri && git lfs pull`
-   Not an AWS command. The brain image copies the SegResNet weights; without
-   them every brain job fails loudly at model load. Skip if deploying with
-   `-c brain=false`.
+`cdk deploy` builds these itself; building first catches a broken image
+before anything is created. Run from the repository root with Docker running.
 
-3. `cd infra && npx cdk diff`
-   Read only: shows what deploy would change.
+```
+docker build --platform linux/amd64 -f infra/lambda/chest/Dockerfile   -t auralane-chest .
+docker build --platform linux/amd64 -f infra/containers/brain/Dockerfile -t auralane-brain .
+docker build --platform linux/amd64 -f infra/containers/ct/Dockerfile    -t auralane-ct .
+```
 
-4. `cd infra && npx cdk deploy Auralane` (optionally `-c brain=false`,
-   `-c chest_provisioned=1`)
-   Builds both images locally with Docker, pushes them to the bootstrap ECR
-   repository, and creates every resource listed above. Costs as in
-   `docs/AWS-COSTS.md`; note the SageMaker endpoint starts with one instance
-   ($0.7364 per hour) until its idle scale-in fires.
+| image | base | notes |
+|---|---|---|
+| chest (Lambda) | `public.ecr.aws/lambda/python:3.12` | CPU torch 2.14.0 from download.pytorch.org; DenseNet weights baked in; OpenCV swapped for the headless build (the Lambda base has no libGL) |
+| brain (SageMaker) | `python:3.12-slim` | CPU torch 2.14.0 and monai 1.6.0; needs `_external/brainmri` with its Git LFS weights (`git lfs pull`) |
+| CT (SageMaker) | `python:3.12-slim` | CPU torch 2.14.0 and transformers; the ViT weights (343 MB) downloaded from Hugging Face at build time, never at run time; needs `_external/triagelane-ct` |
 
-5. Users, in the pool the stack output names:
-   `aws cognito-idp admin-create-user --user-pool-id <pool> --username radiologist --message-action SUPPRESS`
-   `aws cognito-idp admin-set-user-password --user-pool-id <pool> --username radiologist --password <password> --permanent`
-   `aws cognito-idp admin-add-user-to-group --user-pool-id <pool> --username radiologist --group-name radiologist`
-   and the same for `admin`. No charge under 10,000 monthly active users.
+Built on 2026-09-28 and smoke-tested offline (`--network none`): chest 2.97 GB
+(all 18 outputs from the baked weights), brain 1.92 GB (one BraTS case in
+42.6 s), CT 2.68 GB (a 53-slice CQ500 study in 21.9 s). The brain and CT images
+share their torch layer. With the build cache, Docker's disk grew to 18 GB:
+put it on a drive with 25 GB free first (Docker Desktop, Settings, Resources,
+Advanced, Disk image location).
 
-6. `aws iam attach-user-policy --user-name <user> --policy-arn <AURALANE_APP_POLICY_ARN output>`
-   Gives whoever runs the API exactly the permissions `core/` uses. No charge.
+Quick checks after a build, no AWS needed:
 
-7. Environment from the stack outputs (each output's description is the
-   variable name):
-   `aws cloudformation describe-stacks --stack-name Auralane --query "Stacks[0].Outputs[].[Description,OutputValue]" --output text`
-   then export each pair and run `AURALANE_RUNTIME=aws python -m core.run serve`.
+```
+docker run --rm --entrypoint python auralane-chest -c "import chest_app"
+docker run --rm -p 8080:8080 auralane-brain      # then: curl localhost:8080/ping
+docker run --rm -p 8080:8080 auralane-ct         # then: curl localhost:8080/ping
+```
 
 ## Tearing down
 
 ```
 python infra/teardown.py              # dry run: lists what it would delete
-python infra/teardown.py --yes        # empties the bucket, deletes the stack and the endpoint log group
+python infra/teardown.py --yes        # empties the bucket, deletes the stack and both endpoint log groups
 python infra/teardown.py --yes --bootstrap   # also the CDKToolkit stack
 ```
 
@@ -85,13 +90,8 @@ the script says so.
 
 ## Unverified until something is deployed
 
-- Browser frame fetch: `frame_url` returns a SigV4 presigned DICOMweb URL. That
-  HealthImaging accepts query-string signing on DICOMweb, and answers a browser
-  on another origin with CORS headers, is untested. Test with one study first.
-- Bearer tokens: HealthImaging supports OIDC for DICOMweb through a Lambda
-  authorizer. If a Cognito token works there, the signing path can go.
+- Browser frame fetch straight from HealthImaging (`AURALANE_FRAME_MODE=presigned`).
+  The API streams frames by default (`proxy`); `scripts/smoke_aws.py` reports
+  whether the presigned URL answers a browser origin with CORS headers.
 - `GetDICOMSeriesMetadata` has not been called on this account.
-- Both container images have not been built: the Lambda base image and the CPU
-  torch wheels were unreachable from the build machine. Their Dockerfiles are
-  written against the published base images and have not run.
 - Cold start and warm cost figures are the estimates in `docs/AWS-COSTS.md`.

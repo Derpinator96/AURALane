@@ -55,9 +55,10 @@ def plan(cfn, stack: str = STACK) -> dict:
         if kind.startswith("AWS::HealthImaging") or KEEP["datastore"] in physical:
             raise RuntimeError(f"stack {stack} lists {kind} {physical}; refusing: the datastore "
                                f"is not the stack's to delete")
-    endpoint = outputs.get("AURALANE_BRAIN_ENDPOINT")
+    endpoints = [outputs[k] for k in ("AURALANE_BRAIN_ENDPOINT", "AURALANE_CT_ENDPOINT")
+                 if outputs.get(k)]
     return {"stack": stack, "bucket": outputs.get("AURALANE_BUCKET"), "resources": resources,
-            "log_groups": [f"/aws/sagemaker/Endpoints/{endpoint}"] if endpoint else []}
+            "log_groups": [f"/aws/sagemaker/Endpoints/{e}" for e in endpoints]}
 
 
 def empty_bucket(s3, bucket: str) -> int:
