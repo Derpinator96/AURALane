@@ -189,10 +189,16 @@ def _intake(runtime: str):
     if runtime == "fixture":
         return IntakeSimulator(None, {}, unavailable="the fixture runtime has no pipeline")
     if runtime == "aws":
-        from core.providers.aws.config import ENV, REQUIRED_FOR_INGEST
-        missing = [ENV[k] for k in REQUIRED_FOR_INGEST if not os.environ.get(ENV[k])]
-        if missing:
-            return IntakeSimulator(None, {}, unavailable=f"ingest needs {', '.join(missing)}")
+        # Cloud-native: arrivals are copied into S3 and ingested by tasks in AWS,
+        # so this works from the hosted API, which holds no studies itself.
+        import boto3
+        from core.intake import CloudIntake
+        from core.providers.aws.config import REGION
+        bucket = os.environ.get("AURALANE_BUCKET")
+        if not bucket:
+            return IntakeSimulator(None, {}, unavailable="AURALANE_BUCKET is not set")
+        return CloudIntake(boto3.client("s3", region_name=REGION), bucket,
+                           site_state=os.environ.get("AURALANE_SITE_STATE") or None)
     from core.pipeline import ingest
     from core.regional import setting
     from core.registry import Registry
@@ -237,6 +243,52 @@ def cmd_serve(args) -> int:
     return 0
 
 
+def _s3():
+    import boto3
+    from core.providers.aws.config import REGION
+    bucket = os.environ.get("AURALANE_BUCKET")
+    if not bucket:
+        sys.exit("needs AURALANE_BUCKET: pass --stack Auralane")
+    return boto3.client("s3", region_name=REGION), bucket
+
+
+def cmd_upload(args) -> int:
+    """The edge agent: send one study to the cloud pipeline and, with --wait,
+    print the result the ingest task writes."""
+    import time
+    from core.upload import RESULTS, new_batch, upload_study
+    s3, bucket = _s3()
+    target = Path(args.path)
+    files = sorted(target.rglob("*.dcm")) if target.is_dir() else [target]
+    if not files:
+        sys.exit(f"no .dcm files under {target}")
+    batch = new_batch()
+    key = upload_study(s3, bucket, files, batch, "000", site_state=args.state)
+    print(f"uploaded {len(files)} files; manifest s3://{bucket}/{key}")
+    if not args.wait:
+        return 0
+    result = f"{RESULTS}{batch}/000.json"
+    t0 = time.monotonic()
+    while time.monotonic() - t0 < args.wait:
+        try:
+            r = json.loads(s3.get_object(Bucket=bucket, Key=result)["Body"].read())
+            print(json.dumps(r, indent=1))
+            return 0 if r["status"] == "SCORED" else 1
+        except s3.exceptions.NoSuchKey:
+            time.sleep(10)
+            print(f"  waiting for the ingest task: {int(time.monotonic() - t0)} s", flush=True)
+    sys.exit(f"no result after {args.wait} s; see the ingest task's logs")
+
+
+def cmd_upload_corpus(args) -> int:
+    """This machine's study corpus -> S3 corpus/, for the hosted simulated intake."""
+    from core.intake import catalogue
+    from core.upload import upload_corpus
+    s3, bucket = _s3()
+    print(json.dumps(upload_corpus(s3, bucket, catalogue())))
+    return 0
+
+
 def cmd_token(args) -> int:
     auth = providers()["auth"]
     if not hasattr(auth, "issue"):
@@ -263,10 +315,18 @@ def main(argv=None) -> int:
                         help="read the aws runtime's settings from this CloudFormation stack's outputs")
     t = sub.add_parser("token", help="a development bearer token (local runtime only)")
     t.add_argument("user", choices=["radiologist", "admin"])
+    u = sub.add_parser("upload", help="send one study to the cloud pipeline (the edge's only step)")
+    u.add_argument("path", help="a study directory or one .dcm file")
+    u.add_argument("--state", default=None, help="the site's state for the chest regional prior")
+    u.add_argument("--wait", type=int, default=0, help="seconds to wait for the result")
+    c = sub.add_parser("upload-corpus", help="put this machine's study corpus in S3, once")
+    for sp in (u, c):
+        sp.add_argument("--stack", default=None, help="read settings from this CloudFormation stack")
     args = ap.parse_args(argv)
     if getattr(args, "stack", None):
         load_stack(args.stack)
-    return {"ingest": cmd_ingest, "serve": cmd_serve, "token": cmd_token}[args.cmd](args)
+    return {"ingest": cmd_ingest, "serve": cmd_serve, "token": cmd_token, "upload": cmd_upload,
+            "upload-corpus": cmd_upload_corpus}[args.cmd](args)
 
 
 if __name__ == "__main__":

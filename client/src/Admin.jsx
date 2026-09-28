@@ -235,10 +235,12 @@ export function Intake({ load, start }) {
   return (
     <section data-testid="intake">
       <p className="note">
-        Ingests real studies from this API host's corpus through the full pipeline, in a shuffled
-        arrival order: every brain MR and head CT study available, chest X-rays to make up {INTAKE_COUNT}.
-        Lanes come from the models; only the arrival order is simulated. New rows appear on the
-        radiologists' worklist as each study finishes.
+        {state.runtime === "aws"
+          ? "Copies real studies from the corpus in S3 into the upload area; each one starts its own ingest task in AWS (de-identification, HealthImaging, the model, the worklist)."
+          : "Ingests real studies from this machine's corpus through the full pipeline, in this process."}
+        {" "}Every brain MR and head CT study available, chest X-rays to make up {INTAKE_COUNT}, in a shuffled
+        arrival order. Lanes come from the models; only the arrival order is simulated. New rows appear on
+        the radiologists' worklist as each study finishes.
       </p>
       <p className="note">
         Corpus on this host: {c.CR ?? 0} chest, {c.MR ?? 0} brain MR, {c.CT ?? 0} head CT.

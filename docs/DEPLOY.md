@@ -134,33 +134,53 @@ Vercel stays as it is: its `VITE_API_BASE` already points at
 `VITE_API_BASE` and redeploy. To demo the fallback, point `VITE_API_BASE` at
 `auralane-preview` and redeploy (about a minute).
 
-### 7. Ingest, and the end-to-end smoke test
+### 7. Ingest: upload, and AWS does the rest
 
-In your shell, with the scoped key and the stack outputs exported:
+The cloud path: the edge uploads a study's files to S3 (`upload/`), and the
+upload's manifest starts one Fargate task through EventBridge. The task
+de-identifies (identity map in its own table, which only the task can read),
+imports to HealthImaging, scores on Lambda or SageMaker, writes the worklist,
+records a result under `intake/` and deletes the raw upload. The API can write
+uploads but never read them. Settings come from the stack (`--stack Auralane`),
+so nothing is exported.
+
+Once, so the hosted Simulated intake button has studies to send (about 250 MB):
 
 ```
-export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_REGION=us-east-1
-export AURALANE_RUNTIME=aws AURALANE_BUCKET=... AURALANE_IMPORT_ROLE_ARN=... \
-       AURALANE_COGNITO_POOL_ID=... AURALANE_COGNITO_CLIENT_ID=... \
-       AURALANE_CHEST_FUNCTION=... AURALANE_BRAIN_ENDPOINT=... AURALANE_CT_ENDPOINT=...
-export AURALANE_SITE_STATE=Chhattisgarh        # the site's state, for the chest regional prior
+python -m core.run upload-corpus --stack Auralane
+```
+
+One study from this machine, as a hospital's edge would send it:
+
+```
+python -m core.run upload --stack Auralane <study dir> --state Chhattisgarh --wait 900
+```
+
+Thirty at once: Admin, Simulated intake, "Ingest 30 studies", on the deployed
+site or locally. Every brain MR and head CT in the corpus plus chest X-rays to
+make up 30, in a shuffled arrival order; each lands on the worklist as its task
+finishes. Measured 2026-09-28: a chest study scored 24.2 s inside its task,
+about a minute from upload including the task's start.
+
+The end-to-end smoke test, which is the definition of done:
+
+```
 python scripts/smoke_aws.py --api https://auralane-api.onrender.com --user radiologist --password <password>
 ```
 
-It ingests one chest, one brain and one head CT study, then reads the
-deployed worklist and prints each study with its lane. `SMOKE PASSED` means
-all three reached it: that is done. It also fetches one frame through the
-viewer's URL and says whether HealthImaging's presigned URL answers a browser
-origin with CORS headers. Frames default to `presigned`: the browser fetches
-them from HealthImaging and the API never reads pixels. Checked live on
-2026-09-28, including the CORS preflight Cornerstone's Accept header triggers.
-`AURALANE_FRAME_MODE=proxy` on Render streams them through the API instead.
+It uploads one chest, one brain and one head CT study, waits for the tasks, then
+reads the deployed worklist and prints each study with its lane (`--api local`
+runs the same API code here; `--edge` ingests in this process instead of in
+AWS). `SMOKE PASSED` means all three reached it. It also fetches one frame
+through the viewer's URL and checks HealthImaging's presigned URL answers a
+browser origin with CORS headers. Frames default to `presigned`: the browser
+fetches them from HealthImaging and the API never reads pixels (checked live on
+2026-09-28, including the CORS preflight Cornerstone's Accept header
+triggers). `AURALANE_FRAME_MODE=proxy` on Render streams them through the API
+instead.
 
-More studies: `python -m core.run ingest <study dir>` with the same
-environment (`--state` overrides the site state for one ingest).
-
-Expect the first brain and CT jobs after idle to wait for an instance: the
-endpoints scale from 0, and a cold start takes several minutes.
+The first brain and CT jobs after idle wait for their endpoint to start an
+instance: several minutes, with a waiting line printed every minute.
 
 ### What it costs
 

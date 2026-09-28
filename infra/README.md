@@ -20,7 +20,10 @@ Cognito user pool (Lite) with groups `radiologist` and `admin`, the
 HealthImaging import role, the chest inference Lambda (container image), two
 SageMaker asynchronous endpoints scaling 0 to 1 (brain MR on ml.m5.2xlarge,
 head CT on ml.m5.xlarge) with their models, roles, scaling policies and
-alarms, and one managed policy holding exactly what `core/` needs.
+alarms, the cloud ingest (an EventBridge rule on `upload/*/_ready.json`
+starting one Fargate task per arrival in a public-subnet VPC with no NAT
+gateway, and the `auralane-identity` table only that task can read), and one
+managed policy for the API, which may write `upload/` but never read it.
 
 Does not create: the HealthImaging datastore. The existing
 `293abea3292b4e888cbdf60e3a9ff283` is referenced by ID, so there is nothing
@@ -61,6 +64,7 @@ before anything is created. Run from the repository root with Docker running.
 docker build --platform linux/amd64 -f infra/lambda/chest/Dockerfile   -t auralane-chest .
 docker build --platform linux/amd64 -f infra/containers/brain/Dockerfile -t auralane-brain .
 docker build --platform linux/amd64 -f infra/containers/ct/Dockerfile    -t auralane-ct .
+docker build --platform linux/amd64 -f infra/containers/ingest/Dockerfile -t auralane-ingest .
 ```
 
 | image | base | notes |

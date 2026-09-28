@@ -112,3 +112,90 @@ class IntakeSimulator:
 
 def _now() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+
+
+class CloudIntake:
+    """The same button on the AWS runtime: arrivals are started in S3 and run
+    in AWS. start() copies corpus studies into upload/ server-side (nothing is
+    downloaded; this works from the hosted API), and each manifest starts an
+    ingest task (core/cloud_ingest.py). Progress is read from the results the
+    tasks write to intake/<batch>/, so it survives an API restart.
+
+    Items are shown by modality and arrival number, never by a source name:
+    corpus folders are named after original study UIDs.
+    """
+
+    def __init__(self, s3, bucket: str, site_state: str | None = None):
+        from core.upload import corpus_catalogue
+        self.s3, self.bucket, self.site_state = s3, bucket, site_state
+        try:
+            self.studies = corpus_catalogue(s3, bucket)
+            self.unavailable = None if any(self.studies.values()) else (
+                "no corpus in S3 yet: run python -m core.run upload-corpus --stack Auralane")
+        except Exception as e:
+            self.studies, self.unavailable = {}, f"cannot list the S3 corpus: {e}"
+        self._lock = threading.Lock()
+        self._state: dict[str, Any] = {"running": False, "runs": 0}
+
+    def status(self) -> dict[str, Any]:
+        import json
+        with self._lock:
+            state = self._state
+            for it in state.get("items", []):
+                if it["status"] in ("SCORED", "FAILED") or "result" not in it:
+                    continue
+                try:
+                    r = json.loads(self.s3.get_object(Bucket=self.bucket,
+                                                      Key=it["result"])["Body"].read())
+                except self.s3.exceptions.NoSuchKey:
+                    continue
+                it.update(status=r["status"], lane=r.get("lane"), study=r.get("study"),
+                          error=r.get("error"), seconds=r.get("seconds"))
+                state["done" if r["status"] == "SCORED" else "failed"] += 1
+            if state.get("items") and state["running"] and not state.get("uploading") and all(
+                    it["status"] in ("SCORED", "FAILED") for it in state["items"]):
+                state.update(running=False, finished_at=_now())
+            s = {k: ([dict(i) for i in v] if k == "items" else v) for k, v in state.items()}
+        s.update(available=self.unavailable is None, reason=self.unavailable,
+                 catalogue={m: len(v) for m, v in self.studies.items()}, workers="in AWS")
+        return s
+
+    def start(self, count: int, actor: str, seed: int | None = None) -> dict[str, Any]:
+        from core.upload import RESULTS, copy_study, new_batch
+        if self.unavailable:
+            raise RuntimeError(self.unavailable)
+        with self._lock:
+            if self._state["running"]:
+                raise RuntimeError("a simulated intake is already running")
+            batch = new_batch()
+            order = pick(self.studies, count, random.Random(seed))
+            self._state = {
+                "running": True, "uploading": True, "runs": self._state["runs"] + 1,
+                "by": actor, "batch": batch, "started_at": _now(), "finished_at": None,
+                "total": len(order), "done": 0, "failed": 0,
+                "items": [{"modality": m, "source": f"arrival {i + 1}", "status": "queued",
+                           "result": f"{RESULTS}{batch}/{i:03d}.json"}
+                          for i, (m, _) in enumerate(order)]}
+
+        def upload(i: int, modality: str, prefix: str) -> None:
+            try:
+                copy_study(self.s3, self.bucket, prefix, batch, f"{i:03d}",
+                           self.site_state, modality)
+                self._set(i, status="in AWS")
+            except Exception as e:
+                self._set(i, status="FAILED", lane="FAILED", error=f"{type(e).__name__}: {e}")
+                with self._lock:
+                    self._state["failed"] += 1
+
+        def run() -> None:
+            with ThreadPoolExecutor(4) as pool:
+                list(pool.map(lambda x: upload(*x), [(i, m, p) for i, (m, p) in enumerate(order)]))
+            with self._lock:
+                self._state["uploading"] = False
+
+        threading.Thread(target=run, daemon=True).start()
+        return self.status()
+
+    def _set(self, i: int, **fields) -> None:
+        with self._lock:
+            self._state["items"][i].update(fields)

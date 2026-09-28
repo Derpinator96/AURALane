@@ -116,11 +116,14 @@ API on this machine:
 
 - local stack: `python -m core.run serve` as in step 2 (one study at a time,
   the models share the process).
-- AWS: `python -m core.run serve --stack Auralane`, then `npm run dev` in
-  `client/`. Three studies in flight; results land in the AWS worklist the
-  deployed site reads. Sign in as a Cognito `admin` user. Cost: each study is a
-  HealthImaging import and a model call, plus one wake of each SageMaker
-  endpoint (docs/AWS-COSTS.md).
+- AWS, from the deployed site or `python -m core.run serve --stack Auralane`:
+  cloud-native. The button copies 30 corpus studies into S3 `upload/`
+  server-side, and each one starts its own Fargate ingest task
+  (docs/DEPLOY.md step 7), so the studies never pass through the API host.
+  Needs the corpus in S3 once (`python -m core.run upload-corpus --stack
+  Auralane`). Sign in as a Cognito `admin` user. Cost: a Fargate task, a
+  HealthImaging import and a model call per study, plus one wake of each
+  SageMaker endpoint (docs/AWS-COSTS.md).
 
 On the Render API and the fixture runtime the tab says why it is unavailable:
 no corpus on that host, or no pipeline.

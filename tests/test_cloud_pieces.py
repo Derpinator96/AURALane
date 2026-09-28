@@ -176,3 +176,67 @@ def test_intake_without_a_corpus_says_why():
     from core.intake import IntakeSimulator
     s = IntakeSimulator(None, {"CR": [], "MR": [], "CT": []}).status()
     assert s["available"] is False and s["reason"] == "no study corpus on this host"
+
+
+# -- cloud ingest: identity map, uploader, cloud intake (moto) -------------------
+@pytest.fixture
+def moto_aws(monkeypatch):
+    moto = pytest.importorskip("moto")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+    for k in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"):
+        monkeypatch.setenv(k, "testing")
+    with moto.mock_aws():
+        yield
+
+
+def test_dynamo_identity_map_is_consistent_and_issues_one_pseudonym_per_patient(moto_aws):
+    import boto3
+    from core.providers.aws.identity import DynamoIdentityMap
+    boto3.client("dynamodb", region_name="us-east-1").create_table(
+        TableName="t", KeySchema=[{"AttributeName": "k", "KeyType": "HASH"}],
+        AttributeDefinitions=[{"AttributeName": "k", "AttributeType": "S"}],
+        BillingMode="PAY_PER_REQUEST")
+    a, b = DynamoIdentityMap("t"), DynamoIdentityMap("t")      # two tasks, one table
+    uid = a.map_uid("1.2.3.4")
+    assert uid.startswith("1.2.826.0.1.3680043.10.1422.") and b.map_uid("1.2.3.4") == uid
+    assert a.map_patient("P1", name="SIM^PATIENT^0001") == "AUR-000001" == b.map_patient("P1")
+    assert b.map_patient("P2") == "AUR-000002"
+    assert a.record_study("1.2.3.4", uid, "P1").startswith("ACC")
+
+
+BKT = "auralane-test"
+
+
+def test_upload_writes_the_files_then_the_manifest_and_the_intake_reads_results(moto_aws, tmp_path):
+    import json as _json
+    import time as _time
+    import boto3
+    from core.intake import CloudIntake
+    from core.upload import corpus_catalogue, upload_corpus, upload_study
+    s3 = boto3.client("s3", region_name="us-east-1")
+    s3.create_bucket(Bucket=BKT)
+    study = tmp_path / "study"
+    study.mkdir()
+    for i in range(3):
+        (study / f"{i}.dcm").write_bytes(b"DICM" + bytes([i]))
+    key = upload_study(s3, BKT, sorted(study.glob("*.dcm")), "batch1", "000", site_state="Kerala")
+    manifest = _json.loads(s3.get_object(Bucket=BKT, Key=key)["Body"].read())
+    assert key == "upload/batch1/000/_ready.json" and len(manifest["keys"]) == 3
+    assert manifest["site_state"] == "Kerala"
+
+    assert upload_corpus(s3, BKT, {"CR": [study], "MR": [], "CT": []}) == {"CR": 1, "MR": 0, "CT": 0}
+    assert corpus_catalogue(s3, BKT)["CR"] == ["corpus/CR/000/"]
+    intake = CloudIntake(s3, BKT)
+    state = intake.start(1, "admin@x")
+    for _ in range(100):                                        # the copy runs in a thread
+        if not intake.status().get("uploading"):
+            break
+        _time.sleep(0.05)
+    batch = state["batch"]
+    assert s3.get_object(Bucket=BKT, Key=f"upload/{batch}/000/_ready.json")
+    s3.put_object(Bucket=BKT, Key=f"intake/{batch}/000.json", Body=_json.dumps(
+        {"status": "SCORED", "lane": "ROUTINE", "study": "1.2.826.0.1.3680043.10.1422.9",
+         "seconds": 30.0}).encode())                            # what the ingest task writes
+    s = intake.status()
+    assert (s["done"], s["failed"], s["running"]) == (1, 0, False)
+    assert s["items"][0]["lane"] == "ROUTINE" and s["items"][0]["source"] == "arrival 1"
