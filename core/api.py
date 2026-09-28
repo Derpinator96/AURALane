@@ -41,8 +41,10 @@ from fastapi import Depends, FastAPI, Header, HTTPException, UploadFile, File, F
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 
 import triage
+from core import ct_hemorrhage
 from core.registry import Registry
 from core.types import AuditEvent, Principal, StudyRef
 
@@ -227,7 +229,8 @@ def create_app(p: dict, registry: Registry | None = None,
     def study(study: str, who: Principal = Depends(radiologist)):
         row = row_or_404(study)
         entry = registry.entries.get(row.get("model_id") or "", {})
-        urgency = entry.get("urgency", {})
+        # Models outside the registry (head CT) carry their weights on the row.
+        urgency = entry.get("urgency") or (row.get("triage") or {}).get("urgency_weights") or {}
         findings = sorted(({"name": k, "label": _label(k), "signal": v,
                             "urgency": urgency.get(k)}
                            for k, v in (row.get("findings") or {}).items()),
@@ -246,6 +249,7 @@ def create_app(p: dict, registry: Registry | None = None,
                          if isinstance(v, str) and k.endswith("_png")}
         return {"disclaimer": DISCLAIMER, "study": view(row), "findings": findings,
                 "top_findings": (row.get("triage") or {}).get("top_findings", []),
+                "decision_reason": (row.get("triage") or {}).get("decision_reason"),
                 "evidence": evidence, "evidence_urls": evidence_urls, "series": series,
                 "draft": draft,
                 "alzheimer": row.get("alzheimer"),
@@ -318,7 +322,7 @@ def create_app(p: dict, registry: Registry | None = None,
 
     @app.post("/api/studies/upload")
     async def upload_study(
-        file: UploadFile = File(...),
+        file: list[UploadFile] = File(...),
         modality: str | None = Form(None),
         patient_id: str | None = Form(None),
         workflow: str | None = Form(None),
@@ -329,11 +333,13 @@ def create_app(p: dict, registry: Registry | None = None,
         1. Multi-sequence Brain Tumor MRI (BraTS SegResNet)
         2. Single-sequence T1 Alzheimer's MRI (MONAI DenseNet121)
         3. Chest X-Ray (TorchXRayVision DenseNet)
-        4. Head CT (Intracranial Hemorrhage & Midline Shift)
+        4. Head CT (intracranial hemorrhage, Grad-CAM): every slice of the
+           study as repeated "file" fields, or one .zip
         """
         start = time.perf_counter()
-        raw = await file.read()
-        filename = file.filename or "upload.dcm"
+        payloads = [(f.filename or f"upload-{i}.dcm", await f.read())
+                    for i, f in enumerate(file)]
+        filename, raw = payloads[0]
         ext = Path(filename).suffix.lower()
 
         study_uid = f"upload-{uuid.uuid4().hex[:8]}"
@@ -366,6 +372,7 @@ def create_app(p: dict, registry: Registry | None = None,
         series_list = []
         alzheimer_data = None
         metrics_data = None
+        error = None
 
         if target_workflow == "ALZHEIMER" or modality == "MR_ALZHEIMER" or "alz" in filename.lower() or "ad_" in filename.lower() or "cn_" in filename.lower():
             # T1-ONLY ALZHEIMER'S CLASSIFICATION WORKFLOW
@@ -412,40 +419,25 @@ def create_app(p: dict, registry: Registry | None = None,
 
         elif detected_modality == "CT" or target_workflow == "CT":
             detected_modality = "CT"
-            model_id = "ct-head-v1"
-            lane = "CRITICAL"
-            triage_res = {
-                "acuity": 88.0,
-                "lane": "CRITICAL",
-                "sla": "< 15 min",
-                "sla_minutes": 15,
-                "abstained": False,
-                "driver": "Intracranial Hemorrhage",
-                "confidence": 0.942,
-                "signal": 0.942,
-                "top_findings": [
-                    {"name": "Intracranial Hemorrhage", "signal": 0.942, "urgency": 0.98},
-                    {"name": "Mass Effect / Midline Shift", "signal": 0.781, "urgency": 0.90},
-                    {"name": "Cerebral Edema", "signal": 0.655, "urgency": 0.70}
-                ]
-            }
-            findings = {
-                "Intracranial Hemorrhage": 0.942,
-                "Mass Effect / Midline Shift": 0.781,
-                "Cerebral Edema": 0.655
-            }
-            evidence = {
-                "gradcam_png": "evidence/fixture-sample/ct_ich.png",
-                "gradcam_finding": "Intracranial Hemorrhage",
-                "gradcam_coverage": 0.08
-            }
+            model_id = ct_hemorrhage.MODEL_ID
+            try:
+                ct = await run_in_threadpool(ct_hemorrhage.score_upload, payloads,
+                                             p["blob"], study_uid)
+            except ct_hemorrhage.InvalidCTInput as e:
+                raise HTTPException(422, str(e))
+            except Exception as e:
+                # A study that errors stays visible, as in core/pipeline.py.
+                ct = {"lane": "FAILED", "triage": {}, "findings": {}, "evidence": {},
+                      "n_slices": len(payloads), "error": f"{type(e).__name__}: {e}"}
+            lane, triage_res = ct["lane"], ct["triage"]
+            findings, evidence = ct["findings"], ct["evidence"]
+            error = ct.get("error")
             series_list = [{
                 "series_uid": f"1.2.826.0.1.3680043.ct.{uuid.uuid4().hex[:12]}",
                 "number": 1,
-                "description": f"Head CT Axial Non-Contrast ({filename})",
-                "instance_count": 1,
-                "instance_uids": ["ct.inst.upload"],
-                "frame_url": "/fixtures/frames/ct_head.png"
+                "description": f"Head CT Axial Non-Contrast ({ct['n_slices']} slices)",
+                "instance_count": ct["n_slices"],
+                "instance_uids": [],
             }]
 
         elif detected_modality in ("CR", "DX", "XC", "X-RAY"):
@@ -554,25 +546,28 @@ def create_app(p: dict, registry: Registry | None = None,
             "modality": detected_modality,
             "patient_id": pat_id,
             "model_id": model_id,
-            "status": "SCORED",
+            "status": "FAILED" if error else "SCORED",
             "lane": lane,
             "created_at": created_at,
             "triage": triage_res,
             "findings": findings,
             "evidence": evidence,
             "series": series_list,
-            "source": f"Upload: {filename}",
+            "source": (f"Upload: {filename}" if len(payloads) == 1
+                       else f"Upload: {len(payloads)} files ({filename}, ...)"),
             "datastore_id": "fixture",
             "alzheimer": alzheimer_data,
             "metrics": metrics_data,
+            "error": error,
         }
 
         p["table"].put_item("worklist", row)
         duration = (time.perf_counter() - start) * 1000
         p["table"].append_audit(AuditEvent(
             actor=who.email, action="upload_ingest", study=study_uid, at=created_at,
-            outcome="ok", duration_ms=round(duration, 3),
-            detail={"filename": filename, "modality": detected_modality, "lane": lane, "patient_id": pat_id}
+            outcome="failed" if error else "ok", duration_ms=round(duration, 3),
+            detail={"filename": filename, "files": len(payloads), "modality": detected_modality,
+                    "lane": lane, "patient_id": pat_id, **({"error": error} if error else {})}
         ))
 
         return {"disclaimer": DISCLAIMER, "study": view(row), "message": f"Successfully ingested {filename} into {lane} queue"}

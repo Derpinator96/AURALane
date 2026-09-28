@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import MriViewer3D from "../viewer/MriViewer3D.jsx";
+import CtGradcamView, { CtGradcamCaption, hasCtGradcam } from "./CtGradcamView.jsx";
 import { WorklistIcon } from "./Icons.jsx";
 
 const fmt = (v, d = 3) => (v == null ? "--" : Number(v).toFixed(d));
@@ -251,27 +252,26 @@ export default function LatestCasePanel({ studyId, token, onVerdictChange }) {
                 type="button"
                 className={`btn-gradcam-toggle ${showGradcam ? "active" : ""}`}
                 onClick={() => setShowGradcam(!showGradcam)}
+                disabled={!hasCtGradcam(urls)}
+                data-testid="ct-gradcam-toggle"
               >
-                {showGradcam ? "Hemorrhage Highlight: ON" : "Hemorrhage Highlight: OFF"}
+                {showGradcam ? "Grad-CAM Heatmap: ON" : "Grad-CAM Heatmap: OFF"}
               </button>
             </div>
 
-            <div className="ct-canvas-wrapper">
-              <img
-                src="/fixtures/frames/ct_head.png"
-                alt="Head CT Scan"
-                className="ct-base-img"
-              />
-              {showGradcam && (
-                <div className="ct-hemorrhage-overlay" title="Acute hyperdense extra-axial hemorrhage & mass effect">
-                  <span className="overlay-pin">Acute Extra-Axial Hematoma</span>
-                </div>
-              )}
-            </div>
-
-            <p className="evidence-caption">
-              <span className="bold">CT AI Finding:</span> Acute hyperdense extra-axial collection with local mass effect and midline deviation.
-            </p>
+            {hasCtGradcam(urls) ? (
+              <>
+                <CtGradcamView evidence={ev} urls={urls} show={showGradcam} />
+                <CtGradcamCaption evidence={ev} />
+                {detail.decision_reason && <p className="evidence-caption">{detail.decision_reason}</p>}
+              </>
+            ) : (
+              <p className="note viewer-empty" data-testid="ct-no-gradcam">
+                {s.lane === "FAILED"
+                  ? "Processing failed, so there is no Grad-CAM for this study."
+                  : "No Grad-CAM image is stored for this study."}
+              </p>
+            )}
           </div>
         )}
       </div>

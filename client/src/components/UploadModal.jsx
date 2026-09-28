@@ -7,7 +7,7 @@ import { UploadIcon } from "./Icons.jsx";
  * A) Brain Tumor MRI: Multi-sequence workflow (T1, T1c, T2, FLAIR) -> MONAI SegResNet
  * B) Alzheimer's MRI: Single-sequence T1 workflow -> 3D DenseNet121 Cognitive Classifier
  * C) Chest Radiography: DICOM / Image -> TorchXRayVision DenseNet
- * D) Head CT: DICOM -> Intracranial Hemorrhage & Midline Shift
+ * D) Head CT: every slice (DICOM files or a .zip) -> hemorrhage ViT + Grad-CAM
  */
 export default function UploadModal({ token, onClose, onStudyIngested }) {
   const [activeTab, setActiveTab] = useState("mri_tumor"); // 'mri_tumor' | 'mri_alzheimer' | 'cr' | 'ct'
@@ -26,8 +26,13 @@ export default function UploadModal({ token, onClose, onStudyIngested }) {
   // Alzheimer's single T1 file
   const [alzheimerT1, setAlzheimerT1] = useState(null);
 
-  // Single file for CR or CT
+  // Single file for CR
   const [singleFile, setSingleFile] = useState(null);
+
+  // Every slice of one head CT study (files, a picked folder, or one .zip)
+  const [ctFiles, setCtFiles] = useState([]);
+  const pickCt = (e) => setCtFiles(Array.from(e.target.files || []));
+  const ctBytes = ctFiles.reduce((n, f) => n + f.size, 0);
 
   const PIPELINE_STEPS = [
     "Receiving and staging imaging payload",
@@ -108,8 +113,8 @@ export default function UploadModal({ token, onClose, onStudyIngested }) {
         formData.append("file", singleFile);
         formData.append("modality", "CR");
       } else if (activeTab === "ct") {
-        if (!singleFile) throw new Error("Please select a Head CT DICOM file.");
-        formData.append("file", singleFile);
+        if (ctFiles.length === 0) throw new Error("Please select the slices of a Head CT study.");
+        ctFiles.forEach((f) => formData.append("file", f));
         formData.append("modality", "CT");
         formData.append("workflow", "CT");
       }
@@ -358,7 +363,7 @@ export default function UploadModal({ token, onClose, onStudyIngested }) {
                 <div className="pipeline-notice notice-crimson">
                   <span className="notice-badge">CT</span>
                   <div>
-                    <span className="bold">Emergency Head CT Triage:</span> High-priority automated screening for acute intracranial hemorrhage, mass effect, and midline shift.
+                    <span className="bold">Head CT Hemorrhage Triage:</span> A ViT classifier scores every slice for five hemorrhage subtypes; the top slices set the lane, and Grad-CAM shows where the model looked on the deciding slice. Select every slice of one study.
                   </div>
                 </div>
 
@@ -368,22 +373,39 @@ export default function UploadModal({ token, onClose, onStudyIngested }) {
                     id="file-ct"
                     className="hidden-file-input"
                     accept=".dcm,.dicom,.zip"
-                    onChange={(e) => setSingleFile(e.target.files[0] || null)}
+                    multiple
+                    onChange={pickCt}
+                    data-testid="ct-files-input"
+                  />
+                  <input
+                    type="file"
+                    id="folder-ct"
+                    className="hidden-file-input"
+                    webkitdirectory=""
+                    onChange={pickCt}
                   />
                   <label htmlFor="file-ct" className="single-drop-box">
                     <div className="drop-icon"><UploadIcon size={28} /></div>
-                    {singleFile ? (
+                    {ctFiles.length > 0 ? (
                       <div className="file-info">
-                        <span className="mono bold">{singleFile.name}</span>
-                        <span>{(singleFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                        <span className="mono bold">
+                          {ctFiles.length === 1 ? ctFiles[0].name : `${ctFiles.length} files`}
+                        </span>
+                        <span>{(ctBytes / (1024 * 1024)).toFixed(2)} MB</span>
+                        <span className="change-hint">Click to replace selection</span>
                       </div>
                     ) : (
                       <div>
-                        <span className="prompt-text">Drop Non-Contrast Head CT Series (.dcm, .zip)</span>
-                        <span className="sub-hint">Emergency trauma or stroke protocol</span>
+                        <span className="prompt-text">Select all slices of a Non-Contrast Head CT (.dcm, or one .zip)</span>
+                        <span className="sub-hint">Shift- or Ctrl-click to pick several files</span>
                       </div>
                     )}
                   </label>
+                </div>
+
+                <div className="quick-action-bar">
+                  <span className="quick-hint">Study in a folder?</span>
+                  <label htmlFor="folder-ct" className="btn-quick-demo">Select Study Folder</label>
                 </div>
               </div>
             )}
@@ -413,6 +435,8 @@ export default function UploadModal({ token, onClose, onStudyIngested }) {
                     ? !tumorT1c && !tumorT1 && !tumorT2 && !tumorFlair
                     : activeTab === "mri_alzheimer"
                     ? !alzheimerT1
+                    : activeTab === "ct"
+                    ? ctFiles.length === 0
                     : !singleFile
                 }
               >

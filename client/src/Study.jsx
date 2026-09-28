@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import CtGradcamView, { hasCtGradcam } from "./components/CtGradcamView.jsx";
 import { timeUTC } from "./worklist.js";
 import { CheckIcon, ClockIcon } from "./components/Icons.jsx";
 
@@ -256,7 +257,7 @@ export default function Study({ load, loadSeries, sendVerdict }) {
   const [error, setError] = useState(null);
   const [seriesUid, setSeriesUid] = useState(null);
   const [instances, setInstances] = useState(null);
-  const [rationale, setRationale] = useState(false);
+  const [rationale, setRationale] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const [view3D, setView3D] = useState(true);
@@ -304,6 +305,7 @@ export default function Study({ load, loadSeries, sendVerdict }) {
   }
 
   const isMR = detail.study.modality === "MR";
+  const isCT = detail.study.modality === "CT";
   const ev = detail.evidence || {};
   const urls = detail.evidence_urls || {};
   const overlay = rationale && urls.gradcam_layer_png && ev.gradcam_box
@@ -368,7 +370,7 @@ export default function Study({ load, loadSeries, sendVerdict }) {
         </div>
 
         {/* Datastore note shown only when 2D slices are requested and datastore is non-connected */}
-        {detail.datastore_note && (!isMR || !view3D) && (
+        {detail.datastore_note && (!isMR || !view3D) && !isCT && (
           <p className="note datastore-note" role="note" data-testid="datastore-note">
             {detail.datastore_note}
           </p>
@@ -376,7 +378,11 @@ export default function Study({ load, loadSeries, sendVerdict }) {
 
         {/* Primary Medical Imaging Workstation View */}
         <div className="viewer-viewport-container">
-          {isMR && view3D ? (
+          {isCT ? (
+            hasCtGradcam(urls)
+              ? <CtGradcamView evidence={ev} urls={urls} show={rationale} />
+              : <p className="note viewer-empty" data-testid="ct-no-gradcam">No CT image is stored for this study.</p>
+          ) : isMR && view3D ? (
             <Suspense fallback={<div className="viewer-loading-placeholder"><div className="clinical-spinner"></div><p>Initializing NiiVue 3D WebGL Engine...</p></div>}>
               <MriViewer3D
                 studyId={id}
