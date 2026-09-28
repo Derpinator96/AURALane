@@ -19,6 +19,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITY_DB = ROOT / "data" / "identity" / "identity.db"
@@ -52,7 +53,16 @@ def cors_origins() -> list[str] | None:
     """AURALANE_CORS_ORIGINS, comma-separated; None means core.api's development
     defaults. Scheme and host only, no path: https://<project>.vercel.app"""
     raw = os.environ.get("AURALANE_CORS_ORIGINS", "")
-    return [o.strip().rstrip("/") for o in raw.split(",") if o.strip()] or None
+    origins = []
+    for item in raw.split(","):
+        cleaned = item.strip().rstrip("/")
+        if not cleaned:
+            continue
+        if "://" in cleaned:
+            p = urlsplit(cleaned)
+            cleaned = f"{p.scheme}://{p.netloc}"
+        origins.append(cleaned)
+    return origins or None
 
 
 def providers() -> dict:

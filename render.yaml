@@ -28,7 +28,7 @@ services:
       # This service's own URL, e.g. https://auralane-api.onrender.com. Signed
       # evidence URLs are built from it so the Vercel page can load them.
       - key: AURALANE_PUBLIC_URL
-        sync: false
+        value: https://auralane-api.onrender.com
       # The Vercel client's origin(s), comma-separated, scheme and host only.
       - key: AURALANE_CORS_ORIGINS
-        sync: false
+        value: https://aura-lane.vercel.app

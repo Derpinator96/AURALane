@@ -94,8 +94,8 @@ def test_blob_urls_are_absolute_when_hosted(monkeypatch):
 
 
 def test_cors_origins_parse(monkeypatch):
-    monkeypatch.setenv("AURALANE_CORS_ORIGINS", " https://a.vercel.app/ , https://b.example ,")
-    assert run.cors_origins() == ["https://a.vercel.app", "https://b.example"]
+    monkeypatch.setenv("AURALANE_CORS_ORIGINS", " https://a.vercel.app/ , https://b.example , https://c.vercel.app/login")
+    assert run.cors_origins() == ["https://a.vercel.app", "https://b.example", "https://c.vercel.app"]
     monkeypatch.setenv("AURALANE_CORS_ORIGINS", "")
     assert run.cors_origins() is None
 
