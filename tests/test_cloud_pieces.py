@@ -2,6 +2,7 @@
 prior, the head CT adapter, the aws runtime's variable requirements and the
 API's signed frame stream. No AWS call is made (moto)."""
 import json
+import secrets
 
 import numpy as np
 import pytest
@@ -15,6 +16,16 @@ from core.providers.fixture import BLOB, WORKLIST, FixtureDatastore, FixtureTabl
 from core.providers.local import DevAuth, FileBlob, TemplateLLM
 from core.registry import Registry, rank
 from core.types import Findings
+
+# Generated per run: no password is written in this repository (as in test_api.py).
+DEV_PASSWORD = secrets.token_hex(8)
+# Meets Cognito's default policy: upper, lower, digit, symbol, 8 or more.
+REQUESTER_PASSWORD = f"Aa1!{secrets.token_urlsafe(12)}"
+# Usernames and emails generated too; ".invalid" is reserved so no real
+# address can exist on it (RFC 2606).
+REQUESTER = f"user-{secrets.token_hex(4)}"
+REQUESTER_EMAIL = f"{REQUESTER}@{secrets.token_hex(4)}.invalid"
+ACTOR = f"admin-{secrets.token_hex(4)}@{secrets.token_hex(4)}.invalid"
 
 
 # -- regional prior ----------------------------------------------------------
@@ -109,10 +120,10 @@ def test_api_streams_signed_frames_and_refuses_tampered_links():
     study = next(r for r in json.loads(open(WORKLIST).read()) if r["modality"] == "CR")
     app = create_app({"runtime": "aws", "blob": FileBlob(BLOB, url_base="/api/blob"),
                       "table": table, "datastore": _FrameStore(table),
-                      "auth": DevAuth(password="pw"), "llm": TemplateLLM(),
+                      "auth": DevAuth(password=DEV_PASSWORD), "llm": TemplateLLM(),
                       "frame_proxy": "http://testserver"})
     c = TestClient(app)
-    token = c.post("/api/auth/login", json={"username": "radiologist", "password": "pw"}).json()["token"]
+    token = c.post("/api/auth/login", json={"username": "radiologist", "password": DEV_PASSWORD}).json()["token"]
     s = study["series"][0]
     url = c.get(f"/api/studies/{study['study']}/frame-url?series={s['series_uid']}"
                 f"&instance={s['instance_uids'][0]}",
@@ -151,10 +162,10 @@ def test_intake_route_runs_real_ingests_is_admin_only_and_audited(tmp_path):
     sim = IntakeSimulator(ingest_one, {"CR": [tmp_path / "a", tmp_path / "b"], "MR": [], "CT": []})
     table = FixtureTable()
     app = create_app({"runtime": "local", "blob": FileBlob(BLOB, url_base="/api/blob"), "table": table,
-                      "datastore": FixtureDatastore(table), "auth": DevAuth(password="pw"),
+                      "datastore": FixtureDatastore(table), "auth": DevAuth(password=DEV_PASSWORD),
                       "llm": TemplateLLM(), "intake": sim})
     c = TestClient(app)
-    tok = {u: c.post("/api/auth/login", json={"username": u, "password": "pw"}).json()["token"]
+    tok = {u: c.post("/api/auth/login", json={"username": u, "password": DEV_PASSWORD}).json()["token"]
            for u in ("admin", "radiologist")}
     h = {u: {"Authorization": f"Bearer {t}"} for u, t in tok.items()}
     assert c.post("/api/admin/intake", json={"count": 2}, headers=h["radiologist"]).status_code == 403
@@ -227,7 +238,7 @@ def test_upload_writes_the_files_then_the_manifest_and_the_intake_reads_results(
     assert upload_corpus(s3, BKT, {"CR": [study], "MR": [], "CT": []}) == {"CR": 1, "MR": 0, "CT": 0}
     assert corpus_catalogue(s3, BKT)["CR"] == ["corpus/CR/000/"]
     intake = CloudIntake(s3, BKT)
-    state = intake.start(1, "admin@x")
+    state = intake.start(1, ACTOR)
     for _ in range(100):                                        # the copy runs in a thread
         if not intake.status().get("uploading"):
             break
@@ -240,3 +251,104 @@ def test_upload_writes_the_files_then_the_manifest_and_the_intake_reads_results(
     s = intake.status()
     assert (s["done"], s["failed"], s["running"]) == (1, 0, False)
     assert s["items"][0]["lane"] == "ROUTINE" and s["items"][0]["source"] == "arrival 1"
+
+
+# -- access requests ------------------------------------------------------------
+class _AccessTable(FixtureTable):
+    def __init__(self):
+        super().__init__()
+        self.access = {}
+
+    def put_item(self, table, item):
+        if table == "access":
+            self.access[item["username"]] = dict(item)
+        else:
+            super().put_item(table, item)
+
+    def get_item(self, table, key):
+        return dict(self.access[key["username"]]) if table == "access" and key["username"] in \
+            self.access else (None if table == "access" else super().get_item(table, key))
+
+    def scan(self, table):
+        return [dict(v) for v in self.access.values()] if table == "access" else super().scan(table)
+
+
+class _RequestAuth(DevAuth):
+    """DevAuth plus the Cognito access-request calls, recording what they got."""
+    def __init__(self):
+        super().__init__(password=DEV_PASSWORD)
+        self.calls = []
+
+    def request_access(self, username, email, password):
+        self.calls.append(("sign_up", username, email, password))
+
+    def approve(self, username, group):
+        self.calls.append(("approve", username, group))
+
+    def reject(self, username):
+        self.calls.append(("reject", username))
+
+    def verify(self, token):
+        from core.types import Principal
+        p = super().verify(token)
+        # the seeded admin acts as super admin here; the radiologist does not
+        return Principal(p.subject, p.email, p.groups + (("superadmin",) if "admin" in p.groups else ()))
+
+
+def test_access_request_goes_to_the_identity_provider_and_waits_for_the_super_admin():
+    table, auth, sent = _AccessTable(), _RequestAuth(), []
+    app = create_app({"runtime": "aws", "blob": FileBlob(BLOB, url_base="/api/blob"), "table": table,
+                      "datastore": FixtureDatastore(table), "auth": auth, "llm": TemplateLLM(),
+                      "notify": lambda subject, message: sent.append((subject, message))})
+    c = TestClient(app)
+    body = {"username": REQUESTER, "email": REQUESTER_EMAIL, "password": REQUESTER_PASSWORD,
+            "role": "radiologist"}
+    r = c.post("/api/access-requests", json=body)
+    assert r.status_code == 202 and r.json()["status"] == "pending"
+    assert auth.calls == [("sign_up", REQUESTER, REQUESTER_EMAIL, REQUESTER_PASSWORD)]
+    assert REQUESTER_PASSWORD not in json.dumps(table.access) and REQUESTER_PASSWORD not in json.dumps(sent)
+    assert sent and REQUESTER in sent[0][0]
+    assert c.post("/api/access-requests", json=body).status_code == 409      # no duplicate
+
+    h = {u: {"Authorization": f"Bearer {c.post('/api/auth/login', json={'username': u, 'password': DEV_PASSWORD}).json()['token']}"}
+         for u in ("admin", "radiologist")}
+    assert c.get("/api/admin/access-requests", headers=h["radiologist"]).status_code == 403
+    rows = c.get("/api/admin/access-requests", headers=h["admin"]).json()["requests"]
+    assert [(r["username"], r["status"]) for r in rows] == [(REQUESTER, "pending")]
+    r = c.post(f"/api/admin/access-requests/{REQUESTER}", json={"decision": "approve"}, headers=h["admin"])
+    assert r.status_code == 200 and r.json()["request"]["status"] == "approved"
+    assert auth.calls[-1] == ("approve", REQUESTER, "radiologist")
+    assert c.post(f"/api/admin/access-requests/{REQUESTER}", json={"decision": "reject"},
+                  headers=h["admin"]).status_code == 409                       # decided once
+    events = c.get("/api/admin/audit", headers=h["admin"]).json()["events"]
+    assert {"access_request", "access_approved"} <= {e["action"] for e in events}
+
+
+def test_access_requests_are_refused_where_there_is_no_identity_provider():
+    table = FixtureTable()
+    c = TestClient(create_app({"runtime": "fixture", "blob": FileBlob(BLOB, url_base="/api/blob"),
+                               "table": table, "datastore": FixtureDatastore(table),
+                               "auth": DevAuth(password=DEV_PASSWORD), "llm": TemplateLLM()}))
+    r = c.post("/api/access-requests", json={"username": REQUESTER, "email": REQUESTER_EMAIL,
+                                              "password": REQUESTER_PASSWORD, "role": "admin"})
+    assert r.status_code == 409
+
+
+def test_cognito_access_request_cannot_sign_in_until_approved(moto_aws):
+    import boto3
+    from core.providers.aws import CognitoAuth
+    idp = boto3.client("cognito-idp", region_name="us-east-1")
+    pool = idp.create_user_pool(PoolName="p")["UserPool"]["Id"]
+    client = idp.create_user_pool_client(UserPoolId=pool, ClientName="c",
+                                         ExplicitAuthFlows=["ALLOW_USER_PASSWORD_AUTH",
+                                                            "ALLOW_REFRESH_TOKEN_AUTH"])["UserPoolClient"]["ClientId"]
+    for g in ("radiologist", "admin"):
+        idp.create_group(UserPoolId=pool, GroupName=g)
+    auth = CognitoAuth(pool, client, client=idp)
+    auth.request_access(REQUESTER, REQUESTER_EMAIL, REQUESTER_PASSWORD)
+    with pytest.raises(Exception):
+        auth.login(REQUESTER, REQUESTER_PASSWORD)                                     # unconfirmed
+    auth.approve(REQUESTER, "radiologist")
+    assert auth.login(REQUESTER, REQUESTER_PASSWORD)
+    groups = idp.admin_list_groups_for_user(UserPoolId=pool, Username=REQUESTER)["Groups"]
+    assert [g["GroupName"] for g in groups] == ["radiologist"]

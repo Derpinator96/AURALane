@@ -103,13 +103,15 @@ class HealthImagingDatastore(DatastorePort):
         run = uuid.uuid4().hex
         prefix = f"import/{run}"
         keys = [f"{prefix}/in/{i:05d}.dcm" for i in range(len(paths))]
-        # Staged 16 at a time: a 620-slice MR is 620 round trips to us-east-1,
-        # minutes when done one by one.
-        with ThreadPoolExecutor(16) as pool:
-            list(pool.map(lambda kp: self.s3.put_object(Bucket=self.bucket, Key=kp[0],
-                                                        Body=kp[1].read_bytes()),
-                          zip(keys, paths)))
         try:
+            # Staged 16 at a time: a 620-slice MR is 620 round trips to us-east-1,
+            # minutes when done one by one. Inside the try, so a failed or
+            # interrupted upload is cleaned up too: one interrupted run on
+            # 2026-09-28 left 331 staged files for the lifecycle to expire.
+            with ThreadPoolExecutor(16) as pool:
+                list(pool.map(lambda kp: self.s3.put_object(Bucket=self.bucket, Key=kp[0],
+                                                            Body=kp[1].read_bytes()),
+                              zip(keys, paths)))
             job = self.mi.start_dicom_import_job(
                 jobName=f"auralane-{run[:12]}", dataAccessRoleArn=self.role, clientToken=run,
                 datastoreId=self.datastore_id,

@@ -65,3 +65,24 @@ class CognitoAuth(AuthPort):
             raise jwt.InvalidTokenError(f"expected an ID token, got token_use={c.get('token_use')!r}")
         return Principal(c["sub"], c.get("email") or c.get("cognito:username", ""),
                          tuple(c.get("cognito:groups", [])))
+
+    # -- access requests (core/api.py /api/access-requests) --------------------
+    # A requester signs up with their own password through Cognito's SignUp:
+    # the password goes to Cognito and nowhere else. The account is unconfirmed
+    # and in no group, so it can neither sign in nor reach any route until a
+    # super admin approves it. Rejecting deletes it.
+    def request_access(self, username: str, email: str, password: str) -> None:
+        try:
+            self.idp.sign_up(ClientId=self.client_id, Username=username, Password=password,
+                             UserAttributes=[{"Name": "email", "Value": email}])
+        except (self.idp.exceptions.UsernameExistsException,
+                self.idp.exceptions.InvalidPasswordException,
+                self.idp.exceptions.InvalidParameterException) as e:
+            raise ValueError(e.response["Error"]["Message"]) from e
+
+    def approve(self, username: str, group: str) -> None:
+        self.idp.admin_confirm_sign_up(UserPoolId=self.pool, Username=username)
+        self.idp.admin_add_user_to_group(UserPoolId=self.pool, Username=username, GroupName=group)
+
+    def reject(self, username: str) -> None:
+        self.idp.admin_delete_user(UserPoolId=self.pool, Username=username)

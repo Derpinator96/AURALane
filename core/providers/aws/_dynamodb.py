@@ -26,6 +26,7 @@ from core.types import AuditEvent
 SCHEMA = {
     "worklist": ("study", None),
     "audit": ("study", "event_id"),
+    "access": ("username", None),        # access requests, core/api.py
 }
 NO_STUDY = "-"      # audit partition for events that precede a StudyRef
 

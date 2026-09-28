@@ -58,6 +58,10 @@ export const api = {
   audit: (token) => call("/api/admin/audit", { token }),
   laneMix: (token) => call("/api/admin/lane-mix", { token }),
   models: (token) => call("/api/admin/models", { token }),
+  requestAccess: (body) => call("/api/access-requests", { method: "POST", body }),
+  accessRequests: (token) => call("/api/admin/access-requests", { token }),
+  decideAccess: (token, username, decision) =>
+    call(`/api/admin/access-requests/${encodeURIComponent(username)}`, { token, method: "POST", body: { decision } }),
   intake: (token) => call("/api/admin/intake", { token }),
   startIntake: (token, count) => call("/api/admin/intake", { token, method: "POST", body: { count } }),
 };
