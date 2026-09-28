@@ -43,6 +43,15 @@ On presentation day, one warm chest environment:
 `live` (the `AURALANE_CHEST_FUNCTION` output is `<name>:live`), so the
 provisioned environment is the one that answers.
 
+## Before every `cdk deploy`: `python push_images.py`
+
+SageMaker only accepts Docker v2 image manifests; Docker Desktop's containerd
+store writes OCI ones. The stack builds the brain and CT images with
+`--output type=image,oci-mediatypes=false`, but CDK CLI 2.1143.0 breaks on
+that option ("x.replace is not a function"). `push_images.py` builds those two
+from CDK's staged context and pushes them under the asset tags, and
+`cdk deploy` skips images already in ECR. Delete it once the CLI is fixed.
+
 ## The three images: build locally before `cdk deploy`
 
 `cdk deploy` builds these itself; building first catches a broken image

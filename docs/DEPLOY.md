@@ -47,13 +47,24 @@ Check: a `CDKToolkit` stack in CloudFormation, status `CREATE_COMPLETE`.
 
 ### 3. Deploy the stack
 
+With the venv activated (CDK runs `python app.py`, which needs `aws_cdk`):
+
 ```
-cd infra && npx cdk deploy Auralane
+cd infra && python push_images.py
+cd infra && npx cdk deploy Auralane --asset-parallelism=false --require-approval never
 ```
+
+`push_images.py` builds the brain and CT images with Docker v2 manifests and
+pushes them under the tags `cdk deploy` looks for. SageMaker rejects the OCI
+manifests Docker Desktop writes by default ("Unsupported manifest media type"),
+and CDK CLI 2.1143.0 fails on the option that fixes it ("x.replace is not a
+function"); `cdk deploy` skips any image already in ECR, so it never reaches
+that code. Run it again whenever a model image changes. `--asset-parallelism=false`
+pushes one image at a time: in parallel, the chest push failed once.
 
 Flags, all optional: `-c brain=false`, `-c ct=false` leave an endpoint out;
 `-c chest_provisioned=1` keeps one chest environment warm (presentation day
-only). `cdk deploy` rebuilds the images and pushes them to ECR, then creates
+only). `cdk deploy` builds and pushes the chest image, then creates
 everything. Check: it prints the outputs, one per environment variable.
 
 Save the outputs as a file you will source (never commit it):
