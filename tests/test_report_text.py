@@ -29,7 +29,7 @@ def test_chest_report_has_every_section_and_grades_each_finding():
     assert imp[1].startswith("2. Possible nodule") and len(imp) == 3
     assert "Queue lane: Urgent. Reading clock: under 1 hr." in text
     assert "Driving finding: pneumothorax" in text
-    assert text.rstrip().endswith("replaces every statement.") and "—" not in text
+    assert text.rstrip().endswith("replaces every statement.") and "\u2014" not in text
 
 
 def test_brain_report_states_volumes_in_ml_and_eccentricity():
