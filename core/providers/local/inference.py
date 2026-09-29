@@ -203,12 +203,25 @@ class InProcessInference(InferencePort):
         stem = f"evidence/{ref.study_uid}/gradcam_{_slug(target.driver)}"
         self.blob.put(f"{stem}.png", render_gradcam(x[0, 0].numpy(), heat, target.driver))
         self.blob.put(f"{stem}_layer.png", render_heat_layer(heat))
-        return {"preds": preds,
-                "evidence": {"gradcam_png": f"{stem}.png",
-                             "gradcam_layer_png": f"{stem}_layer.png",
-                             "gradcam_box": crop_box(*pixels.shape[:2]),
-                             "gradcam_finding": target.driver,
-                             "gradcam_coverage": heat_coverage(heat)}}
+        evidence = {"gradcam_png": f"{stem}.png",
+                    "gradcam_layer_png": f"{stem}_layer.png",
+                    "gradcam_box": crop_box(*pixels.shape[:2]),
+                    "gradcam_finding": target.driver,
+                    "gradcam_coverage": heat_coverage(heat)}
+        # A map for each of the top findings, not only the driver (core/cxr_gradcam.py).
+        # Best effort: the driver's map above is what the lane rests on.
+        try:
+            import time
+            from adapters import multilabel
+            from core import cxr_gradcam
+            t0 = time.perf_counter()
+            signals = multilabel.adapt(preds, {"entry": model_cfg}).findings
+            evidence["gradcam_findings"] = cxr_gradcam.per_finding(
+                model, x, signals, model_cfg["urgency"], target.driver, heat, self.blob, ref.study_uid)
+            evidence["gradcam_findings_seconds"] = round(time.perf_counter() - t0, 2)
+        except Exception as e:
+            evidence["gradcam_findings_error"] = f"{type(e).__name__}: {e}"
+        return {"preds": preds, "evidence": evidence}
 
     def _segmentation(self, model_cfg, *, nifti: dict[str, Path], **_) -> dict[str, Any]:
         """nifti: {"T1c", "T1", "T2", "FLAIR"} -> paths. Returns metrics.json.

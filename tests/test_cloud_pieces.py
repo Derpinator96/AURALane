@@ -270,8 +270,9 @@ class _AccessTable(FixtureTable):
         return dict(self.access[key["username"]]) if table == "access" and key["username"] in \
             self.access else (None if table == "access" else super().get_item(table, key))
 
-    def scan(self, table):
-        return [dict(v) for v in self.access.values()] if table == "access" else super().scan(table)
+    def scan(self, table, fields=None):
+        return ([dict(v) for v in self.access.values()] if table == "access"
+                else super().scan(table, fields))
 
 
 class _RequestAuth(DevAuth):
@@ -398,3 +399,24 @@ def test_simulate_on_aws_hands_studies_to_ingest_tasks_and_runs_nothing_in_the_a
     items = sim.status(state["batch"])["items"]
     assert [i["status"] for i in items] == ["done", "done"], items
     assert {i["lane"] for i in items} == {"URGENT"}
+
+
+def test_dynamodb_projection_reads_reserved_words_and_recent_audit_uses_the_day_index(moto_aws):
+    from core.providers.aws._dynamodb import DynamoDBTable
+    from core.types import AuditEvent
+    import datetime as _dt
+    t = DynamoDBTable(prefix="perf", region_name="us-east-1")
+    t.put_item("worklist", {"study": "s1", "status": "SCORED", "lane": "URGENT", "findings": {"a": 0.5},
+                            "evidence": {"big": "x" * 50}})
+    # `status` is a DynamoDB reserved word; the projection aliases it.
+    assert t.scan("worklist", fields=["study", "status", "lane"]) == [
+        {"study": "s1", "status": "SCORED", "lane": "URGENT"}]
+    now = _dt.datetime.now(_dt.timezone.utc)
+    for i, study in enumerate(("s1", "s2", "-")):
+        t.append_audit(AuditEvent(actor="a", action="open", study=study,
+                                  at=(now + _dt.timedelta(seconds=i)).isoformat(timespec="microseconds"),
+                                  outcome="ok", duration_ms=1.0))
+    recent = t.recent_audit(days=2)
+    assert [e["study"] for e in recent] == ["-", "s2", "s1"]           # newest first
+    assert all(e["day"] == e["at"][:10] for e in recent)
+    assert t.recent_audit(days=2, limit=2) == recent[:2]

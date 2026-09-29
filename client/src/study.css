@@ -108,3 +108,30 @@ input[type="range"] { accent-color: var(--ink); }
 .viewer-tools button:hover { background: var(--hover); }
 .viewer-tools button[aria-pressed="true"] { background: var(--tag-bg); border-color: var(--ink); color: var(--ink); }
 .viewer-label { margin-left: auto; color: var(--ink-3); font-weight: 400; }
+
+/* Chest Grad-CAM finding selector */
+.finding-selector { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.finding-selector-label { font-size: 12px; color: var(--ink-3); margin-right: 2px; }
+.finding-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; background: var(--sheet);
+  border: 1px solid var(--line-strong); border-radius: var(--r-pill); font-size: 13px; color: var(--ink-2); cursor: pointer;
+}
+.finding-chip:hover { background: var(--blue-tint); border-color: var(--blue-line); color: var(--blue-ink); }
+.finding-chip[aria-pressed="true"] { background: var(--blue-tint); border-color: var(--blue); color: var(--blue-ink); font-weight: 500; }
+.finding-chip-signal { font-size: 11px; color: var(--ink-3); }
+.finding-chip-tag { font-size: 11px; color: var(--blue-ink); }
+
+/* The abstention tray */
+.abstention-tray { display: grid; gap: 12px; background: var(--blue-tint); border-left: 3px solid var(--lane-triage); }
+.abstain-why { display: grid; gap: 4px; font-size: 13px; }
+.abstain-why p { margin: 0; }
+.tray-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.tray-form { display: grid; gap: 10px; }
+.tray-form fieldset { border: 0; padding: 0; margin: 0; display: flex; gap: 14px; flex-wrap: wrap; }
+.tray-form legend { font-size: 12px; color: var(--ink-3); padding: 0; margin-bottom: 4px; }
+.tray-radio { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); cursor: pointer; }
+.tray-reason { display: grid; gap: 4px; font-size: 13px; }
+.tray-reason input, .tray-reason select { width: 100%; }
+.tray-buttons { display: flex; gap: 8px; justify-content: flex-end; }
+.human-lane-note { font-size: 13px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: var(--r-card); background: var(--sheet); }
+.regen-confirm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; background: var(--blue-tint); border: 1px solid var(--blue-line); border-radius: var(--r-card); font-size: 13px; }

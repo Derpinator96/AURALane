@@ -14,6 +14,8 @@ from core.providers.aws.config import REGION
 class DynamoTable(DynamoDBTable):
     service = "Amazon DynamoDB"
     def __init__(self, prefix: str = "auralane", region: str = REGION, **boto_kwargs):
+        from core.providers.aws import session as shared
+        boto_kwargs.setdefault("config", shared.config())
         super().__init__(prefix=prefix, region_name=region, **boto_kwargs)
 
     def _ensure(self, full, pk, sk):

@@ -55,9 +55,9 @@ class FileBlob(BlobPort):
     def _sign(self, key: str, expires: int) -> str:
         return hmac.new(self._secret, f"{key}\n{expires}".encode(), hashlib.sha256).hexdigest()
 
-    def presigned_url(self, key: str, ttl: int = 300) -> str:
+    def presigned_url(self, key: str, ttl: int = 300, check: bool = True) -> str:
         p = self._path(key)
-        if not p.exists():
+        if check and not p.exists():
             raise FileNotFoundError(key)
         if self.url_base is None:
             return p.as_uri()

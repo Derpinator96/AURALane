@@ -1,6 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import AbstentionTray, { HumanLaneNote } from "./components/AbstentionTray.jsx";
 import CtGradcamView, { hasCtGradcam } from "./components/CtGradcamView.jsx";
+import { FindingSelector, gradcamLayer, selectedCaption } from "./components/GradcamFindings.jsx";
 import AnnotationsPanel from "./components/AnnotationsPanel.jsx";
 import NoteEditorModal from "./components/NoteEditorModal.jsx";
 import { api, loadSession } from "./api.js";
@@ -38,10 +40,10 @@ export function rationaleText(detail) {
   return "No rationale image for this study.";
 }
 
-export function Rationale({ detail, on, onToggle, opacity, onOpacity }) {
+export function Rationale({ detail, on, onToggle, opacity, onOpacity, selected = null }) {
   const ev = detail.evidence || {};
   const urls = detail.evidence_urls || {};
-  const drawable = Boolean(urls.gradcam_layer_png && ev.gradcam_coverage !== 0);
+  const drawable = gradcamLayer(ev, urls, selected).drawable;
   return (
     <div className="rationale" data-testid="rationale">
       <button type="button" aria-pressed={on} disabled={!drawable && !urls.overlay_png}
@@ -57,7 +59,7 @@ export function Rationale({ detail, on, onToggle, opacity, onOpacity }) {
         </label>
       )}
       <p className="note" data-testid="rationale-caption">
-        {rationaleText(detail)}{" "}
+        {selectedCaption(ev, selected) || rationaleText(detail)}{" "}
         {(drawable || urls.overlay_png) && "A sanity check on why the study was placed where it was, not a localisation."}
         {ev.gradcam_note ? ` ${ev.gradcam_note}` : ""}
       </p>
@@ -114,15 +116,22 @@ function SegmentationRationale({ detail }) {
 // in the audit.
 export function DraftPanel({ detail, saveDraft }) {
   const s = detail.study;
-  const saved = detail.draft_review;
-  const [text, setText] = useState(saved?.text ?? detail.draft ?? "");
-  const [review, setReview] = useState(saved || null);
+  // What the panel opens with: the latest saved report, else the reader's saved edit
+  // (rows from before reports existed), else the draft generated from the findings.
+  const opening = detail.report?.text ?? detail.draft_review?.text ?? detail.draft ?? "";
+  const [text, setText] = useState(opening);
+  const [base, setBase] = useState(opening);            // what the box held when last loaded or saved
+  const [review, setReview] = useState(detail.report || detail.draft_review || null);
   const [state, setState] = useState(null);
+  const [confirmRegen, setConfirmRegen] = useState(false);
 
   useEffect(() => {
-    setText(detail.draft_review?.text ?? detail.draft ?? "");
-    setReview(detail.draft_review || null);
+    const next = detail.report?.text ?? detail.draft_review?.text ?? detail.draft ?? "";
+    setText(next);
+    setBase(next);
+    setReview(detail.report || detail.draft_review || null);
     setState(null);
+    setConfirmRegen(false);
   }, [detail.study.study]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!detail.draft) return null;
@@ -140,32 +149,59 @@ export function DraftPanel({ detail, saveDraft }) {
     setState("Saving.");
     try {
       const r = await saveDraft(s.study, text, reviewed);
-      setReview(r.draft_review);
-      setState(null);
+      const saved = r.report || r.draft_review;
+      setReview(saved);
+      setBase(text);
+      setState(r.report_error ? `Not added to Reports: ${r.report_error}.`
+        : reviewed
+        ? `Reviewed by ${saved.by || saved.author} at ${saved.at}. `
+          + (r.report ? `Saved as report version ${Number(r.report.version)}: find it under Reports.` : "")
+        : null);
     } catch (e) {
       setState(`Not saved: ${e.message}`);
     }
   }
 
+  // A fresh draft from the stored findings; asks first when the box holds edits.
+  function regenerate(force = false) {
+    if (!force && text !== base && text !== detail.draft) {
+      setConfirmRegen(true);
+      return;
+    }
+    setText(detail.draft);
+    setConfirmRegen(false);
+    setState("Draft regenerated from the stored findings. Save it to keep it.");
+  }
+
+  const reviewedNow = Boolean(review && (review.reviewed || review.status === "reviewed"));
+  const who = review && (review.by || review.author_name || review.author);
   return (
     <section className="draft-panel" data-testid="draft-panel" aria-label="Draft report">
       <h4 className="card-section-title">Draft, template generated, radiologist to review</h4>
       <p className="draft-meta">
         Driving finding: <strong>{s.driver_label || "none"}</strong>. Lane: <strong>{s.lane_label || s.lane}</strong>.
       </p>
-      <textarea className="draft-text mono" value={text} rows={11} data-testid="draft-text"
+      <textarea className="draft-text mono" value={text} rows={14} data-testid="draft-text"
                 aria-label="Draft text" onChange={(e) => { setText(e.target.value); setState(null); }} />
+      {confirmRegen && (
+        <div className="regen-confirm" role="alert">
+          <span>Replace your edits with a fresh draft?</span>
+          <button type="button" className="btn" onClick={() => regenerate(true)}>Replace</button>
+          <button type="button" className="btn" onClick={() => setConfirmRegen(false)}>Keep my edits</button>
+        </div>
+      )}
       <div className="draft-actions">
         <button type="button" onClick={copy}>Copy</button>
-        {saveDraft && <button type="button" onClick={() => save(false)}>Save edits</button>}
+        <button type="button" onClick={() => regenerate(false)} data-testid="draft-regenerate">Regenerate draft</button>
+        {saveDraft && <button type="button" onClick={() => save(false)}>Save draft</button>}
         {saveDraft && (
           <button type="button" className="btn-primary" onClick={() => save(true)}
                   data-testid="draft-reviewed">Mark as reviewed</button>
         )}
       </div>
-      <p className="note" data-testid="draft-status">
-        {state || (review?.reviewed ? `Reviewed by ${review.by} at ${review.at}.`
-                   : review ? `Edited by ${review.by} at ${review.at}, not yet marked reviewed.`
+      <p className="note" data-testid="draft-status" role="status">
+        {state || (reviewedNow ? `Reviewed by ${who} at ${review.at}.`
+                   : review ? `Saved as a draft by ${who} at ${review.at}, not yet marked reviewed.`
                    : "Not reviewed.")}
       </p>
     </section>
@@ -197,6 +233,7 @@ export function RegionalContext({ regional, driver, driverLabel }) {
 }
 
 export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDraft,
+                             token = null, me = null, onStudyChanged = () => {}, onLeft = () => {},
                              annotations = [], activeAnnotationId = null, onSelectAnnotation = null,
                              onEditAnnotation = null, onDeleteAnnotation = null,
                              isAddNoteMode = false, onToggleAddNoteMode = null }) {
@@ -218,6 +255,9 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
         </div>
         {s.assigned_name && <p className="lane-assigned">Assigned to {s.assigned_name}</p>}
       </div>
+
+      <HumanLaneNote study={s} />
+      <AbstentionTray detail={detail} token={token} me={me} onChanged={onStudyChanged} onLeft={onLeft} />
 
       <DraftPanel detail={detail} saveDraft={saveDraft} />
 
@@ -254,11 +294,6 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
 
       {rationaleOn && detail.evidence_urls?.overlay_png && <SegmentationRationale detail={detail} />}
       {s.lane === "FAILED" && <p className="error-banner">Processing failed: {s.error}</p>}
-      {s.abstain_reason && (
-        <div className="abstain-notice-box" data-testid="abstain-reason">
-          <strong>No lane assigned:</strong> {s.abstain_reason}. A radiologist picks the lane.
-        </div>
-      )}
 
       <div className="study-findings-card">
         <div className="findings-header">
@@ -323,6 +358,8 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
   const [busy, setBusy] = useState(false);
   const [view3D, setView3D] = useState(true);
   const [ctView, setCtView] = useState("gradcam");   // head CT: "gradcam" | "3d"
+  const [selectedFinding, setSelectedFinding] = useState(null);   // chest Grad-CAM finding; null is the driver
+  const navigate = useNavigate();
 
   // Clinician Pinpoint Annotations State
   const [annotations, setAnnotations] = useState([]);
@@ -355,6 +392,16 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
     setInstances(null);
     loadSeries(id, seriesUid).then((d) => setInstances(d.instances)).catch(setError);
   }, [id, seriesUid, loadSeries]);
+
+  // A reader placed the study, set it aside or sent it for a second read: reload it.
+  async function onStudyChanged(row) {
+    setDetail((d) => ({ ...d, study: row }));
+    try {
+      setDetail(await load(id));
+    } catch {
+      // The row above is already what the reader sees.
+    }
+  }
 
   async function onVerdict(value) {
     setBusy(true);
@@ -441,8 +488,8 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
   const show3D = (isMR && has3D && view3D) || (hasCtVolume && (ctView === "3d" || !hasCtGradcam(detail.evidence_urls || {})));
   const ev = detail.evidence || {};
   const urls = detail.evidence_urls || {};
-  const overlay = rationale && urls.gradcam_layer_png && ev.gradcam_box && ev.gradcam_coverage !== 0
-    ? { url: urls.gradcam_layer_png, box: ev.gradcam_box, opacity } : null;
+  const layer = gradcamLayer(ev, urls, selectedFinding);
+  const overlay = rationale && layer.drawable ? { url: layer.url, box: ev.gradcam_box, opacity } : null;
   const current = detail.series.find((s) => s.series_uid === seriesUid);
 
   return (
@@ -488,7 +535,8 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
         </div>
 
         <Rationale detail={detail} on={rationale} onToggle={() => setRationale((v) => !v)}
-                   opacity={opacity} onOpacity={setOpacity} />
+                   opacity={opacity} onOpacity={setOpacity} selected={selectedFinding} />
+        <FindingSelector ev={ev} selected={selectedFinding} onSelect={setSelectedFinding} />
 
         {detail.datastore_note && !show3D && (
           <p className="note datastore-note" role="note" data-testid="datastore-note">{detail.datastore_note}</p>
@@ -517,7 +565,8 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
       </div>
 
       <StudyPanel detail={detail} onVerdict={onVerdict} busy={busy} rationaleOn={rationale}
-                  saveDraft={saveDraft} annotations={annotations}
+                  saveDraft={saveDraft} token={activeToken} me={loadSession()?.user?.email}
+                  onStudyChanged={onStudyChanged} onLeft={() => navigate("/")} annotations={annotations}
                   activeAnnotationId={selectedAnnotation?.id || selectedAnnotation?.annotation_id}
                   onSelectAnnotation={handleSelectAnnotation} onEditAnnotation={handleEditAnnotation}
                   onDeleteAnnotation={handleDeleteAnnotation} isAddNoteMode={isAddNoteMode}

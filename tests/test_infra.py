@@ -46,7 +46,7 @@ def _of(t, kind):
 def test_synthesises_without_credentials_and_never_creates_a_datastore(template):
     types = Counter(r["Type"] for r in template["Resources"].values())
     assert not any(k.startswith("AWS::HealthImaging") for k in types)
-    assert types["AWS::S3::Bucket"] == 1 and types["AWS::DynamoDB::Table"] == 5
+    assert types["AWS::S3::Bucket"] == 1 and types["AWS::DynamoDB::Table"] == 6
     # 2 functions: the chest model, and CDK's handler that turns on the bucket's
     # EventBridge notifications.
     assert types["AWS::Lambda::Function"] == 2 and types["AWS::SageMaker::Endpoint"] == 2
@@ -61,6 +61,10 @@ def test_tables_match_what_the_provider_expects(template):
         keys = {k["KeyType"]: k["AttributeName"] for k in tables[f"auralane-{name}"]["KeySchema"]}
         assert keys == ({"HASH": pk, "RANGE": sk} if sk else {"HASH": pk})
         assert tables[f"auralane-{name}"]["BillingMode"] == "PAY_PER_REQUEST"
+    # The audit table's by_day index, which recent_audit queries.
+    (gsi,) = tables["auralane-audit"]["GlobalSecondaryIndexes"]
+    assert gsi["IndexName"] == "by_day"
+    assert {k["KeyType"]: k["AttributeName"] for k in gsi["KeySchema"]} == {"HASH": "day", "RANGE": "event_id"}
 
 
 def test_working_prefixes_expire_and_evidence_is_kept(template):

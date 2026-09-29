@@ -153,6 +153,9 @@ class Simulator:
         (CloudDispatch) and nothing is fetched or run in this process.
         on_study(row, reader, actor): called when a study is scored, to assign it."""
         self.dispatch = dispatch
+        # Called after each study finishes: the API drops its caches, because the
+        # pipeline wrote the row through its own table object, not the API's.
+        self.after_study: Callable[[], None] | None = None
         self.pool, self.ingest_one, self.table = pool, ingest_one, table
         self.runtime, self.on_study, self.workers = runtime, on_study, workers
         self.unavailable = unavailable
@@ -300,6 +303,11 @@ class Simulator:
                           finished_at=_now())
             finally:
                 shutil.rmtree(tmp, ignore_errors=True)
+                if self.after_study is not None:
+                    try:
+                        self.after_study()
+                    except Exception:                        # noqa: BLE001
+                        pass
 
         # Brain MR one at a time (620 instances in memory at once); the rest run
         # beside it, so a chest X-ray never waits for an endpoint to wake.

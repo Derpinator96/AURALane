@@ -284,5 +284,8 @@ def adapt(model_output: dict[str, Any], context: dict[str, Any]) -> Findings:
                 "channels": {"edema": "yellow", "tc": "orange", "et": "red"},
                 # From the model's own metrics.json; the 3D viewer shows these.
                 "volumes_cm3": {"whole_tumour": wt, "tumour_core": tc, "enhancing": et,
-                                "edema": round(wt - tc, 2)}}
+                                "edema": round(wt - tc, 2)},
+                # Off-midline eccentricity (0 central, 1 at the edge of the volume): the
+                # part of the mass effect signal the report states in words.
+                "eccentricity": round(float(derived["eccentricity"]), 3)}
     return Findings(findings=findings, evidence=evidence, meta=meta)

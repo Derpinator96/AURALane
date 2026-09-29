@@ -35,6 +35,7 @@ class FixtureTable(TablePort):
         rows = json.loads(Path(path).read_text())
         self._worklist = {r["study"]: r for r in rows}
         self._audit: list[dict] = []
+        self._reports: dict[tuple[str, str], dict] = {}    # (study, version) -> report
         # AURALANE_FIXTURE_ANNOTATIONS: tests point this at a copy, so a test
         # run never rewrites the committed fixtures/annotations.json.
         self._annotations_path = Path(os.environ.get("AURALANE_FIXTURE_ANNOTATIONS", annotations_path))
@@ -58,6 +59,8 @@ class FixtureTable(TablePort):
             raise PermissionError("audit is append only; use append_audit")
         if table == "worklist":
             self._worklist[item["study"]] = copy.deepcopy(item)
+        elif table == "reports":
+            self._reports[(item["study"], item["version"])] = copy.deepcopy(item)
         elif table == "annotations":
             ann_id = item.get("annotation_id") or item.get("id")
             if not ann_id:
@@ -68,6 +71,9 @@ class FixtureTable(TablePort):
             raise KeyError(table)
 
     def get_item(self, table, key):
+        if table == "reports":
+            item = self._reports.get((key["study"], key["version"]))
+            return copy.deepcopy(item) if item else None
         if table == "worklist":
             row = self._worklist.get(key["study"])
             return copy.deepcopy(row) if row else None
@@ -100,6 +106,9 @@ class FixtureTable(TablePort):
             raise KeyError(table)
 
     def query(self, table, **conditions):
+        if table == "reports":
+            return [copy.deepcopy(v) for (st, _), v in sorted(self._reports.items())
+                    if st == conditions["study"]]
         if table == "audit":
             if set(conditions) != {"study"}:
                 raise ValueError("query by study only")
@@ -117,10 +126,15 @@ class FixtureTable(TablePort):
             return [row] if row else []
         raise KeyError(table)
 
-    def scan(self, table):
+    def scan(self, table, fields=None):
         if table == "audit":
             raise PermissionError("audit is read per study with query, never scanned")
+        elif table == "reports":
+            return [copy.deepcopy(v) for v in self._reports.values()]
         elif table == "worklist":
+            if fields:
+                return [{k: copy.deepcopy(r[k]) for k in fields if k in r}
+                        for r in self._worklist.values()]
             return [copy.deepcopy(r) for r in self._worklist.values()]
         elif table == "annotations":
             return [copy.deepcopy(a) for a in self._annotations.values()]
@@ -130,7 +144,15 @@ class FixtureTable(TablePort):
         item = event.to_dict()
         item["study"] = event.study or NO_STUDY
         item["event_id"] = f"{event.at}#{uuid.uuid4().hex[:12]}"
+        item["day"] = event.at[:10]
         self._audit.append(item)
+
+    def recent_audit(self, days=7, limit=5000):
+        import datetime as _dt
+        since = (_dt.datetime.now(_dt.timezone.utc).date() - _dt.timedelta(days=days - 1)).isoformat()
+        out = [copy.deepcopy(e) for e in self._audit if e["day"] >= since]
+        out.sort(key=lambda e: e["event_id"], reverse=True)
+        return out[:limit]
 
 
 class FixtureDatastore(DatastorePort):

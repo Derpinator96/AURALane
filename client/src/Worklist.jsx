@@ -7,7 +7,7 @@ import ReportsView from "./components/ReportsView.jsx";
 import SettingsView from "./components/SettingsView.jsx";
 import SimulatePanel from "./components/SimulatePanel.jsx";
 import DistributePanel from "./components/DistributePanel.jsx";
-import { BoardIcon, ClockIcon, ListIcon, SearchIcon, UserIcon, WorklistIcon } from "./components/Icons.jsx";
+import { BoardIcon, ClockIcon, CloseIcon, ListIcon, SearchIcon, UserIcon, WorklistIcon } from "./components/Icons.jsx";
 import { Slot } from "./Shell.jsx";
 import { loadSettings } from "./settings.js";
 
@@ -82,10 +82,17 @@ export default function Worklist({ load, token }) {
 
   useEffect(() => { fetchWorklist(); }, [fetchWorklist]);
 
+  // Refresh on a timer, but only while this tab is visible; coming back to the tab
+  // refreshes at once.
   useEffect(() => {
     if (!refresh && !error) return undefined;
-    const t = setInterval(fetchWorklist, (error ? 5 : refresh) * 1000);
-    return () => clearInterval(t);
+    const t = setInterval(() => { if (!document.hidden) fetchWorklist(); }, (error ? 5 : refresh) * 1000);
+    const onVisible = () => { if (!document.hidden) fetchWorklist(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [fetchWorklist, refresh, error]);
 
   const mine = useMemo(() => (data?.me ? (data.studies || []).filter((s) => s.assigned_to === data.me) : []),
@@ -93,13 +100,19 @@ export default function Worklist({ load, token }) {
   // My studies when something is assigned to me; otherwise the whole queue.
   const scope = chosenScope ?? (mine.length ? "mine" : "all");
 
-  // Default selection: the highest-priority study in view, once.
+  // The panel on the right exists only while a study is selected. Esc closes it,
+  // unless a dialog is open or the reader is typing in a field.
   useEffect(() => {
-    if (selectedStudyId || !data?.studies?.length) return;
-    const list = scope === "mine" && mine.length ? mine : data.studies;
-    const top = list.find((s) => s.lane === "CRITICAL") || list[0];
-    if (top) setSelectedStudyId(top.study);
-  }, [data, scope, mine, selectedStudyId]);
+    if (!selectedStudyId) return undefined;
+    const onKey = (e) => {
+      if (e.key !== "Escape" || e.defaultPrevented || panel) return;
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || "")) return;
+      if (document.querySelector('[role="dialog"]')) return;
+      setSelectedStudyId(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selectedStudyId, panel]);
 
   const handleVerdictUpdate = (studyId, updatedStudy) => {
     setData((prev) => prev && {
@@ -158,8 +171,8 @@ export default function Worklist({ load, token }) {
     ? (row.assigned_to === data.me ? "You" : row.assigned_name || row.assigned_to) : "Unassigned");
 
   return (
-    <div className="workstation-layout" data-testid="workstation-layout"
-         style={{ gridTemplateColumns: `minmax(0, 1fr) 6px ${detailsWidth}px` }}>
+    <div className={`workstation-layout ${selectedStudyId ? "with-panel" : ""}`} data-testid="workstation-layout"
+         style={{ gridTemplateColumns: selectedStudyId ? `minmax(0, 1fr) 6px ${detailsWidth}px` : "minmax(0, 1fr)" }}>
       {panel === "simulate" && (
         <SimulatePanel token={token} readers={readers} me={data.me} onClose={() => setPanel(null)} onProgress={fetchWorklist} />
       )}
@@ -302,6 +315,7 @@ export default function Worklist({ load, token }) {
                           <div className="card-meta"><WorklistIcon size={14} />
                             <span>Acuity <span className="mono"><Acuity row={row} /></span></span></div>
                           <div className="card-meta"><UserIcon size={14} /><span>{who(row)}</span></div>
+                          {row.human_lane && <div className="card-meta">Lane set by {row.human_lane.by_name || row.human_lane.by}</div>}
                           {row.overdue && l.lane === "CRITICAL" && (
                             <div className="card-alert">Not opened within the {l.clock || "lane"} clock</div>
                           )}
@@ -371,7 +385,11 @@ export default function Worklist({ load, token }) {
                                data-testid="study-row" data-study={row.study}>
                             <div className="cell-lane">
                               <span className={`lanetag lane-${row.lane}`}>{row.lane_label || row.lane}</span>
-                              {row.clock && <span className="cell-clock mono">{row.clock}</span>}
+                              {row.human_lane ? (
+                                <span className="cell-clock">Lane set by {row.human_lane.by_name || row.human_lane.by}</span>
+                              ) : row.repeat_imaging ? (
+                                <span className="cell-clock">Marked inadequate by {row.repeat_imaging.by_name || row.repeat_imaging.by}</span>
+                              ) : row.clock && <span className="cell-clock mono">{row.clock}</span>}
                             </div>
                             <div className="cell-patient mono bold">{row.patient_id || row.study}</div>
                             <div className="cell-modality">
@@ -402,17 +420,21 @@ export default function Worklist({ load, token }) {
         )}
       </main>
 
-      <div className="layout-resizer" onMouseDown={startResize} title="Drag to resize panel" />
+      {selectedStudyId && (
+        <>
+          <div className="layout-resizer" onMouseDown={startResize} title="Drag to resize panel" />
 
-      <aside className="workstation-details-panel" data-testid="workstation-details-panel">
-        <div className="details-upper" data-testid="details-upper">
-          <LatestCasePanel studyId={selectedStudyId} token={token} onVerdictChange={handleVerdictUpdate} />
-        </div>
-        <div className="details-lower" data-testid="details-lower">
-          <span className="placeholder-label">Placeholder</span>
-          <p className="note">Reserved for a later panel.</p>
-        </div>
-      </aside>
+          <aside className="workstation-details-panel" data-testid="workstation-details-panel">
+            <button type="button" className="icon-btn details-close" onClick={() => setSelectedStudyId(null)}
+                    aria-label="Close study panel" title="Close (Esc)" data-testid="close-panel">
+              <CloseIcon size={16} />
+            </button>
+            <LatestCasePanel studyId={selectedStudyId} token={token} me={data.me}
+                             onVerdictChange={handleVerdictUpdate} onChanged={fetchWorklist}
+                             onLeft={() => setSelectedStudyId(null)} />
+          </aside>
+        </>
+      )}
     </div>
   );
 }

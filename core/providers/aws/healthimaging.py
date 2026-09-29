@@ -57,6 +57,7 @@ from botocore.auth import SigV4Auth, SigV4QueryAuth
 from botocore.awsrequest import AWSRequest
 
 from core.ports import DatastorePort
+from core.providers.aws import session as shared
 from core.providers.aws.config import EXISTING_DATASTORE_ID, REGION
 from core.types import SeriesMeta, StudyMeta, StudyRef
 
@@ -84,11 +85,12 @@ class HealthImagingDatastore(DatastorePort):
                  import_timeout: float = 1800.0):
         self.bucket, self.role, self.datastore_id, self.region = (
             bucket, import_role_arn, datastore_id, region)
-        self.session = session or boto3.Session(region_name=region)
-        self.mi = client or self.session.client("medical-imaging", region_name=region)
-        self.s3 = s3 or self.session.client("s3", region_name=region)
+        self.session = session or shared.session(region)
+        self.mi = client or shared.client("medical-imaging", region)
+        self.s3 = s3 or shared.client("s3", region)
         self.dicomweb = (dicomweb or _dicomweb_host(region)).rstrip("/")
-        self.http = http or httpx.Client(timeout=60)
+        self.http = http or httpx.Client(timeout=60, limits=httpx.Limits(
+            max_connections=32, max_keepalive_connections=32))
         self._docs: dict[str, dict] = {}       # image set id -> metadata document
         self.poll_seconds, self.import_timeout = poll_seconds, import_timeout
 

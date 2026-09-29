@@ -113,12 +113,15 @@ def test_inference_dispatches_on_output_type():
         inf.score(ref, {"output_type": "no-such-type"})
 
 
-def test_template_llm_leaves_impression_to_radiologist():
+def test_template_llm_writes_a_structured_report_from_the_findings():
     text = TemplateLLM().draft({"study": "1.2.3", "model_id": "cxr", "lane": "URGENT",
+                                "modality": "CR", "clock": "under 1 hr",
                                 "triage": {"driver": "Edema", "signal": 0.9, "sla": "< 1 hr"},
                                 "findings": {"Edema": 0.9, "Mass": 0.1}})
     assert text.startswith("NON-DIAGNOSTIC")
-    assert "Edema" in text and "to be written by the reading radiologist" in text
+    for section in ("EXAMINATION", "TECHNIQUE", "COMPARISON", "FINDINGS", "IMPRESSION", "TRIAGE NOTE"):
+        assert section in text
+    assert "None available." in text and "Findings suggestive of edema" in text
 
 
 def test_bedrock_stays_a_stub_that_names_its_service():
