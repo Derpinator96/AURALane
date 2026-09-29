@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { core, initCornerstone, registerFrame, tools } from "./cornerstone.js";
+import { core, initCornerstone, loadInBackground, registerFrame, tools } from "./cornerstone.js";
 
 // Stack viewport for one series. Left drag runs the selected tool (window and
 // level, zoom, pan); the mouse wheel scrolls slices. The pixels come from the
@@ -59,11 +59,14 @@ export default function Viewer({
           bindings: [{ mouseButton: tools.Enums.MouseBindings.Wheel }] });
         const imageIds = instances.map((i) => registerFrame(i.frame_url, i.metadata));
         const start = Math.floor(imageIds.length / 2);
+        // The middle slice first, on screen as soon as it decodes; the rest follow in
+        // the background, nearest first, so scrolling finds them already loaded.
         await viewport.setStack(imageIds, start);
         viewport.render();
         handles.current = { engine, viewport, group, imageIds };
         setSlice({ index: start, count: imageIds.length });
         setError(null);
+        if (imageIds.length > 1) loadInBackground(imageIds, start, () => cancelled);
       } catch (e) {
         if (!cancelled) setError(String(e?.message || e));
       }

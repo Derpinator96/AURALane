@@ -30,8 +30,10 @@ NON-DIAGNOSTIC; DECISION SUPPORT ONLY.
 from __future__ import annotations
 
 import datetime
+import gzip
 import hashlib
 import hmac
+import json
 import logging
 import os
 import secrets
@@ -42,14 +44,14 @@ from collections import Counter
 from typing import Any, Literal
 from urllib.parse import quote, urlencode
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from pydantic import BaseModel, Field
 
 import triage
 from core import assign as assignment
-from core import pipeline_view
+from core import perf, pipeline_view, series_index
 from core.registry import Registry
 from core.types import AuditEvent, Principal, StudyRef
 
@@ -60,13 +62,17 @@ NO_STUDY = "-"
 
 # Round-2 queue order. Abstained and failed studies sit after URGENT: a human
 # picks their lane, so they must be seen before routine work.
-LANE_ORDER = {"CRITICAL": 0, "URGENT": 1, "ABSTAIN": 2, "FAILED": 2, "EXPEDITED": 3,
+LANE_ORDER = {"CRITICAL": 0, "URGENT": 1, "ABSTAIN": 2, "FAILED": 2, "REPEAT": 2, "EXPEDITED": 3,
               "ROUTINE": 4}
-LANE_LABEL = {"ABSTAIN": "NEEDS HUMAN TRIAGE", "FAILED": "PIPELINE FAILED"}
+# REPEAT: a radiologist marked the study technically inadequate; it waits for repeat imaging.
+LANE_LABEL = {"ABSTAIN": "NEEDS HUMAN TRIAGE", "FAILED": "PIPELINE FAILED", "REPEAT": "REPEAT IMAGING"}
+# The lanes a reader may place an abstained study in.
+PLACEABLE_LANES = ("CRITICAL", "URGENT", "EXPEDITED", "ROUTINE")
 # Clock text from triage.LANES, the one source of the SLAs.
 CLOCK = {name: label.replace("< ", "under ") for name, _, label, _ in triage.LANES}
 CLOCK["ABSTAIN"] = "a human picks the lane"
 CLOCK["FAILED"] = "processing did not complete"
+CLOCK["REPEAT"] = "waiting for repeat imaging"
 
 
 class Login(BaseModel):
@@ -117,6 +123,19 @@ class DraftIn(BaseModel):
     reviewed: bool = False
 
 
+class LaneIn(BaseModel):
+    lane: Literal["CRITICAL", "URGENT", "EXPEDITED", "ROUTINE"]
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class SecondReadIn(BaseModel):
+    reader: str
+
+
+class InadequateIn(BaseModel):
+    reason: str = Field(min_length=3, max_length=500)
+
+
 class AnnotationIn(BaseModel):
     modality: str | None = None
     series_id: str | None = None
@@ -144,6 +163,17 @@ class AnnotationPatch(BaseModel):
 UNASSIGNED = "Unassigned"          # no registered model for the study's modality
 CLOCK_MIN = {name: mins for name, _, _, mins in triage.LANES}
 # The NIfTI the 3D viewer can load, by the name the client asks for.
+FRAME_LINK_TTL = 1800          # seconds; presigning is local, so a long link costs nothing
+
+# The worklist columns and nothing else: the list never needs findings, evidence,
+# drafts or series, which are the bulk of a row.
+WORKLIST_FIELDS = ["study", "patient_id", "modality", "model_id", "created_at", "lane", "triage",
+                   "status", "verdict", "error", "source", "assigned_to", "assigned_name",
+                   "assigned_at", "opened_at", "human_lane", "second_read", "repeat_imaging"]
+
+AUDIT_DAYS = 14                # the audit screens and a reader's history read this many days
+PIPELINE_DAYS = 7              # the pipeline view and /metrics
+
 SEQUENCES = {"t1c": "T1c", "t1ce": "T1c", "t1": "T1", "t2": "T2", "flair": "FLAIR",
              "ct": "CT"}
 
@@ -185,6 +215,41 @@ def create_app(p: dict, registry: Registry | None = None,
     registry = registry or Registry()               # startup error on a bad registry
     app = FastAPI(title="AURALane API")
 
+    # Per-process caches. Any write to the worklist table through this API drops
+    # them at once; a write from another process (the ingest tasks) is picked up
+    # when the entry expires.
+    wl_cache = perf.TTLCache(3.0, size=1)            # the worklist scan, shared by every user
+    detail_cache = perf.TTLCache(90.0, size=64)      # study payloads (evidence links live 300 s)
+    series_cache = perf.TTLCache(6 * 3600.0, size=24)    # imported image sets never change
+
+    def _table_written(table: str, *args, **kwargs) -> None:
+        if table == "worklist":
+            wl_cache.clear()
+            detail_cache.clear()
+        elif table == "reports":
+            detail_cache.clear()          # a study payload carries its latest report
+
+    # Server-Timing on every response: total and the time in each backing service.
+    # (In place, so a caller that swaps a provider afterwards still takes effect.)
+    for key, service, after in (("table", "dynamodb", {"put_item": _table_written,
+                                                       "delete_item": _table_written}),
+                                ("datastore", "healthimaging", None),
+                                ("blob", "s3", None), ("auth", "auth", None)):
+        if p.get(key) is not None:
+            raw = p[key]._target if isinstance(p[key], perf.Timed) else p[key]
+            p[key] = perf.Timed(raw, service, after)
+
+    @app.middleware("http")
+    async def _server_timing(request, call_next):
+        started = time.perf_counter()
+        acc, token = perf.begin()
+        try:
+            response = await call_next(request)
+        finally:
+            perf.end(token)
+        response.headers["Server-Timing"] = perf.server_timing((time.perf_counter() - started) * 1000, acc)
+        return response
+
     # An unhandled error must still carry the CORS headers, or the browser reports
     # it as "Failed to fetch" and hides the cause. Added before CORSMiddleware, so
     # it sits inside it.
@@ -199,9 +264,12 @@ def create_app(p: dict, registry: Registry | None = None,
     # The hosted client is on another origin. Tokens travel in the Authorization
     # header, never in a cookie, so credentials stay off; a wildcard origin can
     # therefore never be combined with credentials.
+    # max_age: the browser remembers the preflight for a day instead of sending one
+    # before every authenticated request.
     app.add_middleware(CORSMiddleware, allow_origins=list(cors_origins or DEV_ORIGINS),
                        allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-                       allow_headers=["Authorization", "Content-Type"])
+                       allow_headers=["Authorization", "Content-Type", "If-None-Match"],
+                       expose_headers=["Server-Timing", "ETag"], max_age=86400)
 
     def principal(authorization: str = Header(default="")) -> Principal:
         if not authorization.startswith("Bearer "):
@@ -234,6 +302,10 @@ def create_app(p: dict, registry: Registry | None = None,
             _readers["at"] = time.monotonic()
         return _readers["value"]
 
+    def reader_name(reader_id: str | None) -> str | None:
+        """A reader's display name from the directory; the id when it is not listed."""
+        return next((r["name"] for r in readers() if r["id"] == reader_id), reader_id)
+
     def pick_readers(ids: list[str]) -> list[dict]:
         known = {r["id"]: r for r in readers()}
         unknown = [i for i in ids if i not in known]
@@ -251,15 +323,17 @@ def create_app(p: dict, registry: Registry | None = None,
     # loader sends no bearer token. The key is per process: a restart only
     # expires links early. Without frame_proxy the datastore's own URL is used.
     frame_proxy = p.get("frame_proxy")
-    # TODO: a shared key (environment) if the API ever runs more than one instance.
-    frame_key = secrets.token_bytes(32)
+    # AURALANE_FRAME_KEY makes signed frame links valid across restarts and instances
+    # (proxy mode only); without it the key is per process and a restart only
+    # expires links early.
+    frame_key = (os.environ.get("AURALANE_FRAME_KEY") or "").encode() or secrets.token_bytes(32)
 
     def _frame_sig(path: str, expires: int) -> str:
         return hmac.new(frame_key, f"{path}|{expires}".encode(), hashlib.sha256).hexdigest()
 
     def frame_link(ref: StudyRef, series_uid: str, sop: str, frame: int = 1) -> str:
         if frame_proxy is None:
-            return p["datastore"].frame_url(ref, series_uid, sop, frame)
+            return p["datastore"].frame_url(ref, series_uid, sop, frame, ttl=FRAME_LINK_TTL)
         path = (f"/api/frames/{quote(ref.study_uid, safe='')}/{quote(series_uid, safe='')}/"
                 f"{quote(sop, safe='')}/{int(frame)}")
         expires = int(time.time()) + 300
@@ -298,6 +372,17 @@ def create_app(p: dict, registry: Registry | None = None,
                 return UNASSIGNED
         return entry["reading_pool"]
 
+    def abstain_text(t: dict) -> str | None:
+        """Why the system abstained: the reason it recorded (the brain mask checks, the
+        volume gate) or, for a chest finding in the band, the signal against the band."""
+        if t.get("reason"):
+            return t["reason"]
+        if t.get("driver") and t.get("signal") is not None:
+            return (f"{_label(t['driver'])} has a signal of {t['signal']:.2f}, inside the "
+                    f"{triage.ABSTAIN_LO:.2f} to {triage.ABSTAIN_HI:.2f} band where the model "
+                    f"does not commit to a lane")
+        return None
+
     def view(row: dict) -> dict[str, Any]:
         """A worklist row as the client shows it. Values copied, not computed."""
         t = row.get("triage") or {}
@@ -317,10 +402,15 @@ def create_app(p: dict, registry: Registry | None = None,
             "clock": CLOCK.get(lane),
             "acuity": t.get("acuity"),
             "abstained": bool(t.get("abstained")) or lane == "ABSTAIN",
+            # A study a reader placed or set aside keeps the reason the system abstained.
+            "human_lane": row.get("human_lane"),
+            "second_read": row.get("second_read"),
+            "repeat_imaging": row.get("repeat_imaging"),
             "driver": driver,
             "driver_label": _label(driver),
             "confidence": t.get("confidence"),
-            "abstain_reason": t.get("reason") if lane == "ABSTAIN" else None,
+            "abstain_reason": (abstain_text(t) if lane == "ABSTAIN" or row.get("human_lane")
+                               or row.get("repeat_imaging") else None),
             "status": row.get("status"),
             "verdict": row.get("verdict"),
             "error": row.get("error"),
@@ -357,13 +447,21 @@ def create_app(p: dict, registry: Registry | None = None,
         return {"email": who.email, "groups": list(who.groups), "disclaimer": DISCLAIMER}
 
     # -- radiologist --------------------------------------------------------
+    def worklist_rows() -> list[dict]:
+        """The ordered worklist, projected to the list's columns, scanned at most once
+        every 3 seconds however many users ask. Read only: callers copy, never edit."""
+        rows = wl_cache.get("rows")
+        if rows is None:
+            rows = wl_cache.put("rows", ordered(p["table"].scan("worklist", fields=WORKLIST_FIELDS)))
+        return rows
+
     @app.get("/api/worklist")
-    def worklist(who: Principal = Depends(radiologist)):
-        rows = [r for r in ordered(p["table"].scan("worklist")) if visible_to(r, who)]
+    def worklist(request: Request, who: Principal = Depends(radiologist)):
+        rows = [r for r in worklist_rows() if visible_to(r, who)]
         # The sections the client draws, in display order. Ordering lives here
         # only; the client does not know the lane ranking.
         lanes = [{"lane": lane, "label": LANE_LABEL.get(lane, lane), "clock": CLOCK[lane],
-                  "pinned": lane in ("ABSTAIN", "FAILED")}
+                  "pinned": lane in ("ABSTAIN", "FAILED", "REPEAT")}
                  for lane in sorted(LANE_ORDER, key=lambda l: (LANE_ORDER[l], l != "ABSTAIN"))]
         studies = [view(r) for r in rows]
         # Reading pools: every registered pool, even when empty, in alphabetical
@@ -371,20 +469,62 @@ def create_app(p: dict, registry: Registry | None = None,
         names = {e["reading_pool"] for e in registry.entries.values()}
         names |= {s["pool"] for s in studies}
         pools = [{"pool": n, "label": n} for n in sorted(names, key=lambda n: (n == UNASSIGNED, n))]
-        return {"disclaimer": DISCLAIMER, "pools": pools, "lanes": lanes, "studies": studies,
-                "me": who.email, "readers": readers(), "scope": scope}
+        body = json.dumps({"disclaimer": DISCLAIMER, "pools": pools, "lanes": lanes,
+                           "studies": studies, "me": who.email, "readers": readers(),
+                           "scope": scope}, separators=(",", ":")).encode()
+        etag = '"' + hashlib.sha1(body).hexdigest()[:20] + '"'
+        headers = {"ETag": etag, "Cache-Control": "private, no-cache", "Vary": "Authorization"}
+        if request.headers.get("if-none-match") == etag:
+            return Response(status_code=304, headers=headers)
+        return Response(body, media_type="application/json", headers=headers)
+
+    def study_index(study: str, row: dict) -> dict | None:
+        """The slim series index written at ingest, from memory or S3. None for a
+        study ingested before it existed (callers ask the datastore)."""
+        key = (row.get("evidence") or {}).get("series_index")
+        if not key:
+            return None
+        hit = series_cache.get(("index", study))
+        if hit is not None:
+            return hit
+        try:
+            return series_cache.put(("index", study), series_index.loads(p["blob"].get(key)))
+        except (FileNotFoundError, OSError, ValueError):
+            return None
+
+    def series_of(study: str, row: dict) -> list[dict]:
+        idx = study_index(study, row)
+        if idx is not None:
+            return idx["series"]
+        hit = series_cache.get(("series", study))
+        if hit is None:
+            meta = p["datastore"].get_metadata(StudyRef(study, row["datastore_id"]))
+            hit = series_cache.put(("series", study), [
+                {"series_uid": s.series_uid, "number": s.number, "description": s.description,
+                 "instance_count": s.instance_count, "instance_uids": list(s.instance_uids)}
+                for s in meta.series])
+        return hit
 
     @app.get("/api/studies/{study}")
-    def study(study: str, who: Principal = Depends(radiologist)):
+    def study(study: str, background: BackgroundTasks, who: Principal = Depends(radiologist)):
+        cached = detail_cache.get((study, who.email))
+        if cached is not None and not (
+                cached["study"]["assigned_to"] == who.email and not cached["study"]["opened_at"]):
+            return cached
         row = own_row(study, who)
         if row.get("assigned_to") == who.email and not row.get("opened_at"):
-            # The assigned reader opened it: this stops the critical clock alarm.
+            # The assigned reader opened it: this stops the critical clock alarm. The
+            # response shows it at once; the write and its audit event follow it.
             row["opened_at"] = _now()
-            p["table"].put_item("worklist", row)
-            p["table"].append_audit(AuditEvent(
-                actor=who.email, action="open", study=study, at=row["opened_at"],
-                outcome="ok", duration_ms=0.0,
-                detail={"lane": row["lane"], "assigned_at": row.get("assigned_at")}))
+
+            def record_open(row=dict(row)):
+                p["table"].put_item("worklist", row)
+                p["table"].append_audit(AuditEvent(
+                    actor=who.email, action="open", study=study, at=row["opened_at"],
+                    outcome="ok", duration_ms=0.0,
+                    detail={"lane": row["lane"], "assigned_at": row.get("assigned_at")}))
+
+            background.add_task(record_open)
         entry = registry.entries.get(row.get("model_id") or "", {})
         # Models outside the registry (head CT) carry their weights on the row.
         urgency = entry.get("urgency") or (row.get("triage") or {}).get("urgency_weights") or {}
@@ -392,26 +532,41 @@ def create_app(p: dict, registry: Registry | None = None,
                             "urgency": urgency.get(k)}
                            for k, v in (row.get("findings") or {}).items()),
                           key=lambda f: -f["signal"])
-        series = []
-        if row.get("datastore_id"):
-            meta = p["datastore"].get_metadata(StudyRef(study, row["datastore_id"]))
-            series = [{"series_uid": s.series_uid, "number": s.number,
-                       "description": s.description, "instance_count": s.instance_count,
-                       "instance_uids": list(s.instance_uids)} for s in meta.series]
+        series = series_of(study, row) if row.get("datastore_id") else []
+        # The draft is generated from the stored findings each time a study is opened; a
+        # saved report, when there is one, is what the panel shows (report below).
         draft = p["llm"].draft({"study": study, "model_id": row.get("model_id"),
-                                "lane": row["lane"], "triage": row.get("triage") or {},
-                                "findings": row.get("findings") or {}})
+                                "modality": row.get("modality"), "exam": entry.get("body_part"),
+                                "lane": row["lane"], "clock": CLOCK.get(row["lane"]),
+                                "triage": row.get("triage") or {},
+                                "findings": row.get("findings") or {}, "urgency": urgency,
+                                "evidence": row.get("evidence") or {},
+                                "human_lane": (dict(row["human_lane"],
+                                                    by_name=reader_name(row["human_lane"].get("by")))
+                                               if row.get("human_lane") else None)})
         evidence = dict(row.get("evidence") or {})
-        evidence_urls = {k: p["blob"].presigned_url(v) for k, v in evidence.items()
+        # Keys the pipeline wrote and stored on this row: signed without a HEAD request each.
+        evidence_urls = {k: p["blob"].presigned_url(v, check=False) for k, v in evidence.items()
                          if isinstance(v, str) and k.endswith("_png")}
-        return {"disclaimer": DISCLAIMER, "study": view(row), "findings": findings,
+        # A Grad-CAM for each of the top chest findings: a link for each of its three images.
+        if isinstance(evidence.get("gradcam_findings"), list):
+            evidence["gradcam_findings"] = [
+                {**g, **{k.replace("_png", "_url"): p["blob"].presigned_url(g[k], check=False)
+                         for k in ("layer_png", "heatmap_png", "blended_png") if g.get(k)}}
+                for g in evidence["gradcam_findings"]]
+        versions = p["table"].query("reports", study=study)
+        payload = {"disclaimer": DISCLAIMER, "study": view(row), "findings": findings,
                 "top_findings": (row.get("triage") or {}).get("top_findings", []),
                 "decision_reason": (row.get("triage") or {}).get("decision_reason"),
+                "abstain_band": [triage.ABSTAIN_LO, triage.ABSTAIN_HI],
                 "evidence": evidence, "evidence_urls": evidence_urls, "series": series,
                 "draft": draft, "draft_review": row.get("draft_review"),
+                "report": max(versions, key=lambda r: r["version"]) if versions else None,
                 # A datastore with no real DICOM behind it says so, and the viewer
                 # shows it. Orthanc and HealthImaging have no note.
                 "datastore_note": getattr(p["datastore"], "note", None)}
+        detail_cache.put((study, who.email), payload)
+        return payload
 
     @app.get("/api/studies/{study}/series/{series_uid}")
     def series(study: str, series_uid: str, who: Principal = Depends(radiologist)):
@@ -419,10 +574,16 @@ def create_app(p: dict, registry: Registry | None = None,
         DICOM header the viewer needs to decode them. Headers, never pixels."""
         row = own_row(study, who)
         ref = StudyRef(study, row["datastore_id"])
-        try:
-            items = p["datastore"].series_metadata(ref, series_uid)
-        except LookupError as e:
-            raise HTTPException(404, str(e))
+        items = series_cache.get((study, series_uid))
+        if items is None:
+            idx = study_index(study, row)
+            items = (idx or {}).get("instances", {}).get(series_uid)
+            if items is None:
+                try:
+                    items = [series_index.slim(i) for i in p["datastore"].series_metadata(ref, series_uid)]
+                except LookupError as e:
+                    raise HTTPException(404, str(e))
+            series_cache.put((study, series_uid), items)
         instances = []
         for meta in items:
             sop = meta["00080018"]["Value"][0]
@@ -600,18 +761,114 @@ def create_app(p: dict, registry: Registry | None = None,
 
     @app.post("/api/studies/{study}/draft")
     def save_draft(study: str, body: DraftIn, who: Principal = Depends(radiologist)):
-        """The radiologist's edit of the template draft, and whether they marked
-        it reviewed. Stored on the row; audited without the text."""
+        """The radiologist's edit of the draft, saved as a new version of the study's
+        report: a draft, or a reviewed report when they marked it reviewed. The row
+        keeps its draft_review too, and the audit event is written as before (without
+        the text); Reports no longer reads from the audit trail."""
         row = own_row(study, who)
         at = _now()
         row["draft_review"] = {"text": body.text, "reviewed": body.reviewed,
                                "by": who.email, "at": at}
         p["table"].put_item("worklist", row)
+        entry = registry.entries.get(row.get("model_id") or "", {})
+        versions = p["table"].query("reports", study=study)
+        report = {"study": study,
+                  "version": f"{max((int(v['version']) for v in versions), default=0) + 1:06d}",
+                  "status": "reviewed" if body.reviewed else "draft", "text": body.text,
+                  "author": who.email, "author_name": reader_name(who.email), "at": at,
+                  "lane": row["lane"], "modality": row.get("modality"),
+                  "exam": f"{row.get('modality') or ''} {entry.get('body_part', '')}".strip(),
+                  "driving_finding": _label((row.get("triage") or {}).get("driver")),
+                  "patient_id": row.get("patient_id")}
+        p["table"].put_item("reports", report)
         p["table"].append_audit(AuditEvent(
             actor=who.email, action="draft_reviewed" if body.reviewed else "draft_saved",
             study=study, at=at, outcome="ok", duration_ms=0.0,
-            detail={"lane": row["lane"], "chars": len(body.text)}))
-        return {"disclaimer": DISCLAIMER, "draft_review": row["draft_review"]}
+            detail={"lane": row["lane"], "chars": len(body.text), "report_version": report["version"]}))
+        return {"disclaimer": DISCLAIMER, "draft_review": row["draft_review"], "report": report}
+
+    # -- reports: what a radiologist saved or reviewed ---------------------------
+    @app.get("/api/reports")
+    def my_reports(status: Literal["draft", "reviewed"] | None = None, limit: int = 200,
+                   who: Principal = Depends(radiologist)):
+        """The signed-in radiologist's reports, newest first: the latest saved version
+        of each study they wrote one for, optionally only drafts or only reviewed."""
+        latest: dict[str, dict] = {}
+        for r in p["table"].scan("reports"):
+            if r.get("author") == who.email and (r["study"] not in latest
+                                                 or r["version"] > latest[r["study"]]["version"]):
+                latest[r["study"]] = r
+        items = sorted(latest.values(), key=lambda r: r["at"], reverse=True)
+        counts = Counter(r["status"] for r in items)
+        if status:
+            items = [r for r in items if r["status"] == status]
+        return {"disclaimer": DISCLAIMER, "total": len(items), "counts": dict(counts),
+                "reports": items[:limit]}
+
+    @app.get("/api/reports/{study}/{version}")
+    def report(study: str, version: str, who: Principal = Depends(radiologist)):
+        item = p["table"].get_item("reports", {"study": study, "version": version})
+        if item is None:
+            raise HTTPException(404, "no such report")
+        if item.get("author") != who.email:
+            raise HTTPException(403, "this report belongs to another radiologist")
+        return {"disclaimer": DISCLAIMER, "report": item}
+
+    # -- the abstention tray: what a reader can do with a study the system would not place
+    def _abstained(study: str, who: Principal) -> dict:
+        row = own_row(study, who)
+        if row["lane"] != "ABSTAIN":
+            raise HTTPException(409, "only a study in NEEDS HUMAN TRIAGE can be placed, sent "
+                                     "for a second read or set aside")
+        return row
+
+    @app.post("/api/studies/{study}/lane")
+    def set_lane(study: str, body: LaneIn, who: Principal = Depends(radiologist)):
+        """A reader places an abstained study in a lane, with a reason. It moves at
+        once, keeps the reason the system abstained and says who set the lane."""
+        row = _abstained(study, who)
+        at = _now()
+        row["human_lane"] = {"by": who.email, "by_name": reader_name(who.email),
+                             "reason": body.reason.strip(), "at": at, "original_lane": "ABSTAIN"}
+        row["lane"] = body.lane
+        p["table"].put_item("worklist", row)
+        p["table"].append_audit(AuditEvent(
+            actor=who.email, action="lane_set", study=study, at=at, outcome="ok", duration_ms=0.0,
+            detail={"from": "ABSTAIN", "lane": body.lane, "reason": body.reason.strip(),
+                    "abstain_reason": (row.get("triage") or {}).get("reason")}))
+        return {"disclaimer": DISCLAIMER, "study": view(row)}
+
+    @app.post("/api/studies/{study}/second-read")
+    def request_second_read(study: str, body: SecondReadIn, who: Principal = Depends(radiologist)):
+        """Send an abstained study to another radiologist whose reading pools include
+        it. It leaves this reader's worklist and lands on the other's."""
+        row = _abstained(study, who)
+        (reader,) = pick_readers([body.reader])
+        if reader["id"] == who.email:
+            raise HTTPException(409, "choose another radiologist for a second read")
+        if pool_of(row) not in reader["pools"]:
+            raise HTTPException(409, f"{reader['name']} does not read the {pool_of(row)} pool")
+        at = _now()
+        row["second_read"] = {"requested_by": who.email, "requested_by_name": reader_name(who.email),
+                              "to": reader["id"], "to_name": reader["name"], "at": at}
+        row = assignment.assign_row(p["table"], row, reader, who.email, at, action="second_read")
+        return {"disclaimer": DISCLAIMER, "study": view(row)}
+
+    @app.post("/api/studies/{study}/inadequate")
+    def mark_inadequate(study: str, body: InadequateIn, who: Principal = Depends(radiologist)):
+        """Mark an abstained study technically inadequate: it moves to REPEAT IMAGING
+        with the reason, and keeps the reason the system abstained."""
+        row = _abstained(study, who)
+        at = _now()
+        row["repeat_imaging"] = {"by": who.email, "by_name": reader_name(who.email),
+                                 "reason": body.reason.strip(), "at": at, "original_lane": "ABSTAIN"}
+        row["lane"] = "REPEAT"
+        p["table"].put_item("worklist", row)
+        p["table"].append_audit(AuditEvent(
+            actor=who.email, action="marked_inadequate", study=study, at=at, outcome="ok",
+            duration_ms=0.0, detail={"from": "ABSTAIN", "reason": body.reason.strip(),
+                                     "abstain_reason": (row.get("triage") or {}).get("reason")}))
+        return {"disclaimer": DISCLAIMER, "study": view(row)}
 
     # 3D viewer (NiiVue). The volumes are the model's own NIfTI inputs and its
     # segmentation, stored under evidence/ at ingest (core/pipeline.py). The
@@ -727,35 +984,44 @@ def create_app(p: dict, registry: Registry | None = None,
         except KeyError:
             raise HTTPException(404, "no such batch")
 
+    def audit_events(days: int) -> list[dict]:
+        """Recent audit events, newest first: one query per day on the by_day index;
+        on a table without that index, one query per study."""
+        events = p["table"].recent_audit(days=days)
+        if events is None:
+            studies = {r["study"] for r in p["table"].scan("worklist")} | {NO_STUDY}
+            events = [e for s in studies for e in p["table"].query("audit", study=s)]
+            events.sort(key=lambda e: e["event_id"], reverse=True)
+        return events
+
     @app.get("/api/me/history")
     def my_history(limit: int = 100, who: Principal = Depends(radiologist)):
         """This reader's own audit events (verdicts, opens, drafts, assignments
         they made). The full audit log stays admin only."""
-        studies = {r["study"] for r in p["table"].scan("worklist")} | {NO_STUDY}
-        events = [e for s in studies for e in p["table"].query("audit", study=s)
-                  if e.get("actor") == who.email]
-        events.sort(key=lambda e: e["event_id"], reverse=True)
+        events = [e for e in audit_events(days=AUDIT_DAYS) if e.get("actor") == who.email]
         return {"disclaimer": DISCLAIMER, "total": len(events), "events": events[:limit]}
 
     # -- admin ----------------------------------------------------------------
     @app.get("/api/admin/audit")
     def audit(limit: int = 200, who: Principal = Depends(admin)):
-        studies = {r["study"] for r in p["table"].scan("worklist")} | {NO_STUDY}
-        events = [e for s in studies for e in p["table"].query("audit", study=s)]
-        events.sort(key=lambda e: e["event_id"], reverse=True)
+        events = audit_events(days=AUDIT_DAYS)
         return {"disclaimer": DISCLAIMER, "total": len(events), "events": events[:limit]}
 
     @app.get("/api/admin/lane-mix")
     def lane_mix(who: Principal = Depends(admin)):
         rows = p["table"].scan("worklist")
         counts = Counter(r["lane"] for r in rows)
+        lanes = ["CRITICAL", "URGENT", "ABSTAIN", "EXPEDITED", "ROUTINE", "FAILED"]
+        if counts.get("REPEAT"):
+            lanes.append("REPEAT")          # shown once a reader has set a study aside
         return {"disclaimer": DISCLAIMER, "total": len(rows),
+                # Studies a reader placed in a lane after the system abstained.
+                "placed_by_human": sum(1 for r in rows if r.get("human_lane")),
                 "lanes": [{"lane": lane, "label": LANE_LABEL.get(lane, lane),
                            "count": counts.get(lane, 0),
                            "percent": (round(100 * counts.get(lane, 0) / len(rows), 1)
                                        if rows else None)}
-                          for lane in ("CRITICAL", "URGENT", "ABSTAIN", "EXPEDITED",
-                                       "ROUTINE", "FAILED")],
+                          for lane in lanes],
                 "basis": f"counted from {len(rows)} worklist rows at request time"
                          + (". Fixture rows were picked three per lane by make_fixtures.py, "
                             "so this is not a population lane mix"
@@ -903,8 +1169,9 @@ def create_app(p: dict, registry: Registry | None = None,
 
     # -- pipeline view (admin) and /metrics ---------------------------------------
     # Built from the audit trail only (core/pipeline_view.py). The whole picture
-    # is recomputed at most every 10 seconds (one audit query per study); studies
-    # in a simulate batch are read fresh on every call.
+    # is recomputed at most every 10 seconds, from the last PIPELINE_DAYS days of the
+    # audit trail (one query per day on the by_day index); studies in a simulate
+    # batch are read fresh on every call.
     _pipe: dict[str, Any] = {"at": -1e9, "value": None}
     _pipe_lock = threading.Lock()
 
@@ -922,7 +1189,14 @@ def create_app(p: dict, registry: Registry | None = None,
         with _pipe_lock:
             if _pipe["value"] is None or time.monotonic() - _pipe["at"] > 10:
                 rows = p["table"].scan("worklist")
-                events = _study_events({r["study"] for r in rows})
+                recent = p["table"].recent_audit(days=PIPELINE_DAYS)
+                if recent is None:
+                    events = _study_events({r["study"] for r in rows})
+                else:
+                    events = {r["study"]: [] for r in rows}
+                    for e in reversed(recent):           # oldest first, as a per-study query
+                        if e["study"] in events:
+                            events[e["study"]].append(e)
                 study_runs = {s: pipeline_view.latest_run(evs) for s, evs in events.items()}
                 all_runs = [r for evs in events.values()
                             for r in pipeline_view.runs(evs).values()]

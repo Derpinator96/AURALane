@@ -165,9 +165,9 @@ def test_worklist_is_in_lane_order_with_values_copied_from_rows(client):
     assert abstain and all(r["lane_label"] == "NEEDS HUMAN TRIAGE" for r in abstain)
     assert {r["clock"] for r in rows if r["lane"] == "CRITICAL"} == {"under 15 min"}
     lanes = client.get("/api/worklist", headers=client.radiologist).json()["lanes"]
-    assert [l["lane"] for l in lanes] == ["CRITICAL", "URGENT", "ABSTAIN", "FAILED",
+    assert [l["lane"] for l in lanes] == ["CRITICAL", "URGENT", "ABSTAIN", "FAILED", "REPEAT",
                                            "EXPEDITED", "ROUTINE"]
-    assert [l["lane"] for l in lanes if l["pinned"]] == ["ABSTAIN", "FAILED"]
+    assert [l["lane"] for l in lanes if l["pinned"]] == ["ABSTAIN", "FAILED", "REPEAT"]
 
 
 def test_worklist_names_each_study_s_reading_pool(client):

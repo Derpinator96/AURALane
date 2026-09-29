@@ -46,6 +46,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from core.ports import InferencePort
+from core.providers.aws import session as shared
 from core.providers.aws.config import REGION
 from core.types import StudyRef
 
@@ -84,8 +85,8 @@ class LambdaSageMakerInference(InferencePort):
         self.lam = lambda_client or boto3.client(
             "lambda", region_name=region,
             config=Config(read_timeout=330, retries={"total_max_attempts": 1}))
-        self.smr = sagemaker_runtime or boto3.client("sagemaker-runtime", region_name=region)
-        self.s3 = s3 or boto3.client("s3", region_name=region)
+        self.smr = sagemaker_runtime or shared.client("sagemaker-runtime", region)
+        self.s3 = s3 or shared.client("s3", region)
         self.poll_seconds, self.brain_timeout = poll_seconds, brain_timeout
 
     def score(self, ref: StudyRef, model_cfg: dict[str, Any], **inputs) -> Any:

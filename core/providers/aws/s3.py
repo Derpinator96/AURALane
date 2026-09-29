@@ -24,6 +24,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from core.ports import BlobPort
+from core.providers.aws import session as shared
 from core.providers.aws.config import REGION
 
 
@@ -41,8 +42,7 @@ class S3Blob(BlobPort):
         self.bucket = bucket
         # SigV4 presigned URLs. Without this, botocore can still sign S3 URLs with
         # the deprecated Signature Version 2 (tests/test_aws_providers.py caught it).
-        self.s3 = client or boto3.client("s3", region_name=region,
-                                         config=Config(signature_version="s3v4"))
+        self.s3 = client or shared.client("s3", region, signature_version="s3v4")
 
     def put(self, key: str, data: bytes) -> str:
         self.s3.put_object(Bucket=self.bucket, Key=_clean(key), Body=data)
@@ -59,16 +59,17 @@ class S3Blob(BlobPort):
     def delete(self, key: str) -> None:
         self.s3.delete_object(Bucket=self.bucket, Key=_clean(key))
 
-    def presigned_url(self, key: str, ttl: int = 300) -> str:
+    def presigned_url(self, key: str, ttl: int = 300, check: bool = True) -> str:
         """A presigned S3 GET. For derived artefacts only (see module docstring).
 
         Like FileBlob, refuses a key that does not exist rather than signing a
         URL that would 404 in the browser. Signing itself makes no request."""
-        try:
-            self.s3.head_object(Bucket=self.bucket, Key=_clean(key))
-        except ClientError as e:
-            if e.response["Error"]["Code"] in ("NoSuchKey", "404", "NotFound"):
-                raise FileNotFoundError(key) from e
-            raise
+        if check:
+            try:
+                self.s3.head_object(Bucket=self.bucket, Key=_clean(key))
+            except ClientError as e:
+                if e.response["Error"]["Code"] in ("NoSuchKey", "404", "NotFound"):
+                    raise FileNotFoundError(key) from e
+                raise
         return self.s3.generate_presigned_url(
             "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=ttl)

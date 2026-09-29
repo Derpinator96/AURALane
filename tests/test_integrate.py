@@ -272,3 +272,113 @@ def test_each_radiologist_sees_only_their_own_studies(app):
     # A batch needs at least one reader.
     assert client.post("/api/simulate", json={"counts": {"chest": 1}, "readers": []},
                        headers=h("radiologist-1")).status_code == 400
+
+
+# -- performance pieces: Server-Timing, conditional worklist, series index -----------------------
+def test_every_response_carries_server_timing_and_the_worklist_answers_304(app):
+    h = app.h("radiologist-1")
+    r = app.get("/api/worklist", headers=h)
+    timing = r.headers["server-timing"]
+    for part in ("total;dur=", "dynamodb;dur=", "healthimaging;dur=", "s3;dur=", "auth;dur="):
+        assert part in timing
+    assert "server-timing" in app.get("/api/health").headers
+    again = app.get("/api/worklist", headers={**h, "If-None-Match": r.headers["etag"]})
+    assert again.status_code == 304 and again.content == b""
+    assert app.get("/api/worklist", headers={**h, "If-None-Match": '"stale"'}).status_code == 200
+
+
+def test_worklist_scan_reads_only_the_list_columns_and_is_shared_for_three_seconds(app):
+    scans = []
+    real = app.p["table"]._target.scan
+    app.p["table"]._target.scan = lambda table, fields=None: (scans.append(fields), real(table, fields))[1]
+    for user in ("radiologist-1", "radiologist-2"):
+        assert app.get("/api/worklist", headers=app.h(user)).status_code == 200
+    assert len(scans) == 1 and "findings" not in scans[0] and "study" in scans[0]
+    # A write through the API drops the shared copy at once.
+    study = app.get("/api/worklist", headers=app.h("radiologist-1")).json()["studies"][0]["study"]
+    assert app.post(f"/api/studies/{study}/verdict", json={"verdict": "agree"},
+                    headers=app.h("radiologist-1")).status_code == 200
+    app.get("/api/worklist", headers=app.h("radiologist-1"))
+    assert len(scans) == 2
+
+
+def test_series_index_round_trips_and_keeps_only_what_the_viewer_decodes_with():
+    from core import series_index
+    item = {"00080018": {"vr": "UI", "Value": ["1.2"]}, "00280010": {"vr": "US", "Value": [512]},
+            "00100010": {"vr": "PN", "Value": [{"Alphabetic": "SIM^PATIENT"}]},
+            "00081030": {"vr": "LO", "Value": ["free text"]}}
+    assert set(series_index.slim(item)) == {"00080018", "00280010"}
+
+    class Series:                                       # what StudyMeta.series holds
+        series_uid, number, description, instance_count, instance_uids = "9.9", 1, "T1", 1, ("1.2",)
+
+    class Meta:
+        series = (Series,)
+
+    class Store:
+        def series_metadata(self, ref, uid):
+            return [item]
+
+    index = series_index.loads(series_index.dumps(series_index.build(Store(), None, Meta())))
+    assert index["series"][0]["series_uid"] == "9.9"
+    assert list(index["instances"]["9.9"][0]) == ["00080018", "00280010"]
+
+
+# -- reports and the abstention tray ----------------------------------------------------------
+def _first(app, lane):
+    rows = app.get("/api/worklist", headers=app.h("radiologist-1")).json()["studies"]
+    return [r for r in rows if r["lane"] == lane]
+
+
+def test_saving_and_reviewing_a_draft_makes_a_report_the_reader_can_find(app):
+    h, study = app.h("radiologist-1"), _first(app, "URGENT")[0]["study"]
+    detail = app.get(f"/api/studies/{study}", headers=h).json()
+    assert detail["report"] is None and detail["draft"].startswith("NON-DIAGNOSTIC")
+    saved = app.post(f"/api/studies/{study}/draft", json={"text": "v1 text", "reviewed": False}, headers=h)
+    assert saved.json()["report"]["status"] == "draft" and saved.json()["report"]["version"] == "000001"
+    done = app.post(f"/api/studies/{study}/draft", json={"text": "final text", "reviewed": True}, headers=h)
+    assert done.json()["report"]["status"] == "reviewed" and done.json()["report"]["version"] == "000002"
+
+    mine = app.get("/api/reports", headers=h).json()
+    assert [r["study"] for r in mine["reports"]] == [study] and mine["reports"][0]["text"] == "final text"
+    assert mine["counts"] == {"reviewed": 1}
+    assert app.get("/api/reports?status=draft", headers=h).json()["reports"] == []
+    assert app.get("/api/reports", headers=app.h("radiologist-2")).json()["reports"] == []
+    assert app.get(f"/api/reports/{study}/000001", headers=h).json()["report"]["text"] == "v1 text"
+    assert app.get(f"/api/reports/{study}/000001", headers=app.h("radiologist-2")).status_code == 403
+    # The audit event is still written; a reopened study shows the saved report.
+    assert any(e["action"] == "draft_reviewed" for e in app.p["table"].query("audit", study=study))
+    assert app.get(f"/api/studies/{study}", headers=h).json()["report"]["text"] == "final text"
+
+
+def test_an_abstained_study_can_be_placed_sent_for_a_second_read_or_set_aside(app):
+    h = app.h("radiologist-1")
+    abstained = [r["study"] for r in _first(app, "ABSTAIN")]
+    assert len(abstained) >= 3
+    placed, second, repeat = abstained[:3]
+
+    # Assign a lane: a reason is required; the study moves and keeps why it abstained.
+    assert app.post(f"/api/studies/{placed}/lane", json={"lane": "URGENT", "reason": ""}, headers=h).status_code == 422
+    r = app.post(f"/api/studies/{placed}/lane", json={"lane": "URGENT", "reason": "spiculated margin"}, headers=h)
+    body = r.json()["study"]
+    assert body["lane"] == "URGENT" and body["human_lane"]["reason"] == "spiculated margin"
+    assert body["abstain_reason"] and body["human_lane"]["by"] == R1
+    assert any(s["study"] == placed for s in _first(app, "URGENT"))
+    assert any(e["action"] == "lane_set" for e in app.p["table"].query("audit", study=placed))
+    assert app.post(f"/api/studies/{placed}/lane", json={"lane": "ROUTINE", "reason": "again"},
+                    headers=h).status_code == 409                      # no longer abstained
+    assert app.get("/api/admin/lane-mix", headers=app.h("admin")).json()["placed_by_human"] == 1
+
+    # Second read: another reader, not oneself; it changes hands and is audited.
+    assert app.post(f"/api/studies/{second}/second-read", json={"reader": R1}, headers=h).status_code == 409
+    r = app.post(f"/api/studies/{second}/second-read", json={"reader": R2}, headers=h)
+    assert r.status_code == 200 and r.json()["study"]["assigned_to"] == R2
+    assert r.json()["study"]["second_read"]["requested_by"] == R1
+    assert any(e["action"] == "second_read" for e in app.p["table"].query("audit", study=second))
+
+    # Technically inadequate: a clear Repeat imaging state, with the reason.
+    r = app.post(f"/api/studies/{repeat}/inadequate", json={"reason": "motion, cut off"}, headers=h)
+    assert r.json()["study"]["lane"] == "REPEAT" and r.json()["study"]["lane_label"] == "REPEAT IMAGING"
+    assert any(e["action"] == "marked_inadequate" for e in app.p["table"].query("audit", study=repeat))
+    lanes = {x["lane"]: x for x in app.get("/api/worklist", headers=h).json()["lanes"]}
+    assert lanes["REPEAT"]["pinned"] and any(s["study"] == repeat for s in _first(app, "REPEAT"))

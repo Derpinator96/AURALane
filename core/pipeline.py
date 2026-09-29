@@ -57,6 +57,7 @@ from typing import Any, Iterable
 
 import pydicom
 
+from core import series_index
 from core.ports import BlobPort, DatastorePort, InferencePort, TablePort
 from core.regional import RegionalSetting
 from core.regional import apply as apply_regional
@@ -252,11 +253,19 @@ def check_edge_deid(cleaned: list) -> None:
 
 
 def _evidence(entry: dict, study: str, findings: Findings, inputs: dict, raw: Any,
-              blob: BlobPort, d: dict, cleaned: list | None = None) -> Findings:
+              blob: BlobPort, d: dict, cleaned: list | None = None,
+              series_index_bytes=None) -> Findings:
     """Volume models: the model's NIfTI inputs and its segmentation, to
     evidence/<study>/ for the 3D viewer. Every model: record what evidence the
-    row points at."""
+    row points at, and the slim series index the viewer reads instead of asking
+    the datastore for metadata (core/series_index.py)."""
     evidence = dict(findings.evidence)
+    if series_index_bytes is not None:
+        try:
+            evidence["series_index"] = blob.put(f"evidence/{study}/series_index.json.gz",
+                                                series_index_bytes())
+        except Exception as e:                       # best effort: the API falls back to DICOMweb
+            d["series_index_error"] = f"{type(e).__name__}: {e}"
     # Kept for abstained studies too: that is when a radiologist most needs
     # to look, to pick the lane the model would not.
     if entry["input"]["format"] == "nifti":
@@ -395,7 +404,8 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
                               lane=t["lane"], triage=t, findings=findings, run_id=run.id)
 
             with run.step("evidence", service=service(blob)) as d:
-                findings = _evidence(entry, run.study, findings, inputs, raw, blob, d, cleaned)
+                findings = _evidence(entry, run.study, findings, inputs, raw, blob, d, cleaned,
+                                     lambda: series_index.dumps(series_index.build(datastore, ref, meta)))
                 verdict.findings = findings
 
             with run.step("persist", table="worklist", service=service(table)):

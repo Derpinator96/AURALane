@@ -61,6 +61,10 @@ def test_tables_match_what_the_provider_expects(template):
         keys = {k["KeyType"]: k["AttributeName"] for k in tables[f"auralane-{name}"]["KeySchema"]}
         assert keys == ({"HASH": pk, "RANGE": sk} if sk else {"HASH": pk})
         assert tables[f"auralane-{name}"]["BillingMode"] == "PAY_PER_REQUEST"
+    # The audit table's by_day index, which recent_audit queries.
+    (gsi,) = tables["auralane-audit"]["GlobalSecondaryIndexes"]
+    assert gsi["IndexName"] == "by_day"
+    assert {k["KeyType"]: k["AttributeName"] for k in gsi["KeySchema"]} == {"HASH": "day", "RANGE": "event_id"}
 
 
 def test_working_prefixes_expire_and_evidence_is_kept(template):

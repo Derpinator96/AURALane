@@ -53,7 +53,9 @@ class BlobPort(ABC):
     def delete(self, key: str) -> None: ...
 
     @abstractmethod
-    def presigned_url(self, key: str, ttl: int = 300) -> str: ...
+    def presigned_url(self, key: str, ttl: int = 300, check: bool = True) -> str:
+        """check=False skips the existence test (a HEAD request on S3) for keys the
+        caller wrote itself and read back from a stored row."""
 
 
 class TablePort(ABC):
@@ -73,8 +75,16 @@ class TablePort(ABC):
         """Equality match on the table's partition key, e.g. study="1.2.3"."""
 
     @abstractmethod
-    def scan(self, table: str) -> list[dict[str, Any]]:
-        """Every row. For the worklist, which is small; never used on audit."""
+    def scan(self, table: str, fields: list[str] | None = None) -> list[dict[str, Any]]:
+        """Every row. For the worklist, which is small; never used on audit.
+        fields: only these top-level attributes are read and returned (a
+        ProjectionExpression on DynamoDB)."""
+
+    def recent_audit(self, days: int = 7, limit: int = 5000) -> list[dict[str, Any]] | None:
+        """Audit events of the last `days` UTC days, newest first, in one query per
+        day (a global secondary index partitioned by day). None where the store has
+        no such index: callers fall back to per-study reads."""
+        return None
 
     @abstractmethod
     def append_audit(self, event: AuditEvent) -> None: ...

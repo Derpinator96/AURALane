@@ -32,7 +32,7 @@ export class ApiError extends Error {
   }
 }
 
-async function call(path, { token, method = "GET", body } = {}) {
+async function request(path, { token, method = "GET", body } = {}) {
   const res = await fetch(BASE + path, {
     method,
     headers: {
@@ -46,11 +46,60 @@ async function call(path, { token, method = "GET", body } = {}) {
   return data;
 }
 
+// The same GET asked for twice while the first is still in flight (a viewer and a
+// panel opening the same study) is one request.
+const inflight = new Map();
+
+function call(path, opts = {}) {
+  if ((opts.method || "GET") !== "GET") {
+    forgetStudyFor(path);
+    return request(path, opts);
+  }
+  const key = `${opts.token || ""} ${path}`;
+  if (!inflight.has(key)) {
+    inflight.set(key, request(path, opts).finally(() => inflight.delete(key)));
+  }
+  return inflight.get(key);
+}
+
+// The last few study payloads, so going back to a study is instant. A payload
+// is dropped after a minute (its evidence links are short-lived) and whenever
+// this client writes to that study.
+const STUDY_TTL_MS = 60_000;
+const STUDY_KEEP = 6;
+const studies = new Map();
+
+function forgetStudyFor(path) {
+  const m = /^\/api\/studies\/([^/]+)/.exec(path);
+  if (m) studies.delete(decodeURIComponent(m[1]));
+  else if (path.startsWith("/api/annotations") || path.startsWith("/api/admin/assignments") || path.startsWith("/api/distribute")) {
+    studies.clear();
+  }
+}
+
+function cachedStudy(token, id) {
+  const hit = studies.get(id);
+  if (hit && hit.token === token && Date.now() - hit.at < STUDY_TTL_MS) {
+    studies.delete(id);
+    studies.set(id, hit);                     // most recently used last
+    return Promise.resolve(hit.data);
+  }
+  return null;
+}
+
+async function fetchStudy(token, id) {
+  const data = await call(`/api/studies/${encodeURIComponent(id)}`, { token });
+  studies.set(id, { token, at: Date.now(), data });
+  while (studies.size > STUDY_KEEP) studies.delete(studies.keys().next().value);
+  return data;
+}
+
 export const api = {
   login: (username, password) =>
     call("/api/auth/login", { method: "POST", body: { username, password } }),
   worklist: (token) => call("/api/worklist", { token }),
-  study: (token, id) => call(`/api/studies/${encodeURIComponent(id)}`, { token }),
+  study: (token, id) => cachedStudy(token, id) || fetchStudy(token, id),
+  clearCache: () => { studies.clear(); inflight.clear(); },
   series: (token, id, seriesUid) =>
     call(`/api/studies/${encodeURIComponent(id)}/series/${encodeURIComponent(seriesUid)}`, { token }),
   verdict: (token, id, verdict) =>

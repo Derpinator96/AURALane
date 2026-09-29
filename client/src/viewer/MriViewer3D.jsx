@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api.js";
 import { loadSettings } from "../settings.js";
+import { ensureNiivue, niivueClass } from "./niivue.js";
 
 // The saved first sequence (Settings) in this viewer's own ids.
 const SEQ_ID = { t1c: "t1ce", t1: "t1", t2: "t2", flair: "flair" };
@@ -313,7 +314,14 @@ export default function MriViewer3D({
       // Wait a tick for DOM canvases to mount
       await new Promise((r) => setTimeout(r, 60));
 
-      const Niivue = window.niivue?.Niivue || window.Niivue;
+      // Loaded here, the first time a 3D view mounts, not with the page.
+      try {
+        await ensureNiivue();
+      } catch (e) {
+        if (!cancelled) setError(e.message);
+        return;
+      }
+      const Niivue = niivueClass();
       if (!Niivue) {
         if (!cancelled) setError("3D Medical Engine (NiiVue) initializing. Please reload if persistent.");
         return;

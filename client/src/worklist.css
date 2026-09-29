@@ -4,13 +4,9 @@
 .workstation-center { container-type: inline-size; display: flex; flex-direction: column; gap: 14px; min-width: 0; min-height: 0; padding: 20px 24px 32px; overflow: auto; }
 .layout-resizer { cursor: col-resize; background: transparent; border-left: 1px solid var(--line); }
 .layout-resizer:hover { background: var(--blue-line); }
-.workstation-details-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--column); }
-.details-upper { flex: 1 1 62%; min-height: 0; overflow: auto; }
-.details-lower {
-  flex: 0 0 26%; min-height: 120px; display: grid; place-content: center; justify-items: center; gap: 6px;
-  margin: 0 12px 12px; border: 1px dashed var(--line-strong); border-radius: var(--r-card); background: var(--sheet); text-align: center;
-}
-.placeholder-label { font-size: 14px; font-weight: 500; color: var(--ink-2); }
+/* The case panel exists only while a study is selected; without one the list takes the width. */
+.workstation-details-panel { position: relative; min-width: 0; min-height: 0; overflow: auto; background: var(--column); }
+.details-close { position: absolute; top: 12px; right: 12px; z-index: 2; width: 28px; height: 28px; }
 
 .center-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .center-title { font-size: 16px; font-weight: 500; }

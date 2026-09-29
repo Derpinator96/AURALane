@@ -110,6 +110,23 @@ class AuralaneStack(Stack):
             partition_key=ddb.Attribute(name="study", type=ddb.AttributeType.STRING),
             sort_key=ddb.Attribute(name="event_id", type=ddb.AttributeType.STRING),
             billing_mode=ddb.BillingMode.PAY_PER_REQUEST, removal_policy=RemovalPolicy.DESTROY)
+        # The recent audit events in one query per day, instead of one query per study
+        # (core/providers/aws/_dynamodb.py recent_audit). The API and the ingest task
+        # write `day` (YYYY-MM-DD of the event time) on every new event; scripts/
+        # backfill_audit_day.py adds it to events written before the index existed.
+        audit.add_global_secondary_index(
+            index_name="by_day",
+            partition_key=ddb.Attribute(name="day", type=ddb.AttributeType.STRING),
+            sort_key=ddb.Attribute(name="event_id", type=ddb.AttributeType.STRING),
+            projection_type=ddb.ProjectionType.ALL)
+
+        # Radiologist reports: one item per saved version of a report (draft or
+        # reviewed), keyed by study and a zero-padded version (core/api.py, /api/reports).
+        reports = ddb.Table(
+            self, "Reports", table_name=f"{TABLE_PREFIX}-reports",
+            partition_key=ddb.Attribute(name="study", type=ddb.AttributeType.STRING),
+            sort_key=ddb.Attribute(name="version", type=ddb.AttributeType.STRING),
+            billing_mode=ddb.BillingMode.PAY_PER_REQUEST, removal_policy=RemovalPolicy.DESTROY)
 
         # The identity map for de-identification in AWS (core/providers/aws/
         # identity.py). Only the ingest task's role can read it; the API cannot.
@@ -201,7 +218,8 @@ class AuralaneStack(Stack):
             iam.PolicyStatement(actions=["s3:ListBucket"], resources=[bucket.bucket_arn]),
             iam.PolicyStatement(actions=["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query",
                                          "dynamodb:Scan", "dynamodb:DescribeTable"],
-                                resources=[worklist.table_arn, audit.table_arn]),
+                                resources=[worklist.table_arn, audit.table_arn,
+                                           f"{audit.table_arn}/index/*"]),
             iam.PolicyStatement(actions=["medical-imaging:StartDICOMImportJob",
                                          "medical-imaging:GetDICOMImportJob",
                                          "medical-imaging:SearchImageSets",
@@ -239,6 +257,9 @@ class AuralaneStack(Stack):
             iam.PolicyStatement(actions=["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query",
                                          "dynamodb:Scan", "dynamodb:DeleteItem",
                                          "dynamodb:DescribeTable"], resources=[annotations.table_arn]),
+            iam.PolicyStatement(actions=["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query",
+                                         "dynamodb:Scan", "dynamodb:DescribeTable"],
+                                resources=[reports.table_arn]),
             iam.PolicyStatement(actions=["cognito-idp:AdminConfirmSignUp",
                                          "cognito-idp:AdminAddUserToGroup",
                                          "cognito-idp:AdminDeleteUser",

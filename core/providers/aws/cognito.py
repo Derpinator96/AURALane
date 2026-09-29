@@ -18,10 +18,10 @@ PyJWKClient. Tests pass jwks= directly, so no network call is made.
 """
 from __future__ import annotations
 
-import boto3
 import jwt      # PyJWT: PyJWKClient(uri), PyJWK(dict), jwt.decode(token, key, algorithms=, audience=, issuer=)
 
 from core.ports import AuthPort
+from core.providers.aws import session as shared
 from core.providers.aws.config import REGION
 from core.types import Principal
 
@@ -31,7 +31,7 @@ class CognitoAuth(AuthPort):
                  jwks: dict | None = None, client=None):
         self.pool, self.client_id, self.region = user_pool_id, client_id, region
         self.issuer = f"https://cognito-idp.{region}.amazonaws.com/{user_pool_id}"
-        self.idp = client or boto3.client("cognito-idp", region_name=region)
+        self.idp = client or shared.client("cognito-idp", region)
         self._keys = ({k["kid"]: jwt.PyJWK(k) for k in jwks["keys"]} if jwks else None)
         self._jwk_client = None
 
