@@ -15,7 +15,7 @@ export function BrandLogo({ size = 20, className = "" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden="true" focusable="false">
       <rect x="2" y="2" width="20" height="20" rx="5" fill="var(--ink)" />
-      <path d="M12 6.5v11M6.5 12h11" stroke="var(--sheet)" strokeWidth="1.6" strokeLinecap="round" fill="none" />
+      <path d="M12 6.5v11M6.5 12h11" stroke="var(--on-ink)" strokeWidth="1.6" strokeLinecap="round" fill="none" />
     </svg>
   );
 }
@@ -100,3 +100,34 @@ export const SunIcon = (p) => (
 export const ChevronIcon = (p) => (
   <Icon {...p}><path d="M9 6l6 6-6 6" /></Icon>
 );
+export const ChevronDownIcon = (p) => (
+  <Icon {...p}><path d="M6 9l6 6 6-6" /></Icon>
+);
+export const ArrowUpRightIcon = (p) => (
+  <Icon {...p}><path d="M7 17L17 7M8.5 7H17v8.5" /></Icon>
+);
+export const PlusIcon = (p) => (
+  <Icon {...p}><path d="M12 5v14M5 12h14" /></Icon>
+);
+export const MenuIcon = (p) => (
+  <Icon {...p}><path d="M4 7h16M4 12h16M4 17h16" /></Icon>
+);
+export const PinIcon = (p) => (
+  <Icon {...p}><path d="M12 21s6.5-5.6 6.5-11a6.5 6.5 0 1 0-13 0c0 5.4 6.5 11 6.5 11z" /><circle cx="12" cy="10" r="2.3" /></Icon>
+);
+export const CopyIcon = (p) => (
+  <Icon {...p}><rect x="8.5" y="8.5" width="11" height="11" rx="2.5" /><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5" /></Icon>
+);
+export const PrintIcon = (p) => (
+  <Icon {...p}><path d="M7 9V4h10v5M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 5 9h14a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 19 17h-2" /><rect x="7" y="14" width="10" height="6" rx="1.5" /></Icon>
+);
+export const EyeIcon = (p) => (
+  <Icon {...p}><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="2.8" /></Icon>
+);
+export const RefreshIcon = (p) => (
+  <Icon {...p}><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v5h-5" /></Icon>
+);
+export const AlertIcon = (p) => (
+  <Icon {...p}><path d="M12 4.5l8.5 15h-17z" /><path d="M12 10v4.5M12 17.2v.01" /></Icon>
+);
+export const FilterIcon = SlidersIcon;

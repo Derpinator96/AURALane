@@ -1,5 +1,6 @@
-/* Design tokens. Near-white surfaces, near-black ink, hairline borders, and
-   colour only in small status dots. Every colour in the app comes from here. */
+/* Design tokens. A cool blue-grey field, frosted glass panels, white raised pills,
+   near-black ink. Every colour, radius and shadow in the app comes from here;
+   components never hard-code one. */
 
 @font-face {
   font-family: "Geist";
@@ -31,27 +32,47 @@
 }
 
 :root {
-  --canvas: #fafafa;
-  --sheet: #ffffff;
-  --column: #fcfcfc;
-  --card: #ffffff;
-  --line: #ececec;
-  --line-strong: #e2e2e2;
-  --ink: #1b1b1b;
-  --ink-2: #6b6b6b;
-  --ink-3: #a3a3a3;
-  --tag-bg: #f2f2f2;
-  --hover: #f5f5f5;
-  --alert-bg: #fceaea;
-  --alert-ink: #c23b3b;
+  /* Field: the page is a soft gradient with three large blooms on a fixed layer. */
+  --bg-a: #e4e9ef;
+  --bg-b: #c3ced9;
+  --bloom-blue: rgba(110, 160, 240, 0.55);
+  --bloom-teal: rgba(120, 175, 182, 0.5);
+  --bloom-mist: rgba(186, 202, 232, 0.6);
+  --art-stroke: rgba(31, 58, 110, 0.16);
 
-  /* Lane dots, checked for colour-blind separation on white. */
-  /* Medical blue, used for hover, focus and selection. */
-  --blue: #2a6fdb;
-  --blue-ink: #1f57b3;
-  --blue-tint: #eef4fe;
-  --blue-line: #bcd3f7;
+  /* Glass. Text on it is checked against the composited colour, not the tint. */
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-soft: rgba(255, 255, 255, 0.34);
+  --glass-strong: rgba(255, 255, 255, 0.76);
+  --glass-blur: blur(28px) saturate(150%);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --glass-shadow: 0 34px 64px -34px rgba(30, 52, 92, 0.34), 0 2px 8px rgba(30, 52, 92, 0.05);
+  --pop-shadow: 0 44px 90px -30px rgba(24, 40, 80, 0.42), 0 4px 14px rgba(24, 40, 80, 0.08);
 
+  /* Raised white pills and soft fields sit on the glass. */
+  --pill: #ffffff;
+  --pill-hover: #f2f6ff;
+  --pill-shadow: 0 1px 1px rgba(22, 24, 29, 0.04), 0 8px 18px -8px rgba(22, 24, 29, 0.24);
+  --field: rgba(255, 255, 255, 0.72);
+  --field-hover: rgba(255, 255, 255, 0.92);
+  --tint: rgba(22, 24, 29, 0.05);            /* quiet fills: tracks, hovers, pressed */
+  --scrim: rgba(255, 255, 255, 0.42);
+
+  --ink: #16181d;
+  --ink-2: #4d5562;
+  --ink-3: #5b6472;
+  --on-ink: #ffffff;
+
+  --blue: #2f6bf2;
+  --blue-ink: #1e4fc4;
+  --blue-tint: rgba(47, 107, 242, 0.12);
+  --navy: #1f3a8a;
+  --alert-bg: rgba(207, 58, 58, 0.11);
+  --alert-ink: #b02f2f;
+  --ok: #2f8a3f;
+  --idle: #8a93a0;
+
+  /* Lane colours. Unchanged; they carry meaning. */
   --lane-critical: #cf3a3a;
   --lane-urgent: #e98a2a;
   --lane-triage: #3d5a9e;
@@ -59,42 +80,67 @@
   --lane-routine: #9a9a9a;
   --lane-failed: #1b1b1b;
   --lane-repeat: #2b8a8a;
-  --ok: #3f8f4a;
-  --idle: #a3a3a3;
 
-  --r-sheet: 16px;
-  --r-column: 12px;
-  --r-card: 10px;
-  --r-control: 8px;
+  /* Radii: the frame 36, panels 28, cards 20. Pills are always full. */
+  --r-frame: 36px;
+  --r-panel: 28px;
+  --r-card: 20px;
+  --r-field: 20px;
+  --r-small: 12px;
   --r-pill: 999px;
 
-  --shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  --fs-title: 44px;
+  --fs-stat: 34px;
+  --fs-card: 16px;
+  --fs-body: 14px;
+  --fs-meta: 13px;
+
   --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --sidebar-w: 240px;
+
+  --sheet-w: 460px;
+  --gap: 20px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --canvas: #111110;
-  --sheet: #161615;
-  --column: #1a1a19;
-  --card: #1c1c1b;
-  --line: #2a2a28;
-  --line-strong: #363634;
-  --ink: #ecebe8;
-  --ink-2: #a8a7a2;
-  --ink-3: #6f6e69;
-  --tag-bg: #232322;
-  --hover: #222221;
-  --alert-bg: #3a1f1f;
-  --alert-ink: #e5484d;
+  --bg-a: #14171c;
+  --bg-b: #1d2229;
+  --bloom-blue: rgba(70, 110, 200, 0.34);
+  --bloom-teal: rgba(60, 120, 132, 0.3);
+  --bloom-mist: rgba(80, 96, 140, 0.3);
+  --art-stroke: rgba(150, 175, 230, 0.14);
+
+  --glass: rgba(28, 32, 40, 0.55);
+  --glass-soft: rgba(28, 32, 40, 0.34);
+  --glass-strong: rgba(24, 28, 36, 0.8);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 34px 64px -34px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --pop-shadow: 0 44px 90px -30px rgba(0, 0, 0, 0.8), 0 4px 14px rgba(0, 0, 0, 0.3);
+
+  --pill: rgba(255, 255, 255, 0.1);
+  --pill-hover: rgba(255, 255, 255, 0.17);
+  --pill-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 8px 18px -8px rgba(0, 0, 0, 0.6);
+  --field: rgba(255, 255, 255, 0.08);
+  --field-hover: rgba(255, 255, 255, 0.13);
+  --tint: rgba(255, 255, 255, 0.07);
+  --scrim: rgba(20, 23, 28, 0.5);
+
+  --ink: #eceff4;
+  --ink-2: #b4bcc9;
+  --ink-3: #98a1af;
+  --on-ink: #16181d;
 
   --blue: #6ea3f5;
-  --blue-ink: #8db7f8;
-  --blue-tint: #16233a;
-  --blue-line: #2c4a7c;
+  --blue-ink: #9cc0fa;
+  --blue-tint: rgba(110, 163, 245, 0.16);
+  --navy: #8fa6e8;
+  --alert-bg: rgba(229, 72, 77, 0.16);
+  --alert-ink: #ff8a8e;
+  --ok: #6bc47a;
+  --idle: #6f7886;
 
   --lane-critical: #e5484d;
   --lane-urgent: #ff8a3d;
@@ -103,9 +149,25 @@
   --lane-routine: #8a8985;
   --lane-failed: #ecebe8;
   --lane-repeat: #4fb3b3;
-  --ok: #5fb56b;
-  --idle: #6f6e69;
 
-  --shadow: none;
   color-scheme: dark;
+}
+
+/* People who ask for less transparency get solid surfaces and no blur. */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass: #f3f6f9;
+    --glass-soft: #f3f6f9;
+    --glass-strong: #f8fafc;
+    --glass-blur: none;
+    --scrim: rgba(230, 236, 243, 0.9);
+    --field: #ffffff;
+  }
+  :root[data-theme="dark"] {
+    --glass: #1f242c;
+    --glass-soft: #1f242c;
+    --glass-strong: #1a1f26;
+    --scrim: rgba(16, 19, 23, 0.9);
+    --field: #2a313b;
+  }
 }

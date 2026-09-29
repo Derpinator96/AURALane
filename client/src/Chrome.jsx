@@ -26,10 +26,10 @@ export function ThemeToggle() {
   };
 
   return (
-    <button type="button" className="icon-btn theme-toggle" onClick={toggle}
+    <button type="button" className="circle theme-toggle" onClick={toggle}
             aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
             title={dark ? "Switch to light mode" : "Switch to dark mode"}>
-      {dark ? <SunIcon size={16} /> : <MoonIcon size={16} />}
+      {dark ? <SunIcon size={18} /> : <MoonIcon size={18} />}
     </button>
   );
 }
@@ -39,6 +39,7 @@ export function ThemeToggle() {
 export function Banner() {
   return (
     <div className="banner" role="note" aria-label="Non-diagnostic notice">
+      <span className="dot" aria-hidden="true" />
       NON-DIAGNOSTIC. DECISION SUPPORT ONLY.
     </div>
   );
