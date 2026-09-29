@@ -7,10 +7,20 @@ import ReportsView from "./components/ReportsView.jsx";
 import SettingsView from "./components/SettingsView.jsx";
 import SimulatePanel from "./components/SimulatePanel.jsx";
 import DistributePanel from "./components/DistributePanel.jsx";
-import { SearchIcon } from "./components/Icons.jsx";
+import { BoardIcon, ClockIcon, ListIcon, SearchIcon, UserIcon, WorklistIcon } from "./components/Icons.jsx";
+import { Slot } from "./Shell.jsx";
 import { loadSettings } from "./settings.js";
 
 const LANE_FILTERS = ["ALL", "CRITICAL", "URGENT", "EXPEDITED", "ROUTINE"];
+const VIEW_KEY = "auralane.worklistView";
+
+function loadView() {
+  try {
+    return localStorage.getItem(VIEW_KEY) === "board" ? "board" : "list";
+  } catch {
+    return "list";
+  }
+}
 
 function Acuity({ row }) {
   if (row.lane === "ABSTAIN" || row.lane === "FAILED" || row.acuity == null) return "--";
@@ -31,6 +41,15 @@ export default function Worklist({ load, token }) {
   const [chosenScope, setScope] = useState(null);       // "mine" | "all"
   const [detailsWidth, setDetailsWidth] = useState(580);
   const [refresh, setRefresh] = useState(() => loadSettings().refreshSeconds);
+  const [view, setViewState] = useState(loadView);        // "list" | "board"
+  const setView = (v) => {
+    setViewState(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      // Storage unavailable: the choice lasts until reload.
+    }
+  };
 
   const startResize = (e) => {
     e.preventDefault();
@@ -138,7 +157,7 @@ export default function Worklist({ load, token }) {
 
   return (
     <div className="workstation-layout" data-testid="workstation-layout"
-         style={{ gridTemplateColumns: `240px 1fr 6px ${detailsWidth}px` }}>
+         style={{ gridTemplateColumns: `minmax(0, 1fr) 6px ${detailsWidth}px` }}>
       {panel === "simulate" && (
         <SimulatePanel token={token} readers={readers} onClose={() => setPanel(null)} onProgress={fetchWorklist} />
       )}
@@ -166,12 +185,14 @@ export default function Worklist({ load, token }) {
                 <h2 className="center-title">AI Worklist Queue</h2>
                 <p className="center-subtitle">Grouped by reading pool because a neuroradiologist reads the MRI and a chest radiologist reads the X-ray; studies are ranked within a pool, never across.</p>
               </div>
-              <div className="center-action-buttons">
-                <button type="button" className="btn-action-primary" onClick={() => setPanel("simulate")}
-                        data-testid="btn-simulate">Simulate ingest</button>
-                <button type="button" className="btn-action-quick" onClick={() => setPanel("distribute")}
-                        disabled={readers.length === 0} data-testid="btn-distribute">Distribute worklist</button>
-              </div>
+              <Slot name="actions">
+                <div className="center-action-buttons">
+                  <button type="button" className="btn" onClick={() => setPanel("distribute")}
+                          disabled={readers.length === 0} data-testid="btn-distribute">Distribute worklist</button>
+                  <button type="button" className="btn btn-primary" onClick={() => setPanel("simulate")}
+                          data-testid="btn-simulate">Simulate ingest</button>
+                </div>
+              </Slot>
             </div>
 
             <div className="worklist-filter-bar">
@@ -205,6 +226,16 @@ export default function Worklist({ load, token }) {
                     {Object.entries(SORTS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </label>
+              </div>
+              <div className="view-toggle" role="group" aria-label="Worklist view">
+                <button type="button" className="icon-btn" aria-pressed={view === "list"} title="List view"
+                        aria-label="List view" onClick={() => setView("list")} data-testid="view-list">
+                  <ListIcon size={16} />
+                </button>
+                <button type="button" className="icon-btn" aria-pressed={view === "board"} title="Board view"
+                        aria-label="Board view" onClick={() => setView("board")} data-testid="view-board">
+                  <BoardIcon size={16} />
+                </button>
               </div>
             </div>
 
@@ -259,7 +290,52 @@ export default function Worklist({ load, token }) {
               Needs human triage is always shown and is not affected by filters.
             </p>
 
-            <div className="queue-container">
+            {view === "board" && (
+              <div className="board" data-testid="board">
+                {(data.lanes || []).map((l) => {
+                  const cards = pools.flatMap((p) => p.sections.flatMap((s) => s.rows)).filter((r) => r.lane === l.lane);
+                  if (l.pinned && l.lane !== "ABSTAIN" && cards.length === 0) return null;
+                  return (
+                    <section key={l.lane} className={`board-col lane-${l.lane}`} data-testid={`board-col-${l.lane}`}
+                             aria-label={l.label}>
+                      <h3 className="board-col-head">
+                        <span className="lane-dot" aria-hidden="true" />
+                        <span className="lanename">{l.label}</span>
+                        <span className="count mono">{cards.length}</span>
+                        {l.clock && <span className="clock mono">{l.clock}</span>}
+                      </h3>
+                      {l.lane === "ABSTAIN" && (
+                        <p className="lane-explain-why">Model confidence was not sufficient to assign a lane. A radiologist picks it.</p>
+                      )}
+                      {cards.map((row) => (
+                        <article key={row.study} className={`board-card ${row.study === selectedStudyId ? "selected" : ""}`}
+                                 data-testid="board-card" data-study={row.study}>
+                          <div className="card-head">
+                            <span className="card-title">
+                              {row.lane === "FAILED" ? row.error : row.driver_label || row.abstain_reason || "--"}
+                            </span>
+                            <span className="tag">{row.exam || row.modality}</span>
+                          </div>
+                          <div className="card-meta"><UserIcon size={14} /><span className="mono">{row.patient_id || row.study}</span></div>
+                          <div className="card-meta"><ClockIcon size={14} /><span className="mono">{timeUTC(row.arrived)} UTC</span></div>
+                          <div className="card-meta"><WorklistIcon size={14} />
+                            <span>Acuity <span className="mono"><Acuity row={row} /></span></span></div>
+                          <div className="card-meta"><UserIcon size={14} /><span>{who(row)}</span></div>
+                          {row.overdue && l.lane === "CRITICAL" && (
+                            <div className="card-alert">Not opened within the {l.clock || "lane"} clock</div>
+                          )}
+                          <button type="button" className="btn card-open" onClick={() => setSelectedStudyId(row.study)}>
+                            Open study
+                          </button>
+                        </article>
+                      ))}
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+
+            {view === "list" && <div className="queue-container">
               <div className="queue-colhead" aria-hidden="true">
                 <span>Lane / SLA</span><span>Patient ID</span><span>Modality</span><span>AI Driving Finding</span>
                 <span>Acuity</span><span>Status / Reader</span><span>Arrived</span>
@@ -319,7 +395,7 @@ export default function Worklist({ load, token }) {
                   ))}
                 </section>
               ))}
-            </div>
+            </div>}
           </>
         )}
       </main>

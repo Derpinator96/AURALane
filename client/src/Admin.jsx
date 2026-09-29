@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { timeUTC } from "./worklist.js";
 import { Assignments, Pipeline } from "./AdminOps.jsx";
 
@@ -346,15 +346,19 @@ const TABS = [["pipeline", "Pipeline"], ["assignments", "Assignments"], ["audit"
               ["lanes", "Lane mix"], ["thresholds", "Thresholds"], ["models", "Model registry"],
               ["intake", "Simulated intake"]];
 
+// The sidebar (Shell.jsx) lists these, grouped; the routes below are unchanged.
+export const ADMIN_TABS = TABS;
+export const ADMIN_GROUPS = [
+  { label: "Operations", tabs: TABS.filter(([p]) => ["pipeline", "assignments", "audit", "intake"].includes(p)) },
+  { label: "Model", tabs: TABS.filter(([p]) => ["lanes", "thresholds", "models"].includes(p)) },
+  { label: "Access", tabs: [["access", "Waitlist"]] },
+];
+
 export default function Admin({ loadAudit, loadLaneMix, loadModels, loadIntake, startIntake,
                                 superadmin = false, loadAccess, decideAccess,
                                 loadPipeline, loadPipelineStudy, loadAssignments, reassign }) {
-  const tabs = superadmin ? [...TABS, ["access", "Waitlist"]] : TABS;
   return (
     <main className="adminpage">
-      <nav className="tabs" aria-label="Admin">
-        {tabs.map(([path, label]) => <NavLink key={path} to={`/admin/${path}`}>{label}</NavLink>)}
-      </nav>
       <p className="note">Admins configure and audit the system. Studies are opened by radiologists only.</p>
       <Routes>
         <Route index element={<Navigate to="pipeline" replace />} />

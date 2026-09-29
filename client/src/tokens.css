@@ -1,0 +1,98 @@
+/* Design tokens. Near-white surfaces, near-black ink, hairline borders, and
+   colour only in small status dots. Every colour in the app comes from here. */
+
+@font-face {
+  font-family: "Geist";
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/geist-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Geist";
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/geist-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Geist Mono";
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/geist-mono-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Geist Mono";
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/geist-mono-500.woff2") format("woff2");
+}
+
+:root {
+  --canvas: #fafafa;
+  --sheet: #ffffff;
+  --column: #fcfcfc;
+  --card: #ffffff;
+  --line: #ececec;
+  --line-strong: #e2e2e2;
+  --ink: #1b1b1b;
+  --ink-2: #6b6b6b;
+  --ink-3: #a3a3a3;
+  --tag-bg: #f2f2f2;
+  --hover: #f5f5f5;
+  --alert-bg: #fceaea;
+  --alert-ink: #c23b3b;
+
+  /* Lane dots, checked for colour-blind separation on white. */
+  --lane-critical: #cf3a3a;
+  --lane-urgent: #e98a2a;
+  --lane-triage: #3d5a9e;
+  --lane-expedited: #a8850c;
+  --lane-routine: #9a9a9a;
+  --lane-failed: #1b1b1b;
+  --ok: #3f8f4a;
+  --idle: #a3a3a3;
+
+  --r-sheet: 16px;
+  --r-column: 12px;
+  --r-card: 10px;
+  --r-control: 8px;
+  --r-pill: 999px;
+
+  --shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --sidebar-w: 240px;
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --canvas: #111110;
+  --sheet: #161615;
+  --column: #1a1a19;
+  --card: #1c1c1b;
+  --line: #2a2a28;
+  --line-strong: #363634;
+  --ink: #ecebe8;
+  --ink-2: #a8a7a2;
+  --ink-3: #6f6e69;
+  --tag-bg: #232322;
+  --hover: #222221;
+  --alert-bg: #3a1f1f;
+  --alert-ink: #e5484d;
+
+  --lane-critical: #e5484d;
+  --lane-urgent: #ff8a3d;
+  --lane-triage: #6e9cf0;
+  --lane-expedited: #ffe066;
+  --lane-routine: #8a8985;
+  --lane-failed: #ecebe8;
+  --ok: #5fb56b;
+  --idle: #6f6e69;
+
+  --shadow: none;
+  color-scheme: dark;
+}
