@@ -46,6 +46,12 @@
   --alert-ink: #c23b3b;
 
   /* Lane dots, checked for colour-blind separation on white. */
+  /* Medical blue, used for hover, focus and selection. */
+  --blue: #2a6fdb;
+  --blue-ink: #1f57b3;
+  --blue-tint: #eef4fe;
+  --blue-line: #bcd3f7;
+
   --lane-critical: #cf3a3a;
   --lane-urgent: #e98a2a;
   --lane-triage: #3d5a9e;
@@ -83,6 +89,11 @@
   --hover: #222221;
   --alert-bg: #3a1f1f;
   --alert-ink: #e5484d;
+
+  --blue: #6ea3f5;
+  --blue-ink: #8db7f8;
+  --blue-tint: #16233a;
+  --blue-line: #2c4a7c;
 
   --lane-critical: #e5484d;
   --lane-urgent: #ff8a3d;

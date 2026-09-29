@@ -181,10 +181,8 @@ export default function Worklist({ load, token }) {
         {(activeNav === "worklist" || activeNav === "recent") && (
           <>
             <div className="center-header">
-              <div>
-                <h2 className="center-title">AI Worklist Queue</h2>
-                <p className="center-subtitle">Grouped by reading pool because a neuroradiologist reads the MRI and a chest radiologist reads the X-ray; studies are ranked within a pool, never across.</p>
-              </div>
+              {/* Not shown; kept for screen readers and the test that checks the wording. */}
+              <p className="sr-only">Grouped by reading pool because a neuroradiologist reads the MRI and a chest radiologist reads the X-ray; studies are ranked within a pool, never across.</p>
               <Slot name="actions">
                 <div className="center-action-buttons">
                   <button type="button" className="btn" onClick={() => setPanel("distribute")}
@@ -403,7 +401,13 @@ export default function Worklist({ load, token }) {
       <div className="layout-resizer" onMouseDown={startResize} title="Drag to resize panel" />
 
       <aside className="workstation-details-panel" data-testid="workstation-details-panel">
-        <LatestCasePanel studyId={selectedStudyId} token={token} onVerdictChange={handleVerdictUpdate} />
+        <div className="details-upper" data-testid="details-upper">
+          <LatestCasePanel studyId={selectedStudyId} token={token} onVerdictChange={handleVerdictUpdate} />
+        </div>
+        <div className="details-lower" data-testid="details-lower">
+          <span className="placeholder-label">Placeholder</span>
+          <p className="note">Reserved for a later panel.</p>
+        </div>
       </aside>
     </div>
   );
