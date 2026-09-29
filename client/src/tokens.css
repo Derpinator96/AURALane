@@ -58,6 +58,7 @@
   --lane-expedited: #a8850c;
   --lane-routine: #9a9a9a;
   --lane-failed: #1b1b1b;
+  --lane-repeat: #2b8a8a;
   --ok: #3f8f4a;
   --idle: #a3a3a3;
 
@@ -101,6 +102,7 @@
   --lane-expedited: #ffe066;
   --lane-routine: #8a8985;
   --lane-failed: #ecebe8;
+  --lane-repeat: #4fb3b3;
   --ok: #5fb56b;
   --idle: #6f6e69;
 

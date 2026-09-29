@@ -315,6 +315,7 @@ export default function Worklist({ load, token }) {
                           <div className="card-meta"><WorklistIcon size={14} />
                             <span>Acuity <span className="mono"><Acuity row={row} /></span></span></div>
                           <div className="card-meta"><UserIcon size={14} /><span>{who(row)}</span></div>
+                          {row.human_lane && <div className="card-meta">Lane set by {row.human_lane.by_name || row.human_lane.by}</div>}
                           {row.overdue && l.lane === "CRITICAL" && (
                             <div className="card-alert">Not opened within the {l.clock || "lane"} clock</div>
                           )}
@@ -384,7 +385,11 @@ export default function Worklist({ load, token }) {
                                data-testid="study-row" data-study={row.study}>
                             <div className="cell-lane">
                               <span className={`lanetag lane-${row.lane}`}>{row.lane_label || row.lane}</span>
-                              {row.clock && <span className="cell-clock mono">{row.clock}</span>}
+                              {row.human_lane ? (
+                                <span className="cell-clock">Lane set by {row.human_lane.by_name || row.human_lane.by}</span>
+                              ) : row.repeat_imaging ? (
+                                <span className="cell-clock">Marked inadequate by {row.repeat_imaging.by_name || row.repeat_imaging.by}</span>
+                              ) : row.clock && <span className="cell-clock mono">{row.clock}</span>}
                             </div>
                             <div className="cell-patient mono bold">{row.patient_id || row.study}</div>
                             <div className="cell-modality">
@@ -424,7 +429,9 @@ export default function Worklist({ load, token }) {
                     aria-label="Close study panel" title="Close (Esc)" data-testid="close-panel">
               <CloseIcon size={16} />
             </button>
-            <LatestCasePanel studyId={selectedStudyId} token={token} onVerdictChange={handleVerdictUpdate} />
+            <LatestCasePanel studyId={selectedStudyId} token={token} me={data.me}
+                             onVerdictChange={handleVerdictUpdate} onChanged={fetchWorklist}
+                             onLeft={() => setSelectedStudyId(null)} />
           </aside>
         </>
       )}

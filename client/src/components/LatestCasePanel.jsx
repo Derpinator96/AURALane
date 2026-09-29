@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { DraftPanel, rationaleText } from "../Study.jsx";
 import CtGradcamView, { CtGradcamCaption, hasCtGradcam } from "./CtGradcamView.jsx";
+import AbstentionTray, { HumanLaneNote } from "./AbstentionTray.jsx";
+import { FindingSelector, gradcamLayer, selectedCaption } from "./GradcamFindings.jsx";
 import { WorklistIcon } from "./Icons.jsx";
 
 // Cornerstone (2D) and NiiVue (3D) load only when a study needs them.
@@ -39,9 +41,10 @@ function SeriesView({ token, detail, overlay }) {
   );
 }
 
-export default function LatestCasePanel({ studyId, token, onVerdictChange }) {
+export default function LatestCasePanel({ studyId, token, me = null, onVerdictChange, onChanged, onLeft }) {
   const navigate = useNavigate();
   const [detail, setDetail] = useState(null);
+  const [selectedFinding, setSelectedFinding] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -55,6 +58,7 @@ export default function LatestCasePanel({ studyId, token, onVerdictChange }) {
     setLoading(true);
     setError(null);
     setNo3D(false);
+    setSelectedFinding(null);
     api.study(token, studyId)
       .then((d) => { if (live) { setDetail(d); setLoading(false); } })
       .catch((err) => { if (live) { setError(err.message || "Failed to load study details"); setLoading(false); } });
@@ -104,8 +108,21 @@ export default function LatestCasePanel({ studyId, token, onVerdictChange }) {
   const urls = detail.evidence_urls || {};
   const v = s.verdict;
   const has3D = Boolean(ev.volumes) && !no3D;
-  const heat = urls.gradcam_layer_png && ev.gradcam_box && ev.gradcam_coverage !== 0;
-  const overlay = showGradcam && heat ? { url: urls.gradcam_layer_png, box: ev.gradcam_box, opacity } : null;
+  const layer = gradcamLayer(ev, urls, selectedFinding);
+  const heat = layer.drawable;
+  const overlay = showGradcam && heat ? { url: layer.url, box: ev.gradcam_box, opacity } : null;
+
+  // A study a reader placed or set aside is refetched: its draft and lane text change.
+  const changed = async (row) => {
+    setDetail((prev) => ({ ...prev, study: row }));
+    if (onVerdictChange) onVerdictChange(studyId, row);
+    if (onChanged) onChanged();
+    try {
+      setDetail(await api.study(token, studyId));
+    } catch {
+      // The row above is already what the reader sees.
+    }
+  };
 
   return (
     <div className="latest-case-panel" data-testid="latest-case-panel">
@@ -129,6 +146,9 @@ export default function LatestCasePanel({ studyId, token, onVerdictChange }) {
           {s.clock && <span className="lane-clock">SLA: {s.clock}</span>}
         </div>
       </div>
+
+      <HumanLaneNote study={s} />
+      <AbstentionTray detail={detail} token={token} me={me} onChanged={changed} onLeft={onLeft} />
 
       <div className="case-panel-viewer-section">
         {isMR && (
@@ -173,8 +193,10 @@ export default function LatestCasePanel({ studyId, token, onVerdictChange }) {
                        onChange={(e) => setOpacity(parseFloat(e.target.value))} aria-label="Grad-CAM opacity" />
               </label>
             )}
+            <FindingSelector ev={ev} selected={selectedFinding} onSelect={setSelectedFinding} />
             <SeriesView token={token} detail={detail} overlay={overlay} />
-            <p className="evidence-caption"><span className="bold">Grad-CAM Explanation:</span> {rationaleText(detail)}</p>
+            <p className="evidence-caption"><span className="bold">Grad-CAM Explanation:</span>{" "}
+              {selectedCaption(ev, selectedFinding) || rationaleText(detail)}</p>
           </div>
         )}
 

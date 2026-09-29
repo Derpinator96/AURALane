@@ -46,7 +46,7 @@ def _of(t, kind):
 def test_synthesises_without_credentials_and_never_creates_a_datastore(template):
     types = Counter(r["Type"] for r in template["Resources"].values())
     assert not any(k.startswith("AWS::HealthImaging") for k in types)
-    assert types["AWS::S3::Bucket"] == 1 and types["AWS::DynamoDB::Table"] == 5
+    assert types["AWS::S3::Bucket"] == 1 and types["AWS::DynamoDB::Table"] == 6
     # 2 functions: the chest model, and CDK's handler that turns on the bucket's
     # EventBridge notifications.
     assert types["AWS::Lambda::Function"] == 2 and types["AWS::SageMaker::Endpoint"] == 2

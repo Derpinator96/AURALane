@@ -122,6 +122,18 @@ export const api = {
     call(`/api/studies/${encodeURIComponent(study)}/metrics`, { token }),
   saveDraft: (token, study, text, reviewed) =>
     call(`/api/studies/${encodeURIComponent(study)}/draft`, { token, method: "POST", body: { text, reviewed } }),
+  // The abstention tray: place an abstained study in a lane, send it for a second
+  // read, or mark it technically inadequate. Each answers {study}.
+  setLane: (token, study, lane, reason) =>
+    call(`/api/studies/${encodeURIComponent(study)}/lane`, { token, method: "POST", body: { lane, reason } }),
+  secondRead: (token, study, reader) =>
+    call(`/api/studies/${encodeURIComponent(study)}/second-read`, { token, method: "POST", body: { reader } }),
+  markInadequate: (token, study, reason) =>
+    call(`/api/studies/${encodeURIComponent(study)}/inadequate`, { token, method: "POST", body: { reason } }),
+  // The signed-in radiologist's saved reports (latest version per study).
+  reports: (token, status) => call(`/api/reports${status ? `?status=${encodeURIComponent(status)}` : ""}`, { token }),
+  report: (token, study, version) =>
+    call(`/api/reports/${encodeURIComponent(study)}/${encodeURIComponent(version)}`, { token }),
   readers: (token) => call("/api/readers", { token }),
   distribute: (token, readers) => call("/api/distribute", { token, method: "POST", body: { readers } }),
   simulateInfo: (token) => call("/api/simulate", { token }),

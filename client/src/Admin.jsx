@@ -65,6 +65,12 @@ export function LaneMix({ load }) {
       {(d) => (
         <>
           <p className="note">{d.basis}.</p>
+          {d.placed_by_human != null && (
+            <p data-testid="placed-by-human">
+              Placed by a human after the system abstained: <strong className="mono">{d.placed_by_human}</strong>
+              {" "}of <span className="mono">{d.total}</span> studies.
+            </p>
+          )}
           <table className="admin" data-testid="lane-mix">
             <thead><tr><th>Lane</th><th>Studies</th><th>Share</th><th className="barcol" aria-hidden="true" /></tr></thead>
             <tbody>

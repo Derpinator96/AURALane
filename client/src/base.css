@@ -84,6 +84,7 @@ label { color: var(--ink-2); }
 .lane-EXPEDITED { --dot: var(--lane-expedited); }
 .lane-ROUTINE { --dot: var(--lane-routine); }
 .lane-FAILED { --dot: var(--lane-failed); }
+.lane-REPEAT { --dot: var(--lane-repeat); }
 .lanetag::before, .lane-dot { background: var(--dot, var(--lane-routine)); }
 .lane-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--dot, var(--lane-routine)); }
 
