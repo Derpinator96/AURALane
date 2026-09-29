@@ -1,113 +1,102 @@
+// One thin line-icon set: 24px grid, 1.5px stroke, currentColor. Icons label a
+// nav item, a metadata row or an action; nothing here is decoration.
+
+function Icon({ size = 16, className = "", children }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}
+         aria-hidden="true" focusable="false">
+      {children}
+    </svg>
+  );
+}
+
 export function BrandLogo({ size = 20, className = "" }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <circle cx="12" cy="12" r="10" stroke="currentColor" style={{ fill: "var(--brand-purple-light)" }} />
-      <path d="M12 6v12M6 12h12" stroke="currentColor" />
-      <circle cx="12" cy="12" r="3" fill="currentColor" />
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden="true" focusable="false">
+      <rect x="2" y="2" width="20" height="20" rx="5" fill="var(--ink)" />
+      <path d="M12 6.5v11M6.5 12h11" stroke="var(--sheet)" strokeWidth="1.6" strokeLinecap="round" fill="none" />
     </svg>
   );
 }
 
-export function WorklistIcon({ size = 16, className = "" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect width="18" height="18" x="3" y="3" rx="2" />
-      <path d="M8 8h8M8 12h8M8 16h5" />
-    </svg>
-  );
-}
+export const WorklistIcon = (p) => (
+  <Icon {...p}><rect x="4" y="4" width="16" height="16" rx="3" /><path d="M8 9h8M8 12.5h8M8 16h5" /></Icon>
+);
+export const ClockIcon = (p) => (
+  <Icon {...p}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></Icon>
+);
+export const HistoryIcon = (p) => (
+  <Icon {...p}><path d="M6 3.5h8l4 4v13H6z" /><path d="M14 3.5v4h4M9 12h6M9 15.5h6" /></Icon>
+);
+export const ReportsIcon = (p) => (
+  <Icon {...p}><path d="M5 20V10M12 20V4M19 20v-7" /></Icon>
+);
+export const SettingsIcon = (p) => (
+  <Icon {...p}><circle cx="12" cy="12" r="3" /><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" /></Icon>
+);
+export const SearchIcon = (p) => (
+  <Icon {...p}><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.2-4.2" /></Icon>
+);
+export const UploadIcon = (p) => (
+  <Icon {...p}><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4M12 4v11M8 8l4-4 4 4" /></Icon>
+);
+export const AnalyseIcon = (p) => (
+  <Icon {...p}><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="2.5" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" /></Icon>
+);
+export const CheckIcon = (p) => (
+  <Icon {...p}><path d="M5 12.5l4.5 4.5L19 7.5" /></Icon>
+);
+export const CloseIcon = (p) => (
+  <Icon {...p}><path d="M6 6l12 12M18 6L6 18" /></Icon>
+);
 
-export function ClockIcon({ size = 16, className = "" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
-
-export function HistoryIcon({ size = 16, className = "" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-    </svg>
-  );
-}
-
-export function ReportsIcon({ size = 16, className = "" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <line x1="18" y1="20" x2="18" y2="10" />
-      <line x1="12" y1="20" x2="12" y2="4" />
-      <line x1="6" y1="20" x2="6" y2="14" />
-    </svg>
-  );
-}
-
-export function SettingsIcon({ size = 16, className = "" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </svg>
-  );
-}
-
-export function SearchIcon({ size = 15, className = "" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}
-
-export function UploadIcon({ size = 16, className = "" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  );
-}
-
-export function AnalyseIcon({ size = 15, className = "" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-export function CheckIcon({ size = 14, className = "" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-export function CloseIcon({ size = 14, className = "" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
+// Shell and worklist
+export const SidebarIcon = (p) => (
+  <Icon {...p}><rect x="3.5" y="4.5" width="17" height="15" rx="3" /><path d="M9.5 4.5v15" /></Icon>
+);
+export const ListIcon = (p) => (
+  <Icon {...p}><path d="M8 7h11M8 12h11M8 17h11M4.5 7h.01M4.5 12h.01M4.5 17h.01" /></Icon>
+);
+export const BoardIcon = (p) => (
+  <Icon {...p}><rect x="4" y="4.5" width="4.5" height="15" rx="1.5" /><rect x="10" y="4.5" width="4.5" height="9" rx="1.5" /><rect x="16" y="4.5" width="4" height="12" rx="1.5" /></Icon>
+);
+export const UserIcon = (p) => (
+  <Icon {...p}><circle cx="12" cy="8.5" r="3.5" /><path d="M5 20c.6-3.4 3.4-5.5 7-5.5s6.4 2.1 7 5.5" /></Icon>
+);
+export const CalendarIcon = (p) => (
+  <Icon {...p}><rect x="4" y="5.5" width="16" height="14" rx="2.5" /><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" /></Icon>
+);
+export const GaugeIcon = (p) => (
+  <Icon {...p}><path d="M4 16a8 8 0 1 1 16 0" /><path d="M12 16l3.5-5" /></Icon>
+);
+export const PlayIcon = (p) => (
+  <Icon {...p}><path d="M8 5.5v13l10-6.5z" /></Icon>
+);
+export const ActivityIcon = (p) => (
+  <Icon {...p}><path d="M3 12h4l3-7 4 14 3-7h4" /></Icon>
+);
+export const UsersIcon = (p) => (
+  <Icon {...p}><circle cx="9" cy="9" r="3" /><path d="M3.5 19c.5-3 2.7-4.7 5.5-4.7s5 1.7 5.5 4.7M16 6.5a3 3 0 0 1 0 5.5M17.5 14.5c1.7.5 2.7 2 3 4.5" /></Icon>
+);
+export const ScrollIcon = (p) => (
+  <Icon {...p}><path d="M7 4.5h10a2 2 0 0 1 2 2V19H9a2 2 0 0 1-2-2z" /><path d="M7 17V6.5M11 9h5M11 12.5h5" /></Icon>
+);
+export const SlidersIcon = (p) => (
+  <Icon {...p}><path d="M5 6h6M15 6h4M5 12h2M11 12h8M5 18h9M18 18h1" /><circle cx="13" cy="6" r="1.8" /><circle cx="9" cy="12" r="1.8" /><circle cx="16" cy="18" r="1.8" /></Icon>
+);
+export const ModelIcon = (p) => (
+  <Icon {...p}><path d="M12 3.5l7.5 4.2v8.6L12 20.5l-7.5-4.2V7.7z" /><path d="M12 12l7.5-4.3M12 12L4.5 7.7M12 12v8.5" /></Icon>
+);
+export const InboxIcon = (p) => (
+  <Icon {...p}><path d="M4 13l2.5-7.5h11L20 13v5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18z" /><path d="M4 13h4.5l1 2.5h5l1-2.5H20" /></Icon>
+);
+export const MoonIcon = (p) => (
+  <Icon {...p}><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" /></Icon>
+);
+export const SunIcon = (p) => (
+  <Icon {...p}><circle cx="12" cy="12" r="3.8" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4" /></Icon>
+);
+export const ChevronIcon = (p) => (
+  <Icon {...p}><path d="M9 6l6 6-6 6" /></Icon>
+);

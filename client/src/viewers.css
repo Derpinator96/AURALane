@@ -1,0 +1,1666 @@
+/* Viewer wrappers inside the case panel */
+/* Chest Radiography & CT Viewer Wrappers */
+.cxr-canvas-wrapper, .ct-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  background: #000000;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+}
+
+.cxr-base-img {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+}
+
+.cxr-overlay-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.75;
+  mix-blend-mode: screen;
+}
+
+
+/* Head CT Grad-CAM view and 3D NiiVue MPR view */
+/* --------------------------------------------------------------------------
+   Head CT Grad-CAM Workstation Styles (CT_Mehak triagelane-ct)
+-------------------------------------------------------------------------- */
+.ct-gradcam-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* 1. Terminal / Notebook Diagnostic Header (Exact format from CT_Mehak) */
+.ct-diagnostic-header {
+  background: #09090b;
+  color: #e4e4e7;
+  border: 1px solid #27272a;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  box-shadow: var(--shadow);
+}
+
+.ct-diagnostic-header .meta-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.ct-diagnostic-header .meta-key {
+  color: #a1a1aa;
+  font-weight: 500;
+}
+
+.ct-diagnostic-header .meta-val {
+  color: #f4f4f5;
+  font-weight: 500;
+}
+
+.ct-diagnostic-header .meta-finding {
+  color: #38bdf8;
+  font-weight: 500;
+}
+
+/* Toolbar Controls */
+.ct-toolbar-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.ct-mode-switcher {
+  display: flex;
+  gap: 4px;
+  background: var(--tag-bg);
+  padding: 2px;
+  border-radius: 6px;
+}
+
+.ct-mode-btn {
+  background: transparent;
+  border: none;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ct-mode-btn:hover {
+  color: var(--ink);
+}
+
+.ct-mode-btn.active {
+  background: #ffffff;
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-weight: 500;
+}
+
+.ct-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ct-slider-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.ct-slider-control .slider-label {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.ct-opacity-range {
+  width: 90px;
+  cursor: pointer;
+  accent-color: var(--ink);
+}
+
+.ct-slider-control .slider-value {
+  min-width: 34px;
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.ct-toggles {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.ct-toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 2. Side-by-Side Dual-View Grid */
+.ct-dualview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+@media (max-width: 800px) {
+  .ct-dualview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 3. Tri-View 3-Panel Grid */
+.ct-triview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .ct-triview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ct-panel-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ct-panel-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0;
+  text-align: center;
+  letter-spacing: -0.2px;
+}
+
+.ct-panel-frame {
+  position: relative;
+  background: #000000;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #27272a;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.ct-panel-frame.jet-bg {
+  background: #000080;
+}
+
+.ct-panel-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.ct-overlay-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  transition: opacity 0.05s ease;
+}
+
+.ct-blend-layer {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+}
+
+.opacity-badge {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #38bdf8;
+  font-size: 9.5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  pointer-events: none;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.slice-badge, .colormap-badge {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #a1a1aa;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* Lime-Green Localized Region Bounding Box (Exact Mehak specification) */
+.ct-lime-bbox {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2.5px solid #00ff00;
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
+  animation: subtle-pulse 2.5s infinite ease-in-out;
+}
+
+@keyframes subtle-pulse {
+  0%, 100% { border-color: #00ff00; }
+  50% { border-color: #7cfc00; box-shadow: 0 0 12px rgba(124, 252, 0, 0.7); }
+}
+
+.bbox-label {
+  position: absolute;
+  top: -18px;
+  left: -2px;
+  background: #00ff00;
+  color: #000000;
+  font-size: 9.5px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 2px;
+
+  letter-spacing: 0;
+}
+
+/* Centroid marker */
+.ct-centroid-marker {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.ct-centroid-marker .crosshair-h {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  width: 14px;
+  height: 2px;
+  background: #ffff00;
+  box-shadow: 0 0 4px #000;
+}
+.ct-centroid-marker .crosshair-v {
+  position: absolute;
+  left: 6px;
+  top: 0;
+  width: 2px;
+  height: 14px;
+  background: #ffff00;
+  box-shadow: 0 0 4px #000;
+}
+
+/* Composite View */
+.ct-composite-wrapper {
+  background: #000000;
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 8px;
+}
+.ct-composite-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Single View */
+.ct-single-wrapper {
+  display: flex;
+  justify-content: center;
+  background: #000000;
+  border-radius: 8px;
+  padding: 16px;
+}
+.ct-gradcam-stage {
+  position: relative;
+  width: min(100%, 480px);
+}
+.ct-stage-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Caption Card */
+.ct-caption-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.caption-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.caption-bold {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.caption-target-chip {
+  background: var(--tag-bg);
+  border: 1px solid var(--line);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  color: var(--ink);
+}
+
+.caption-text {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+
+/* Findings Section */
+.case-panel-findings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-heading {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+
+  letter-spacing: 0;
+  margin: 0;
+}
+
+.findings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.findings-table th {
+  text-align: left;
+  padding: 6px 10px;
+  background: var(--tag-bg);
+  color: var(--ink-3);
+  font-size: 10.5px;
+
+}
+
+.findings-table td {
+  padding: 7px 10px;
+  border-top: 1px solid var(--line);
+}
+
+.findings-table tr.driver-row td {
+  background: var(--tag-bg);
+  font-weight: 500;
+}
+
+/* Verdict Section */
+.case-panel-verdict-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.verdict-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.verdict-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.verdict-status-note {
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.verdict-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Draft Note */
+.case-panel-draft {
+  margin-top: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  background: var(--tag-bg);
+}
+
+.case-panel-draft summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.draft-content {
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin: 8px 0 0;
+  color: var(--ink-2);
+}
+
+/* --------------------------------------------------------------------------
+   3D NiiVue MPR Workstation Styles (PACS Grade)
+-------------------------------------------------------------------------- */
+.mri-3d-workstation {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #09090b;
+  padding: 16px;
+  border-radius: 12px;
+  color: #f4f4f5;
+  border: 1px solid #27272a;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.mri-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #27272a;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #a1a1aa;
+
+  letter-spacing: 0;
+}
+
+.segmented-group {
+  display: flex;
+  gap: 3px;
+  background: #18181b;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid #27272a;
+}
+
+.segmented-btn {
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.segmented-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.segmented-btn.active {
+  background: var(--ink);
+  color: var(--sheet);
+}
+
+.segmentation-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #18181b;
+  color: #a1a1aa;
+  border: 1px solid #3f3f46;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-toggle:hover {
+  border-color: #71717a;
+  color: #ffffff;
+}
+
+.btn-toggle.active {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: var(--ink);
+  color: #a1a1aa;
+}
+
+.status-indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #71717a;
+}
+.btn-toggle.active .status-indicator-dot {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.slider-label {
+  font-size: 11px;
+  color: #a1a1aa;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #18181b;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #27272a;
+}
+
+.opacity-slider {
+  width: 75px;
+  height: 4px;
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+
+.btn-tool-action {
+  background: #18181b;
+  border: 1px solid #27272a;
+  color: #a1a1aa;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-tool-action:hover {
+  background: #27272a;
+  color: #ffffff;
+}
+
+.btn-tool-action.active {
+  background: var(--tag-bg);
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+/* Multi-Planar Orthogonal Viewports Grid */
+.mri-grid {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.layout-mpr-grid {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 270px 270px;
+  min-height: 540px;
+}
+
+.layout-single-3d, .layout-single-axial {
+  grid-template-columns: 1fr;
+  height: 540px;
+}
+
+.viewport-cell {
+  position: relative;
+  background: #000000;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #27272a;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewport-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(9, 9, 11, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f4f4f5;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge-coords {
+  color: #a1a1aa;
+  font-size: 9px;
+}
+
+.orientation-tag {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 500;
+  color: #71717a;
+  pointer-events: none;
+  z-index: 5;
+  user-select: none;
+}
+.top-tag { top: 6px; left: 50%; transform: translateX(-50%); }
+.bottom-tag { bottom: 6px; left: 50%; transform: translateX(-50%); }
+.left-tag { left: 8px; top: 50%; transform: translateY(-50%); }
+.right-tag { right: 8px; top: 50%; transform: translateY(-50%); }
+
+.raymarch-hint {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(9, 9, 11, 0.8);
+  color: #a1a1aa;
+  font-size: 9.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.mri-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.mri-loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #a1a1aa;
+  padding: 6px 0;
+}
+
+/* Quantitative Measurements HUD Footer */
+.mri-metrics-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid #27272a;
+}
+
+.metrics-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.metrics-bar-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #a1a1aa;
+
+  letter-spacing: 0;
+}
+
+.metric-chip {
+  background: #18181b;
+  border: 1px solid #27272a;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.metric-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.dot-wt { background: #ef4444; }
+.dot-tc { background: #f97316; }
+.dot-et { background: #be123c; }
+
+.metric-title {
+  color: #a1a1aa;
+  font-weight: 500;
+}
+
+.metric-val {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.metric-chip.validation {
+  background: rgba(0, 0, 0, 0.15);
+  border-color: rgba(0, 0, 0, 0.4);
+  color: #a1a1aa;
+}
+.metric-chip.validation .metric-title { color: #a1a1aa; }
+.metric-chip.validation .metric-val { color: #ffffff; }
+
+/* The 2D Cornerstone viewer (main's rules; the redesign dropped them, which
+   left the viewport at zero height). */
+.viewer { display: flex; flex-direction: column; gap: 6px; }
+.viewer-tools { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.viewer-tools button { padding: 4px 10px; border: 1px solid var(--line); border-radius: 3px;
+  background: var(--card); color: inherit; font: inherit; font-size: 12px; cursor: pointer; }
+.viewer-tools button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); }
+.slice { margin-left: 8px; }
+.viewer-label { margin-left: auto; font-weight: 500; letter-spacing: 0; }
+.viewport-wrap { position: relative; }
+.viewport { width: 100%; height: calc(100vh - 260px); min-height: 420px; background: #000; }
+.overlay-layer { position: absolute; pointer-events: none; image-rendering: auto; }
+
+/* Viewer viewport inside the case panel */
+/* The 2D viewer inside the latest-case panel: a panel-sized viewport. */
+.latest-case-panel .viewport { height: 420px; min-height: 0; }
+.latest-case-panel .mri-grid { min-height: 520px; }
+
+
+/* Notes, pins and the note editor */
+/* --------------------------------------------------------------------------
+   Clinician Pinpoint Notes & Annotations Styling (PACS Grade)
+-------------------------------------------------------------------------- */
+.study-annotations-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow);
+}
+
+.annotations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.annotations-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.annotations-count-badge {
+  background: var(--tag-bg);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 12px;
+}
+
+.btn-add-pinpoint, .btn-pin-mode {
+  background: var(--tag-bg);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-add-pinpoint:hover, .btn-pin-mode:hover {
+  background: var(--tag-bg);
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.btn-add-pinpoint.active, .btn-pin-mode.active {
+  background: var(--ink);
+  color: var(--sheet);
+  border-color: var(--ink);
+}
+
+.pin-mode-banner, .mri-pin-instruction-hud, .ct-pin-instruction-hud, .cxr-pin-instruction-hud {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  color: #a1a1aa;
+  font-size: 11.5px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  animation: fade-in 0.2s ease-out;
+}
+
+.pin-mode-banner .pulse-dot, .mri-pin-instruction-hud .pulse-dot, .ct-pin-instruction-hud .pulse-dot, .cxr-pin-instruction-hud .pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #38bdf8;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: pulse-ring 1.5s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px #38bdf8; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.annotations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.annotation-item-card {
+  background: var(--tag-bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.annotation-item-card:hover {
+  border-color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.annotation-item-card.selected {
+  border-color: var(--ink);
+  background: var(--tag-bg);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.ann-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ann-meta-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ann-region-pill, .hud-region-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+
+  letter-spacing: 0;
+}
+
+.region-et, [class*="region-et"] {
+  background: #f43f5e;
+  color: #ffffff;
+}
+
+.region-tc, [class*="region-tc"] {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.region-wt, [class*="region-wt"] {
+  background: #eab308;
+  color: #000000;
+}
+
+.region-user-annotation-on-t1-volume, [class*="region-t1"], [class*="region-user"] {
+  background: #a1a1aa;
+  color: #ffffff;
+}
+
+.region-localized, [class*="region-local"] {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.region-unsegmented-location, [class*="region-unseg"] {
+  background: #52525b;
+  color: #ffffff;
+}
+
+.ann-coords-tag {
+  font-size: 10px;
+  color: var(--ink-2);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+}
+
+.ann-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-ann-action {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.btn-ann-action:hover {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--ink-2);
+}
+
+.btn-ann-action.delete-btn:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.delete-confirm-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn-ann-action.delete-confirm {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+.ann-text-body {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.ann-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+/* --------------------------------------------------------------------------
+   On-Image Pin Markers & Popovers
+-------------------------------------------------------------------------- */
+.pinpoint-active-mode {
+  cursor: crosshair !important;
+}
+
+.pinpoint-active-mode .mri-canvas,
+.pinpoint-active-mode .ct-panel-frame,
+.pinpoint-active-mode .viewport {
+  cursor: crosshair !important;
+}
+
+.pin-marker-point {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.pin-dot {
+  width: 10px;
+  height: 10px;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.8), 0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease;
+}
+
+.pin-pulse {
+  position: absolute;
+  inset: -4px;
+  border: 2px solid #ef4444;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: pin-ripple 2s infinite ease-out;
+}
+
+@keyframes pin-ripple {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+.pin-marker-point:hover .pin-dot,
+.pin-marker-point.selected .pin-dot {
+  transform: scale(1.3);
+  background: #38bdf8;
+  border-color: #ffffff;
+  box-shadow: 0 0 12px #38bdf8, 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.pin-tooltip-popover {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(9, 9, 11, 0.92);
+  backdrop-filter: blur(6px);
+  color: #f4f4f5;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 40;
+}
+
+/* --------------------------------------------------------------------------
+   Clinician Note Editor Modal
+-------------------------------------------------------------------------- */
+.note-editor-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fade-in 0.15s ease-out;
+}
+
+.note-editor-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  animation: scale-up 0.2s ease-out;
+}
+
+@keyframes scale-up {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.note-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-icon {
+  font-size: 16px;
+}
+
+.editor-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 0;
+}
+
+.btn-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--ink-2);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+}
+.btn-modal-close:hover {
+  color: var(--ink);
+}
+
+.note-spatial-hud {
+  background: var(--tag-bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11.5px;
+}
+
+.spatial-hud-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hud-label {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+.hud-val {
+  color: var(--ink);
+}
+
+.text-accent {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.note-editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.editor-input-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.note-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 90px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.note-textarea:focus {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px var(--tag-bg);
+}
+
+.note-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* --------------------------------------------------------------------------
+   3D MRI Pinpoint Spatial Dot Markers & Overlays
+-------------------------------------------------------------------------- */
+.mri-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mri-pin-dot-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.mri-pin-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 25;
+  transition: transform 0.15s ease;
+}
+
+.mri-pin-marker:hover {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.mri-pin-marker.selected {
+  transform: translate(-50%, -50%) scale(1.3);
+  z-index: 30;
+}
+
+.mri-pin-core {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.9), 0 0 4px rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 500;
+  color: #ffffff;
+  position: relative;
+  z-index: 2;
+}
+
+.mri-pin-marker.selected .mri-pin-core {
+  background: #a1a1aa;
+  border-color: var(--tag-bg);
+  box-shadow: 0 0 14px rgba(139, 92, 246, 1.0), 0 0 6px rgba(0, 0, 0, 0.9);
+}
+
+.mri-pin-pulse {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.35);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  animation: mri-pin-pulse-anim 2s infinite ease-out;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mri-pin-marker.selected .mri-pin-pulse {
+  background: rgba(139, 92, 246, 0.4);
+  border-color: rgba(139, 92, 246, 0.8);
+}
+
+@keyframes mri-pin-pulse-anim {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.mri-pin-popover {
+  position: absolute;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(139, 92, 246, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 170px;
+  max-width: 220px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+  color: #f1f5f9;
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: auto;
+  z-index: 50;
+  white-space: normal;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mri-pin-popover.popover-above {
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.mri-pin-popover.popover-above::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(15, 23, 42, 0.95);
+}
+
+.mri-pin-popover.popover-below {
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.mri-pin-popover.popover-below::after {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-bottom-color: rgba(15, 23, 42, 0.95);
+}
+
+.mri-pin-popover.popover-align-left {
+  left: 0;
+  transform: none;
+}
+.mri-pin-popover.popover-align-left::after {
+  left: 14px;
+  transform: none;
+}
+
+.mri-pin-popover.popover-align-right {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.mri-pin-popover.popover-align-right::after {
+  left: auto;
+  right: 14px;
+  transform: none;
+}
+
+.mri-pin-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 4px;
+}
+
+.popover-tag {
+  font-weight: 500;
+  color: #a1a1aa;
+}
+
+.popover-region-badge {
+  font-size: 9.5px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.popover-note-text {
+  font-size: 11.5px;
+  color: #ffffff;
+  word-break: break-word;
+}
+
+.popover-meta {
+  font-size: 10px;
+  color: #94a3b8;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.mri-3d-pin-floating-hud {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 22;
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.hud-pin-dot-list {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hud-pin-pill {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 1px solid #ffffff;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.hud-pin-pill:hover,
+.hud-pin-pill.active {
+  background: #a1a1aa;
+  transform: scale(1.18);
+  box-shadow: 0 0 8px #a1a1aa;
+}
+
+.popover-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.btn-popover-action {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  color: #f1f5f9;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-popover-action:hover {
+  background: rgba(139, 92, 246, 0.3);
+  border-color: #a1a1aa;
+  color: #ffffff;
+}
+
+.btn-popover-focus {
+  background: rgba(139, 92, 246, 0.25);
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #a1a1aa;
+}
+
+.btn-popover-delete {
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
+  margin-left: auto;
+}
+
+.btn-popover-delete:hover {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: #ef4444;
+}
+
+/* Quick Clinical Template Chips */
+.editor-quick-templates {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quick-templates-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.template-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn-template-chip {
+  background: var(--tag-bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.btn-template-chip:hover {
+  background: var(--tag-bg);
+  border-color: var(--ink);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.editor-shortcut-hint {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  margin-right: auto;
+}
+
+.mri-pin-marker.in-slice .mri-pin-core {
+  box-shadow: 0 0 12px rgba(239, 68, 68, 1.0), 0 0 0 2px rgba(255, 255, 255, 0.8);
+}
+
+.mri-pin-marker.out-slice .mri-pin-core {
+  opacity: 0.7;
+}
+
+
+
+
+
+/* Panels narrower than the media queries assume: stack the Grad-CAM views. */
+@container (max-width: 430px) {
+  .ct-triview-grid, .ct-dualview-grid { grid-template-columns: 1fr; }
+}

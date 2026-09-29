@@ -36,7 +36,7 @@ export default function DistributePanel({ token, readers, studies, onClose, onDo
             <p className="modal-subtitle">
               {unread.length} unread {unread.length === 1 ? "study" : "studies"}, dealt in priority order (critical first)
               round robin, so each reader gets the same count and a similar share of critical work. A study goes only to
-              a reader whose pools include it.
+              a reader whose pools include it. Studies you hand to another reader leave your worklist.
             </p>
           </div>
           <button type="button" className="btn-close" onClick={onClose} aria-label="Close">Close</button>

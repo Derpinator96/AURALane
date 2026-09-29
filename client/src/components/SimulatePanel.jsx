@@ -29,10 +29,12 @@ export function ReaderPicker({ readers, chosen, setChosen, pools = [] }) {
   );
 }
 
-export default function SimulatePanel({ token, readers, onClose, onProgress }) {
+export default function SimulatePanel({ token, readers, me = null, onClose, onProgress }) {
   const [info, setInfo] = useState(null);
   const [counts, setCounts] = useState({ chest: 3, brain: 1, ct: 1 });
-  const [chosen, setChosen] = useState(() => readers.map((r) => r.id));
+  // A study appears on the worklist of the reader it is sent to, so the default is
+  // the signed-in reader alone; add others to share the batch equally.
+  const [chosen, setChosen] = useState(() => (readers.some((r) => r.id === me) ? [me] : readers.map((r) => r.id)));
   const [estimate, setEstimate] = useState(null);
   const [batch, setBatch] = useState(null);
   const [error, setError] = useState(null);
@@ -135,9 +137,10 @@ export default function SimulatePanel({ token, readers, onClose, onProgress }) {
             </p>
 
             <ReaderPicker readers={readers} chosen={chosen} setChosen={setChosen} pools={pools} />
-            <p className="note">
-              Each study is assigned as it finishes: to the chosen reader with the fewest so far, then the fewest in its lane.
-              Choose no reader to leave them unassigned.
+            <p className="note" data-testid="share-summary">
+              {chosen.length === 0
+                ? "Choose at least one radiologist: a study appears only on the worklist of the reader it is sent to."
+                : `${total} ${total === 1 ? "study" : "studies"} to ${chosen.length} ${chosen.length === 1 ? "reader" : "readers"}, dealt equally: each study goes to the chosen reader with the fewest so far, then the fewest in its lane.`}
             </p>
 
             {estimate && (
@@ -154,7 +157,7 @@ export default function SimulatePanel({ token, readers, onClose, onProgress }) {
 
             <div className="modal-actions">
               <button type="button" onClick={onClose}>Cancel</button>
-              <button type="button" className="btn-primary" disabled={busy || gap || total === 0}
+              <button type="button" className="btn-primary" disabled={busy || gap || total === 0 || chosen.length === 0}
                       onClick={send} data-testid="simulate-send">
                 Send {total} {total === 1 ? "study" : "studies"}
               </button>

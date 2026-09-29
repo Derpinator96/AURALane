@@ -118,7 +118,8 @@ class _FrameStore(FixtureDatastore):
 def test_api_streams_signed_frames_and_refuses_tampered_links():
     table = FixtureTable()
     study = next(r for r in json.loads(open(WORKLIST).read()) if r["modality"] == "CR")
-    app = create_app({"runtime": "aws", "blob": FileBlob(BLOB, url_base="/api/blob"),
+    # This test is about signed frame links, not whose worklist a study is on.
+    app = create_app({"runtime": "aws", "worklist_scope": "all", "blob": FileBlob(BLOB, url_base="/api/blob"),
                       "table": table, "datastore": _FrameStore(table),
                       "auth": DevAuth(password=DEV_PASSWORD), "llm": TemplateLLM(),
                       "frame_proxy": "http://testserver"})

@@ -2,10 +2,10 @@ import { useCallback, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { api, loadSession, saveSession } from "./api.js";
 import Admin from "./Admin.jsx";
-import { Header } from "./Chrome.jsx";
-import { Footer, Privacy, Terms } from "./Legal.jsx";
+import { Privacy, Terms } from "./Legal.jsx";
 import Login from "./Login.jsx";
 import RequestAccess from "./RequestAccess.jsx";
+import Shell from "./Shell.jsx";
 import Study from "./Study.jsx";
 import Worklist from "./Worklist.jsx";
 
@@ -41,8 +41,7 @@ export default function App() {
   const radiologist = session?.user.groups.includes("radiologist");
 
   return (
-    <>
-      <Header session={session} onSignOut={onSignOut} />
+    <Shell session={session} onSignOut={onSignOut}>
       <Routes>
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
@@ -64,7 +63,6 @@ export default function App() {
           : <Navigate to={home(session)} />} />
         <Route path="*" element={<Navigate to={home(session)} />} />
       </Routes>
-      <Footer />
-    </>
+    </Shell>
   );
 }

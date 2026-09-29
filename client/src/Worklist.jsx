@@ -7,10 +7,20 @@ import ReportsView from "./components/ReportsView.jsx";
 import SettingsView from "./components/SettingsView.jsx";
 import SimulatePanel from "./components/SimulatePanel.jsx";
 import DistributePanel from "./components/DistributePanel.jsx";
-import { SearchIcon } from "./components/Icons.jsx";
+import { BoardIcon, ClockIcon, ListIcon, SearchIcon, UserIcon, WorklistIcon } from "./components/Icons.jsx";
+import { Slot } from "./Shell.jsx";
 import { loadSettings } from "./settings.js";
 
 const LANE_FILTERS = ["ALL", "CRITICAL", "URGENT", "EXPEDITED", "ROUTINE"];
+const VIEW_KEY = "auralane.worklistView";
+
+function loadView() {
+  try {
+    return localStorage.getItem(VIEW_KEY) === "board" ? "board" : "list";
+  } catch {
+    return "list";
+  }
+}
 
 function Acuity({ row }) {
   if (row.lane === "ABSTAIN" || row.lane === "FAILED" || row.acuity == null) return "--";
@@ -31,6 +41,16 @@ export default function Worklist({ load, token }) {
   const [chosenScope, setScope] = useState(null);       // "mine" | "all"
   const [detailsWidth, setDetailsWidth] = useState(580);
   const [refresh, setRefresh] = useState(() => loadSettings().refreshSeconds);
+  const [poolTab, setPoolTab] = useState("ALL");            // "ALL" or a pool name
+  const [view, setViewState] = useState(loadView);        // "list" | "board"
+  const setView = (v) => {
+    setViewState(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      // Storage unavailable: the choice lasts until reload.
+    }
+  };
 
   const startResize = (e) => {
     e.preventDefault();
@@ -133,14 +153,15 @@ export default function Worklist({ load, token }) {
   }
 
   const readers = data.readers || [];
+  const emptyOwn = data.scope === "own" && data.studies.length === 0;
   const who = (row) => (row.assigned_to
     ? (row.assigned_to === data.me ? "You" : row.assigned_name || row.assigned_to) : "Unassigned");
 
   return (
     <div className="workstation-layout" data-testid="workstation-layout"
-         style={{ gridTemplateColumns: `240px 1fr 6px ${detailsWidth}px` }}>
+         style={{ gridTemplateColumns: `minmax(0, 1fr) 6px ${detailsWidth}px` }}>
       {panel === "simulate" && (
-        <SimulatePanel token={token} readers={readers} onClose={() => setPanel(null)} onProgress={fetchWorklist} />
+        <SimulatePanel token={token} readers={readers} me={data.me} onClose={() => setPanel(null)} onProgress={fetchWorklist} />
       )}
       {panel === "distribute" && (
         <DistributePanel token={token} readers={readers} studies={data.studies}
@@ -162,20 +183,20 @@ export default function Worklist({ load, token }) {
         {(activeNav === "worklist" || activeNav === "recent") && (
           <>
             <div className="center-header">
-              <div>
-                <h2 className="center-title">AI Worklist Queue</h2>
-                <p className="center-subtitle">Grouped by reading pool because a neuroradiologist reads the MRI and a chest radiologist reads the X-ray; studies are ranked within a pool, never across.</p>
-              </div>
-              <div className="center-action-buttons">
-                <button type="button" className="btn-action-primary" onClick={() => setPanel("simulate")}
-                        data-testid="btn-simulate">Simulate ingest</button>
-                <button type="button" className="btn-action-quick" onClick={() => setPanel("distribute")}
-                        disabled={readers.length === 0} data-testid="btn-distribute">Distribute worklist</button>
-              </div>
+              {/* Not shown; kept for screen readers and the test that checks the wording. */}
+              <p className="sr-only">Grouped by reading pool because a neuroradiologist reads the MRI and a chest radiologist reads the X-ray; studies are ranked within a pool, never across.</p>
+              <Slot name="actions">
+                <div className="center-action-buttons">
+                  <button type="button" className="btn" onClick={() => setPanel("distribute")}
+                          disabled={readers.length === 0} data-testid="btn-distribute">Distribute worklist</button>
+                  <button type="button" className="btn btn-primary" onClick={() => setPanel("simulate")}
+                          data-testid="btn-simulate">Simulate ingest</button>
+                </div>
+              </Slot>
             </div>
 
             <div className="worklist-filter-bar">
-              {data.me && (
+              {data.me && data.scope !== "own" && (
                 <div className="scope-toggle" role="group" aria-label="Whose studies">
                   <button type="button" aria-pressed={scope === "mine"} onClick={() => setScope("mine")}
                           data-testid="scope-mine">My studies ({mine.length})</button>
@@ -206,6 +227,16 @@ export default function Worklist({ load, token }) {
                   </select>
                 </label>
               </div>
+              <div className="view-toggle" role="group" aria-label="Worklist view">
+                <button type="button" className="icon-btn" aria-pressed={view === "list"} title="List view"
+                        aria-label="List view" onClick={() => setView("list")} data-testid="view-list">
+                  <ListIcon size={16} />
+                </button>
+                <button type="button" className="icon-btn" aria-pressed={view === "board"} title="Board view"
+                        aria-label="Board view" onClick={() => setView("board")} data-testid="view-board">
+                  <BoardIcon size={16} />
+                </button>
+              </div>
             </div>
 
             {scope === "mine" && mine.length === 0 && (
@@ -215,57 +246,104 @@ export default function Worklist({ load, token }) {
               </p>
             )}
 
-            {heroStudy && activeNav === "worklist" && (
+            {!emptyOwn && heroStudy && activeNav === "worklist" && (
               <section className="hero-case-card" data-testid="hero-study-card">
-                <div className="hero-badge-strip">
-                  <span className="hero-alert-badge">TOP PRIORITY AI TRIAGE</span>
-                  <span className={`lanetag lane-${heroStudy.lane}`}>{heroStudy.lane_label || heroStudy.lane}</span>
-                  {heroStudy.clock && <span className="hero-clock">SLA TARGET: {heroStudy.clock}</span>}
-                </div>
-                <div className="hero-content-grid">
-                  <div className="hero-main-info">
-                    <div className="hero-patient-id mono">{heroStudy.patient_id || heroStudy.study}</div>
-                    <div className="hero-exam-name">{heroStudy.exam}</div>
-                    <div className="hero-driver">
-                      <span className="driver-label-text">Driving Finding:</span>{" "}
-                      <span className="bold highlight-driver">{heroStudy.driver_label || heroStudy.abstain_reason || "--"}</span>
-                    </div>
-                  </div>
-                  <div className="hero-metrics">
-                    <div className="metric-box">
-                      <span className="box-title">Acuity Score</span>
-                      <span className="box-val mono bold"><Acuity row={heroStudy} /></span>
-                    </div>
-                    <div className="metric-box">
-                      <span className="box-title">Confidence</span>
-                      <span className="box-val mono">
-                        {heroStudy.confidence != null ? `${(heroStudy.confidence * 100).toFixed(0)}%` : "--"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="hero-action-col">
-                    <button type="button"
-                            className={`btn-hero-inspect ${selectedStudyId === heroStudy.study ? "active-inspect" : ""}`}
-                            onClick={() => setSelectedStudyId(heroStudy.study)}>
-                      {selectedStudyId === heroStudy.study ? "Active in Viewer" : "Inspect Case Scans"}
-                    </button>
-                    <span className="hero-time mono">Arrived {timeUTC(heroStudy.arrived)} UTC</span>
-                  </div>
-                </div>
+                <span className="hero-alert-badge">Next up</span>
+                <span className={`lanetag lane-${heroStudy.lane}`}>{heroStudy.lane_label || heroStudy.lane}</span>
+                <span className="hero-patient-id mono">{heroStudy.patient_id || heroStudy.study}</span>
+                <span className="hero-driver">
+                  <span className="bold highlight-driver">{heroStudy.driver_label || heroStudy.abstain_reason || "--"}</span>
+                  <span className="hero-exam-name"> {heroStudy.exam}</span>
+                </span>
+                <span className="hero-spacer" />
+                <span className="hero-metric mono" title="Acuity"><Acuity row={heroStudy} /></span>
+                {heroStudy.clock && <span className="hero-clock">{heroStudy.clock}</span>}
+                <button type="button"
+                        className={`btn-hero-inspect ${selectedStudyId === heroStudy.study ? "active-inspect" : ""}`}
+                        onClick={() => setSelectedStudyId(heroStudy.study)}>
+                  {selectedStudyId === heroStudy.study ? "Active in Viewer" : "Inspect Case Scans"}
+                </button>
               </section>
             )}
 
-            <p className="note">
+            {!emptyOwn && <p className="note">
               Needs human triage is always shown and is not affected by filters.
-            </p>
+            </p>}
 
-            <div className="queue-container">
-              <div className="queue-colhead" aria-hidden="true">
-                <span>Lane / SLA</span><span>Patient ID</span><span>Modality</span><span>AI Driving Finding</span>
-                <span>Acuity</span><span>Status / Reader</span><span>Arrived</span>
+            {!emptyOwn && view === "board" && (
+              <div className="board" data-testid="board">
+                {(data.lanes || []).map((l) => {
+                  const cards = pools.filter((p) => poolTab === "ALL" || poolTab === p.pool)
+                    .flatMap((p) => p.sections.flatMap((s) => s.rows)).filter((r) => r.lane === l.lane);
+                  if (l.pinned && l.lane !== "ABSTAIN" && cards.length === 0) return null;
+                  return (
+                    <section key={l.lane} className={`board-col lane-${l.lane}`} data-testid={`board-col-${l.lane}`}
+                             aria-label={l.label}>
+                      <h3 className="board-col-head">
+                        <span className="lane-dot" aria-hidden="true" />
+                        <span className="lanename">{l.label}</span>
+                        <span className="count mono">{cards.length}</span>
+                        {l.clock && <span className="clock mono">{l.clock}</span>}
+                      </h3>
+                      {l.lane === "ABSTAIN" && (
+                        <p className="lane-explain-why">Model confidence was not sufficient to assign a lane. A radiologist picks it.</p>
+                      )}
+                      {cards.map((row) => (
+                        <article key={row.study} className={`board-card ${row.study === selectedStudyId ? "selected" : ""}`}
+                                 data-testid="board-card" data-study={row.study}>
+                          <div className="card-head">
+                            <span className="card-title">
+                              {row.lane === "FAILED" ? row.error : row.driver_label || row.abstain_reason || "--"}
+                            </span>
+                            <span className="tag">{row.exam || row.modality}</span>
+                          </div>
+                          <div className="card-meta"><UserIcon size={14} /><span className="mono">{row.patient_id || row.study}</span></div>
+                          <div className="card-meta"><ClockIcon size={14} /><span className="mono">{timeUTC(row.arrived)} UTC</span></div>
+                          <div className="card-meta"><WorklistIcon size={14} />
+                            <span>Acuity <span className="mono"><Acuity row={row} /></span></span></div>
+                          <div className="card-meta"><UserIcon size={14} /><span>{who(row)}</span></div>
+                          {row.overdue && l.lane === "CRITICAL" && (
+                            <div className="card-alert">Not opened within the {l.clock || "lane"} clock</div>
+                          )}
+                          <button type="button" className="btn card-open" onClick={() => setSelectedStudyId(row.study)}>
+                            Open study
+                          </button>
+                        </article>
+                      ))}
+                    </section>
+                  );
+                })}
               </div>
+            )}
+
+            {data.scope === "own" && data.studies.length === 0 && (
+              <section className="empty-worklist" data-testid="empty-worklist">
+                <WorklistIcon size={28} />
+                <h3>Your worklist is empty</h3>
+                <p>Studies appear here when an ingest or a distribution includes you. Use Simulate ingest
+                  to send studies to yourself or to other radiologists.</p>
+              </section>
+            )}
+
+            {(data.scope !== "own" || data.studies.length > 0) && (
+              <div className="pool-tabs" role="group" aria-label="Reading pool">
+                <button type="button" aria-pressed={poolTab === "ALL"} onClick={() => setPoolTab("ALL")}
+                        data-testid="pooltab-ALL">
+                  All pools <span className="count mono">{filteredStudies.length}</span>
+                </button>
+                {pools.map((p) => (
+                  <button key={p.pool} type="button" aria-pressed={poolTab === p.pool}
+                          onClick={() => setPoolTab(p.pool)} data-testid={`pooltab-${p.pool}`}>
+                    {p.label} <span className="count mono">{filteredStudies.filter((r) => r.pool === p.pool).length}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {!emptyOwn && view === "list" && <div className={`queue-container ${poolTab !== "ALL" ? "single-pool" : ""}`}>
               {pools.map((p) => (
-                <section key={p.pool} className="pool-group" data-testid={`pool-${p.pool}`} aria-label={`${p.label} reading pool`}>
+                <section key={p.pool} className="pool-group" data-testid={`pool-${p.pool}`} aria-label={`${p.label} reading pool`}
+                         hidden={poolTab !== "ALL" && poolTab !== p.pool}>
                   <div className="pool-header">
                     <h2 className="pool-title">{p.label} Reading Pool</h2>
                     <span className="pool-badge">{p.sections.reduce((a, s) => a + s.rows.length, 0)} Studies</span>
@@ -319,7 +397,7 @@ export default function Worklist({ load, token }) {
                   ))}
                 </section>
               ))}
-            </div>
+            </div>}
           </>
         )}
       </main>
@@ -327,7 +405,13 @@ export default function Worklist({ load, token }) {
       <div className="layout-resizer" onMouseDown={startResize} title="Drag to resize panel" />
 
       <aside className="workstation-details-panel" data-testid="workstation-details-panel">
-        <LatestCasePanel studyId={selectedStudyId} token={token} onVerdictChange={handleVerdictUpdate} />
+        <div className="details-upper" data-testid="details-upper">
+          <LatestCasePanel studyId={selectedStudyId} token={token} onVerdictChange={handleVerdictUpdate} />
+        </div>
+        <div className="details-lower" data-testid="details-lower">
+          <span className="placeholder-label">Placeholder</span>
+          <p className="note">Reserved for a later panel.</p>
+        </div>
       </aside>
     </div>
   );

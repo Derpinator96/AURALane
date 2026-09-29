@@ -271,6 +271,22 @@ def create_app(p: dict, registry: Registry | None = None,
             raise HTTPException(404, "no such study")
         return row
 
+    # Whose worklist a radiologist sees. "own": only the studies assigned to that
+    # account, so a new radiologist starts empty and a study appears when an
+    # ingest or a distribution includes them (the local and AWS runtimes).
+    # "all": every study, for the fixture preview, whose rows are fixed and
+    # unassigned. Set p["worklist_scope"] or AURALANE_WORKLIST_SCOPE to choose.
+    scope = p.get("worklist_scope") or os.environ.get("AURALANE_WORKLIST_SCOPE") or ("own" if p.get("runtime") in ("local", "aws") else "all")
+
+    def visible_to(row: dict, who: Principal) -> bool:
+        return scope == "all" or row.get("assigned_to") == who.email
+
+    def own_row(study: str, who: Principal) -> dict:
+        row = row_or_404(study)
+        if not visible_to(row, who):
+            raise HTTPException(403, "this study is on another radiologist's worklist")
+        return row
+
     def pool_of(row: dict) -> str:
         """The reading pool: the registry entry's, else the one registered model
         for the row's modality (a study can fail before a model is chosen)."""
@@ -343,7 +359,7 @@ def create_app(p: dict, registry: Registry | None = None,
     # -- radiologist --------------------------------------------------------
     @app.get("/api/worklist")
     def worklist(who: Principal = Depends(radiologist)):
-        rows = ordered(p["table"].scan("worklist"))
+        rows = [r for r in ordered(p["table"].scan("worklist")) if visible_to(r, who)]
         # The sections the client draws, in display order. Ordering lives here
         # only; the client does not know the lane ranking.
         lanes = [{"lane": lane, "label": LANE_LABEL.get(lane, lane), "clock": CLOCK[lane],
@@ -356,11 +372,11 @@ def create_app(p: dict, registry: Registry | None = None,
         names |= {s["pool"] for s in studies}
         pools = [{"pool": n, "label": n} for n in sorted(names, key=lambda n: (n == UNASSIGNED, n))]
         return {"disclaimer": DISCLAIMER, "pools": pools, "lanes": lanes, "studies": studies,
-                "me": who.email, "readers": readers()}
+                "me": who.email, "readers": readers(), "scope": scope}
 
     @app.get("/api/studies/{study}")
     def study(study: str, who: Principal = Depends(radiologist)):
-        row = row_or_404(study)
+        row = own_row(study, who)
         if row.get("assigned_to") == who.email and not row.get("opened_at"):
             # The assigned reader opened it: this stops the critical clock alarm.
             row["opened_at"] = _now()
@@ -401,7 +417,7 @@ def create_app(p: dict, registry: Registry | None = None,
     def series(study: str, series_uid: str, who: Principal = Depends(radiologist)):
         """Per instance: the frame URL the browser fetches pixels from, and the
         DICOM header the viewer needs to decode them. Headers, never pixels."""
-        row = row_or_404(study)
+        row = own_row(study, who)
         ref = StudyRef(study, row["datastore_id"])
         try:
             items = p["datastore"].series_metadata(ref, series_uid)
@@ -419,7 +435,7 @@ def create_app(p: dict, registry: Registry | None = None,
                   who: Principal = Depends(radiologist)):
         """A URL the browser fetches pixels from: the datastore's own, or, with
         frame_proxy, this API's signed streaming route."""
-        row = row_or_404(study)
+        row = own_row(study, who)
         try:
             url = frame_link(StudyRef(study, row["datastore_id"]), series, instance, frame)
         except LookupError as e:
@@ -450,7 +466,7 @@ def create_app(p: dict, registry: Registry | None = None,
     def verdict(study: str, body: VerdictIn, who: Principal = Depends(radiologist)):
         """Agree or disagree with the lane. Audited; the row updates in place."""
         start = time.perf_counter()
-        row = row_or_404(study)
+        row = own_row(study, who)
         at = _now()
         row["verdict"] = {"value": body.verdict, "by": who.email, "at": at}
         p["table"].put_item("worklist", row)
@@ -586,7 +602,7 @@ def create_app(p: dict, registry: Registry | None = None,
     def save_draft(study: str, body: DraftIn, who: Principal = Depends(radiologist)):
         """The radiologist's edit of the template draft, and whether they marked
         it reviewed. Stored on the row; audited without the text."""
-        row = row_or_404(study)
+        row = own_row(study, who)
         at = _now()
         row["draft_review"] = {"text": body.text, "reviewed": body.reviewed,
                                "by": who.email, "at": at}
@@ -601,14 +617,14 @@ def create_app(p: dict, registry: Registry | None = None,
     # segmentation, stored under evidence/ at ingest (core/pipeline.py). The
     # route answers with a presigned URL (S3, or this API's signed /api/blob),
     # never the bytes, the same rule as every other evidence image.
-    def _evidence(study: str) -> dict:
-        return row_or_404(study).get("evidence") or {}
+    def _evidence(study: str, who: Principal) -> dict:
+        return own_row(study, who).get("evidence") or {}
 
     @app.get("/api/studies/{study}/volume/{sequence}")
     def study_volume(study: str, sequence: str, who: Principal = Depends(radiologist)):
         name = sequence.lower().split(".nii")[0].replace("-", "").replace("_", "")
         channel = SEQUENCES.get(name)
-        key = (_evidence(study).get("volumes") or {}).get(channel)
+        key = (_evidence(study, who).get("volumes") or {}).get(channel)
         if not key:
             raise HTTPException(404, f"no {sequence} volume stored for this study; volumes are "
                                      f"kept for brain MR and head CT ingested by this build")
@@ -616,7 +632,7 @@ def create_app(p: dict, registry: Registry | None = None,
 
     @app.get("/api/studies/{study}/segmentation")
     def study_segmentation(study: str, who: Principal = Depends(radiologist)):
-        key = _evidence(study).get("segmentation")
+        key = _evidence(study, who).get("segmentation")
         if not key:
             raise HTTPException(404, "no segmentation stored for this study")
         return {"url": blob_url(key), "name": "segmentation.nii.gz"}
@@ -624,7 +640,7 @@ def create_app(p: dict, registry: Registry | None = None,
     @app.get("/api/studies/{study}/metrics")
     def study_metrics(study: str, who: Principal = Depends(radiologist)):
         """Volumes from the brain model's own metrics (adapters/brats.py)."""
-        ev = _evidence(study)
+        ev = _evidence(study, who)
         if not ev.get("volumes_cm3"):
             raise HTTPException(404, "no volumetry for this study")
         return {"volumes_cm3": ev["volumes_cm3"], "axial_index": ev.get("axial_index"),
@@ -639,10 +655,12 @@ def create_app(p: dict, registry: Registry | None = None,
 
     @app.post("/api/distribute")
     def distribute(body: DistributeIn, who: Principal = Depends(radiologist)):
-        """Deal every unread study in priority order among the chosen readers.
-        Refused, naming the pool, if a pool on the list has no chosen reader."""
+        """Deal every unread study on the caller's worklist in priority order among
+        the chosen readers, equally. Refused, naming the pool, if a pool on the
+        list has no chosen reader."""
         chosen = pick_readers(body.readers)
-        rows = [r for r in ordered(p["table"].scan("worklist")) if not r.get("verdict")]
+        rows = [r for r in ordered(p["table"].scan("worklist"))
+                if not r.get("verdict") and visible_to(r, who)]
         items = [{"study": r["study"], "pool": pool_of(r), "lane": r["lane"], "row": r}
                  for r in rows]
         items = [i for i in items if i["pool"] != UNASSIGNED]
@@ -686,8 +704,11 @@ def create_app(p: dict, registry: Registry | None = None,
     def simulate_start(body: SimulateIn, who: Principal = Depends(radiologist)):
         """Starts a batch in the background and returns its id at once. Studies
         reach the worklist one by one as each finishes. Audited."""
-        sim = simulator()
         chosen = pick_readers(body.readers)
+        if scope == "own" and not chosen:
+            raise HTTPException(400, "choose at least one radiologist: a study only appears on "
+                                     "the worklist of the reader it is sent to")
+        sim = simulator()
         try:
             state = sim.start(body.counts.model_dump(), chosen, who.email)
         except (ValueError, RuntimeError) as e:
