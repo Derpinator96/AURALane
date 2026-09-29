@@ -1,7 +1,9 @@
 import { useCallback, useState } from "react";
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { api, loadSession, saveSession } from "./api.js";
 import Admin from "./Admin.jsx";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
+import { Backdrop } from "./components/ui.jsx";
 import { Privacy, Terms } from "./Legal.jsx";
 import Login from "./Login.jsx";
 import RequestAccess from "./RequestAccess.jsx";
@@ -18,6 +20,7 @@ const home = (session) =>
 export default function App() {
   const [session, setSession] = useState(loadSession);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const onLogin = (s) => { saveSession(s); setSession(s); navigate(home(s)); };
   const onSignOut = () => { saveSession(null); setSession(null); navigate("/login"); };
@@ -41,7 +44,18 @@ export default function App() {
   const radiologist = session?.user.groups.includes("radiologist");
 
   return (
+    <>
+    <Backdrop />
     <Shell session={session} onSignOut={onSignOut}>
+      {/* A render error anywhere below shows a message here, not a blank app. */}
+      <ErrorBoundary key={pathname}
+                     fallback={({ reset }) => (
+                       <div className="failed" role="alert">
+                         <span>This screen failed to load</span><span aria-hidden="true">·</span>
+                         <button type="button" className="pill pill-sm" onClick={() => window.location.reload()}>Reload</button>
+                         <button type="button" className="pill pill-sm pill-quiet" onClick={reset}>Try again</button>
+                       </div>
+                     )}>
       <Routes>
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
@@ -63,6 +77,8 @@ export default function App() {
           : <Navigate to={home(session)} />} />
         <Route path="*" element={<Navigate to={home(session)} />} />
       </Routes>
+      </ErrorBoundary>
     </Shell>
+    </>
   );
 }
