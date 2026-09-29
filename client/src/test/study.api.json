@@ -14,10 +14,13 @@
    "clock": "a human picks the lane",
    "acuity": 15.5,
    "abstained": true,
+   "human_lane": null,
+   "second_read": null,
+   "repeat_imaging": null,
    "driver": "Nodule",
    "driver_label": "Nodule",
    "confidence": 0.552,
-   "abstain_reason": null,
+   "abstain_reason": "Nodule has a signal of 0.35, inside the 0.35 to 0.60 band where the model does not commit to a lane",
    "status": "SCORED",
    "verdict": null,
    "error": null,
@@ -68,6 +71,10 @@
    }
   ],
   "decision_reason": null,
+  "abstain_band": [
+   0.35,
+   0.6
+  ],
   "evidence": {
    "gradcam_png": "evidence/fixture-sample/gradcam_nodule.png",
    "gradcam_layer_png": "evidence/fixture-sample/gradcam_nodule_layer.png",
@@ -95,8 +102,9 @@
     ]
    }
   ],
-  "draft": "NON-DIAGNOSTIC; DECISION SUPPORT ONLY\nStudy: fixture-cr-ST-028\nModel: cxr-densenet-v1\nQueue lane: ABSTAIN (a human picks the lane)\nModel abstained: no lane assigned, a human picks the lane.\nSignals (0 to 1, relative to the model's operating point, not a probability of disease):\n  Nodule: 0.351\n  Mass: 0.094\n  Fibrosis: 0.086\nImpression: to be written by the reading radiologist.",
+  "draft": "NON-DIAGNOSTIC; DECISION SUPPORT ONLY. DRAFT FOR RADIOLOGIST REVIEW.\nStudy: fixture-cr-ST-028   Model: cxr-densenet-v1\n\nEXAMINATION\nChest radiograph.\n\nTECHNIQUE\nChest radiograph (de-identified copy). Each finding is scored against its own operating point, not a flat threshold.\n\nCOMPARISON\nNone available.\n\nFINDINGS\nPossible nodule (signal 0.35).\nNo convincing evidence of mass, fibrosis.\n\nIMPRESSION\n1. Possible nodule (signal 0.35, weighted 0.15).\n2. No convincing evidence of mass (signal 0.09, weighted 0.05).\n3. No convincing evidence of fibrosis (signal 0.09, weighted 0.01).\n\nTRIAGE NOTE\nQueue lane: Needs human triage. The system did not assign a lane.\nReason: the driving finding, nodule, has a signal of 0.35, inside the 0.35 to 0.60 band where the model does not commit.\n\nNON-DIAGNOSTIC; DECISION SUPPORT ONLY. Assembled from the system's structured output. The reading radiologist confirms, edits or replaces every statement.",
   "draft_review": null,
+  "report": null,
   "datastore_note": "No DICOM datastore is connected to this preview. Chest studies show one public sample image, not the study's own, and brain studies have no images here. The live pipeline, from de-identification through the datastore to scoring, runs locally."
  },
  "series": {
@@ -105,74 +113,10 @@
    {
     "sop": "1.2.826.0.1.3680043.10.1421.949689161333583822409768757806928238",
     "metadata": {
-     "00100010": {
-      "vr": "PN",
-      "Value": [
-       {
-        "Alphabetic": "FIXTURE^SAMPLE"
-       }
-      ]
-     },
-     "00100020": {
-      "vr": "LO",
-      "Value": [
-       "FIXTURE-SAMPLE"
-      ]
-     },
-     "00100030": {
-      "vr": "DA",
-      "Value": [
-       "19531028"
-      ]
-     },
-     "00100040": {
-      "vr": "CS",
-      "Value": [
-       "M"
-      ]
-     },
      "0020000D": {
       "vr": "UI",
       "Value": [
        "1.2.826.0.1.3680043.10.1421.650935848926897257606440117979757198"
-      ]
-     },
-     "00080020": {
-      "vr": "DA",
-      "Value": [
-       "20260925"
-      ]
-     },
-     "00080030": {
-      "vr": "TM",
-      "Value": [
-       "080000"
-      ]
-     },
-     "00080050": {
-      "vr": "SH",
-      "Value": [
-       "A202609259000"
-      ]
-     },
-     "00080090": {
-      "vr": "PN",
-      "Value": [
-       {
-        "Alphabetic": "SIM^REFERRER^C"
-       }
-      ]
-     },
-     "00081030": {
-      "vr": "LO",
-      "Value": [
-       "CHEST PA"
-      ]
-     },
-     "00200010": {
-      "vr": "SH",
-      "Value": [
-       "09000"
       ]
      },
      "0020000E": {
@@ -199,40 +143,10 @@
        "PA"
       ]
      },
-     "00180015": {
-      "vr": "CS",
-      "Value": [
-       "CHEST"
-      ]
-     },
      "00185101": {
       "vr": "CS",
       "Value": [
        "PA"
-      ]
-     },
-     "00080080": {
-      "vr": "LO",
-      "Value": [
-       "SIMULATED GENERAL HOSPITAL"
-      ]
-     },
-     "00081010": {
-      "vr": "SH",
-      "Value": [
-       "CR_ROOM2"
-      ]
-     },
-     "00080070": {
-      "vr": "LO",
-      "Value": [
-       "AURALANE SIM"
-      ]
-     },
-     "00081090": {
-      "vr": "LO",
-      "Value": [
-       "PNG-WRAPPER"
       ]
      },
      "00080016": {
@@ -336,24 +250,6 @@
       "vr": "DS",
       "Value": [
        255.0
-      ]
-     },
-     "00280301": {
-      "vr": "CS",
-      "Value": [
-       "NO"
-      ]
-     },
-     "00104000": {
-      "vr": "LT",
-      "Value": [
-       "SIMULATED STUDY - source image 16747_3_1.jpg"
-      ]
-     },
-     "00082111": {
-      "vr": "ST",
-      "Value": [
-       "Synthetic DICOM wrapper around a public NIH ChestX-ray14 image. Identifiers are fabricated. Not real patient data."
       ]
      }
     },

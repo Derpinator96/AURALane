@@ -16,7 +16,9 @@ export function activeFinding(ev, selected) {
 export function gradcamLayer(ev, urls, selected) {
   const active = activeFinding(ev, selected);
   const url = active?.layer_url || urls?.gradcam_layer_png;
-  const drawable = Boolean(url && ev?.gradcam_box && (active ? true : ev.gradcam_coverage !== 0));
+  // A map with no supporting region (coverage 0) is empty: nothing is drawn, and the
+  // caption says so.
+  const drawable = Boolean(url && ev?.gradcam_box && (active ? active.coverage !== 0 : ev.gradcam_coverage !== 0));
   return { active, url, drawable };
 }
 
@@ -42,6 +44,10 @@ export function FindingSelector({ ev, selected, onSelect }) {
 
 export function selectedCaption(ev, selected) {
   const active = activeFinding(ev, selected);
-  if (!active || active.driver) return null;
+  if (!active) return null;
+  if (active.coverage === 0) {
+    return `Grad-CAM found no region supporting ${active.name} on this image, so nothing is drawn.`;
+  }
+  if (active.driver) return null;
   return `Grad-CAM for ${active.name} (signal ${Number(active.signal).toFixed(2)}). It did not set the lane: ${ev.gradcam_finding} did.`;
 }

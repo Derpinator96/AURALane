@@ -29,6 +29,7 @@ NON-DIAGNOSTIC; DECISION SUPPORT ONLY.
 """
 from __future__ import annotations
 
+import copy
 import datetime
 import gzip
 import hashlib
@@ -222,12 +223,23 @@ def create_app(p: dict, registry: Registry | None = None,
     detail_cache = perf.TTLCache(90.0, size=64)      # study payloads (evidence links live 300 s)
     series_cache = perf.TTLCache(6 * 3600.0, size=24)    # imported image sets never change
 
+    row_cache = perf.TTLCache(30.0, size=64)         # single rows, for the calls after an open
+
     def _table_written(table: str, *args, **kwargs) -> None:
         if table == "worklist":
             wl_cache.clear()
             detail_cache.clear()
+            row_cache.clear()
         elif table == "reports":
             detail_cache.clear()          # a study payload carries its latest report
+
+    def _drop_caches() -> None:
+        wl_cache.clear()
+        detail_cache.clear()
+        row_cache.clear()
+
+    if p.get("simulate") is not None and hasattr(p["simulate"], "after_study"):
+        p["simulate"].after_study = _drop_caches
 
     # Server-Timing on every response: total and the time in each backing service.
     # (In place, so a caller that swaps a provider afterwards still takes effect.)
@@ -290,16 +302,30 @@ def create_app(p: dict, registry: Registry | None = None,
     superadmin = require("superadmin")
 
     # Readers: every radiologist account, with display name and reading pools
-    # (core/assign.py). Cognito is asked at most once a minute.
-    _readers: dict[str, Any] = {"at": -1e9, "value": []}
+    # (core/assign.py). Cognito is asked at most once a minute, and a stale list is
+    # served while a background thread refreshes it, so no request waits on Cognito
+    # after the first.
+    _readers: dict[str, Any] = {"at": -1e9, "value": [], "refreshing": False}
+    _readers_lock = threading.Lock()
+
+    def _refresh_readers() -> None:
+        try:
+            _readers["value"] = assignment.directory(p["auth"])
+        except Exception:                    # e.g. no ListUsersInGroup permission yet
+            _readers["value"] = _readers["value"] or []
+        _readers["at"] = time.monotonic()
+        _readers["refreshing"] = False
 
     def readers() -> list[dict]:
         if time.monotonic() - _readers["at"] > 60:
-            try:
-                _readers["value"] = assignment.directory(p["auth"])
-            except Exception:                # e.g. no ListUsersInGroup permission yet
-                _readers["value"] = []
-            _readers["at"] = time.monotonic()
+            with _readers_lock:
+                if time.monotonic() - _readers["at"] <= 60:
+                    return _readers["value"]
+                if _readers["at"] < 0:                       # never loaded: this request waits
+                    _refresh_readers()
+                elif not _readers["refreshing"]:
+                    _readers["refreshing"] = True
+                    threading.Thread(target=_refresh_readers, daemon=True).start()
         return _readers["value"]
 
     def reader_name(reader_id: str | None) -> str | None:
@@ -340,10 +366,16 @@ def create_app(p: dict, registry: Registry | None = None,
         return f"{frame_proxy}{path}?{urlencode({'expires': expires, 'sig': _frame_sig(path, expires)})}"
 
     def row_or_404(study: str) -> dict:
-        row = p["table"].get_item("worklist", {"study": study})
-        if row is None:
-            raise HTTPException(404, "no such study")
-        return row
+        """A copy of the study's row. Rows are kept for 30 s so the calls that follow an
+        open (series, frames, evidence) do not each read DynamoDB; a write through this
+        API drops them."""
+        hit = row_cache.get(study)
+        if hit is None:
+            hit = p["table"].get_item("worklist", {"study": study})
+            if hit is None:
+                raise HTTPException(404, "no such study")
+            row_cache.put(study, hit)
+        return copy.deepcopy(hit)
 
     # Whose worklist a radiologist sees. "own": only the studies assigned to that
     # account, so a new radiologist starts empty and a study appears when an
@@ -505,6 +537,25 @@ def create_app(p: dict, registry: Registry | None = None,
                 for s in meta.series])
         return hit
 
+    class ReportsMissing(Exception):
+        """The reports table is not deployed yet (the CDK stack creates it)."""
+
+    def reports_table(op, *args, **kwargs):
+        try:
+            return getattr(p["table"], op)("reports", *args, **kwargs)
+        except RuntimeError as e:
+            if "does not exist" in str(e):
+                raise ReportsMissing(str(e)) from e
+            raise
+
+    def report_versions(study: str) -> list[dict]:
+        """A study's saved report versions; none until the reports table exists, so an
+        API deployed ahead of the stack still opens studies."""
+        try:
+            return reports_table("query", study=study)
+        except ReportsMissing:
+            return []
+
     @app.get("/api/studies/{study}")
     def study(study: str, background: BackgroundTasks, who: Principal = Depends(radiologist)):
         cached = detail_cache.get((study, who.email))
@@ -554,7 +605,7 @@ def create_app(p: dict, registry: Registry | None = None,
                 {**g, **{k.replace("_png", "_url"): p["blob"].presigned_url(g[k], check=False)
                          for k in ("layer_png", "heatmap_png", "blended_png") if g.get(k)}}
                 for g in evidence["gradcam_findings"]]
-        versions = p["table"].query("reports", study=study)
+        versions = report_versions(study)
         payload = {"disclaimer": DISCLAIMER, "study": view(row), "findings": findings,
                 "top_findings": (row.get("triage") or {}).get("top_findings", []),
                 "decision_reason": (row.get("triage") or {}).get("decision_reason"),
@@ -771,7 +822,7 @@ def create_app(p: dict, registry: Registry | None = None,
                                "by": who.email, "at": at}
         p["table"].put_item("worklist", row)
         entry = registry.entries.get(row.get("model_id") or "", {})
-        versions = p["table"].query("reports", study=study)
+        versions = report_versions(study)
         report = {"study": study,
                   "version": f"{max((int(v['version']) for v in versions), default=0) + 1:06d}",
                   "status": "reviewed" if body.reviewed else "draft", "text": body.text,
@@ -780,12 +831,22 @@ def create_app(p: dict, registry: Registry | None = None,
                   "exam": f"{row.get('modality') or ''} {entry.get('body_part', '')}".strip(),
                   "driving_finding": _label((row.get("triage") or {}).get("driver")),
                   "patient_id": row.get("patient_id")}
-        p["table"].put_item("reports", report)
+        stored = True
+        try:
+            reports_table("put_item", report)
+        except ReportsMissing:
+            stored = False           # the edit is still on the row and in the audit trail
         p["table"].append_audit(AuditEvent(
             actor=who.email, action="draft_reviewed" if body.reviewed else "draft_saved",
             study=study, at=at, outcome="ok", duration_ms=0.0,
-            detail={"lane": row["lane"], "chars": len(body.text), "report_version": report["version"]}))
-        return {"disclaimer": DISCLAIMER, "draft_review": row["draft_review"], "report": report}
+            detail={"lane": row["lane"], "chars": len(body.text),
+                    "report_version": report["version"] if stored else None}))
+        out = {"disclaimer": DISCLAIMER, "draft_review": row["draft_review"],
+               "report": report if stored else None}
+        if not stored:
+            out["report_error"] = ("saved on the study, but the reports store is not deployed yet "
+                                   "(cdk deploy creates it)")
+        return out
 
     # -- reports: what a radiologist saved or reviewed ---------------------------
     @app.get("/api/reports")
@@ -794,7 +855,11 @@ def create_app(p: dict, registry: Registry | None = None,
         """The signed-in radiologist's reports, newest first: the latest saved version
         of each study they wrote one for, optionally only drafts or only reviewed."""
         latest: dict[str, dict] = {}
-        for r in p["table"].scan("reports"):
+        try:
+            everything = reports_table("scan")
+        except ReportsMissing:
+            everything = []
+        for r in everything:
             if r.get("author") == who.email and (r["study"] not in latest
                                                  or r["version"] > latest[r["study"]]["version"]):
                 latest[r["study"]] = r
@@ -807,7 +872,10 @@ def create_app(p: dict, registry: Registry | None = None,
 
     @app.get("/api/reports/{study}/{version}")
     def report(study: str, version: str, who: Principal = Depends(radiologist)):
-        item = p["table"].get_item("reports", {"study": study, "version": version})
+        try:
+            item = reports_table("get_item", {"study": study, "version": version})
+        except ReportsMissing:
+            item = None
         if item is None:
             raise HTTPException(404, "no such report")
         if item.get("author") != who.email:
@@ -1278,5 +1346,18 @@ def create_app(p: dict, registry: Registry | None = None,
                 "lanes": [{"lane": n, "acuity_floor": f, "clock": CLOCK[n]}
                           for n, f, _, _ in triage.LANES],
                 "abstain_band": [triage.ABSTAIN_LO, triage.ABSTAIN_HI]}
+
+    # On AWS, warm what the first request would otherwise pay for: the TLS connections,
+    # DynamoDB's table check, the reader list from Cognito, one worklist scan. A thread,
+    # so startup (and the platform's health check) does not wait for it.
+    if p.get("runtime") == "aws" and os.environ.get("AURALANE_WARM", "on").lower() != "off":
+        def _warm() -> None:
+            try:
+                readers()
+                worklist_rows()
+            except Exception:                    # noqa: BLE001
+                log.warning("warm-up did not finish", exc_info=True)
+
+        threading.Thread(target=_warm, daemon=True, name="warm-up").start()
 
     return app

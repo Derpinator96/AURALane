@@ -68,7 +68,11 @@ export default function AbstentionTray({ detail, token, me = null, onChanged, on
             where the model does not commit.
           </p>
         ) : null}
-        <p className="note" data-testid="abstain-reason">{why}</p>
+        {/* The band sentence above already says it; anything the system recorded
+            beyond that (the brain mask checks, the volume gate) is shown as written. */}
+        {!(driverFinding && /band where the model does not commit/.test(why)) && (
+          <p className="note" data-testid="abstain-reason">{why}</p>
+        )}
       </div>
 
       {!action && (

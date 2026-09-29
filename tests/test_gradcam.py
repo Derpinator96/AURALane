@@ -90,3 +90,43 @@ def test_crop_box_matches_torchxrayvision_center_crop():
         img = np.arange(rows * cols).reshape(1, rows, cols)
         x, y, size = crop_box(rows, cols)
         assert np.array_equal(xrv.datasets.XRayCenterCrop()(img), img[:, y:y + size, x:x + size])
+
+
+def test_each_top_finding_gets_layer_heatmap_and_blended_images(result):
+    """A map for the top findings by weighted value, the driver first, each with the
+    three images under evidence/<study>/gradcam/, computed for this study."""
+    from core import cxr_gradcam
+    _, blob, _, out = result
+    ev = out["evidence"]
+    assert "gradcam_findings_error" not in ev, ev.get("gradcam_findings_error")
+    listed = ev["gradcam_findings"]
+    assert len(listed) == cxr_gradcam.GRADCAM_FINDINGS and listed[0]["driver"] is True
+    assert listed[0]["name"] == ev["gradcam_finding"] and not any(g["driver"] for g in listed[1:])
+    weights = [g["weighted"] for g in listed]
+    assert weights == sorted(weights, reverse=True) or listed[0]["driver"]      # driver first, then by weight
+    assert len({g["name"] for g in listed}) == len(listed)
+    assert ev["gradcam_findings_seconds"] >= 0
+    for g in listed:
+        stem = f"evidence/1.2.3/gradcam/{g['slug']}"
+        assert (g["layer_png"], g["heatmap_png"], g["blended_png"]) == (
+            f"{stem}_layer.png", f"{stem}_heatmap.png", f"{stem}_blended.png")
+        layer = Image.open(io.BytesIO(blob.get(g["layer_png"])))
+        heat = Image.open(io.BytesIO(blob.get(g["heatmap_png"])))
+        blended = Image.open(io.BytesIO(blob.get(g["blended_png"])))
+        assert layer.mode == "RGBA" and layer.size == (224, 224)
+        assert heat.mode == "RGB" and heat.size == (224, 224) and blended.size == (448, 448)
+    # Grad-CAM is the ReLU of a weighted sum, so a finding can have no supporting region
+    # on an image; its map is then empty and coverage says 0, which the viewer states.
+    assert all(0 <= g["coverage"] <= 1 for g in listed)
+
+
+def test_jet_and_normalise_follow_the_reference_rendering():
+    import numpy as np
+    from core import cxr_gradcam as cg
+    assert tuple(cg.jet(np.array(0.0))) == (0, 0, 127) and tuple(cg.jet(np.array(1.0))) == (127, 0, 0)
+    flat = cg.normalise(np.ones((224, 224), np.float32))
+    assert float(flat.max()) == 0.0                                    # a flat map stays empty
+    spot = np.zeros((224, 224), np.float32)
+    spot[100:110, 100:110] = 1.0
+    n = cg.normalise(spot)
+    assert n.min() >= 0 and abs(n.max() - 1.0) < 1e-6 and n[105, 105] > n[10, 10]

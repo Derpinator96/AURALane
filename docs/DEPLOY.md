@@ -388,8 +388,10 @@ the committed fixture state. Sessions survive, because the signing key is
 stable.
 
 To keep it awake for the presentation, add an HTTP monitor on
-`https://<service>.onrender.com/api/health` at a 5-minute interval (a free
+`https://auralane-api.onrender.com/api/health` at a 5-minute interval (a free
 UptimeRobot monitor does this; the route needs no token and touches nothing).
+Monitor the API service only, not `auralane-preview`: one always-on service uses
+about 744 of the 750 hours in a month, two would not fit.
 **Switch it on on 30 September, the day before the 1 October presentation, and
 off afterwards.** Render's free tier grants 750 instance hours per workspace
 per calendar month, shared by every free service in the workspace, and an

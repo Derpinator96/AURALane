@@ -2,6 +2,7 @@
  "lane_mix": {
   "disclaimer": "NON-DIAGNOSTIC; DECISION SUPPORT ONLY",
   "total": 19,
+  "placed_by_human": 0,
   "lanes": [
    {
     "lane": "CRITICAL",

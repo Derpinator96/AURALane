@@ -85,14 +85,17 @@ def median(xs):
 
 
 def timed(bench: Bench, path: str, token: str | None, repeat: int):
-    """-> (median ms, last Server-Timing split, last response)."""
-    runs, timing, resp = [], {}, None
-    for _ in range(repeat):
+    """-> (median ms, last Server-Timing split, last response, first-call ms). The
+    first call is the cold one: nothing cached yet on either side."""
+    runs, timing, resp, cold = [], {}, None, {}
+    for i in range(repeat):
         r, ms = bench.get(path, token)
         r.raise_for_status()
         runs.append(ms)
         timing, resp = parse_timing(r.headers.get("server-timing")), r
-    return median(runs), timing, resp
+        if i == 0:
+            cold = timing
+    return median(runs), (cold, timing), resp, runs[0]
 
 
 def frames(bench: Bench, urls: list[str], accept: str, token: str | None, workers: int = 6):
@@ -110,9 +113,14 @@ def frames(bench: Bench, urls: list[str], accept: str, token: str | None, worker
     return wall, median([m for m, _ in res]), sum(b for _, b in res), any("/api/frames/" in u for u in urls)
 
 
-def split(t: dict[str, float]) -> str:
-    keep = [f"{k} {t[k]:.0f}" for k in ("total", "dynamodb", "healthimaging", "s3", "auth") if k in t]
-    return ", ".join(keep) if keep else "n/a"
+def split(t) -> str:
+    """Server-Timing as 'cold: ...; warm: ...' for timed() results, or one split."""
+    def one(d):
+        keep = [f"{k} {d[k]:.0f}" for k in ("total", "dynamodb", "healthimaging", "s3", "auth") if k in d]
+        return ", ".join(keep) if keep else "n/a"
+    if isinstance(t, tuple):
+        return f"cold: {one(t[0])}; warm: {one(t[1])}"
+    return one(t)
 
 
 def main() -> int:
@@ -141,49 +149,49 @@ def main() -> int:
 
     rows = []
 
-    def add(name, ms, extra=""):
-        rows.append((name, ms, extra))
+    def add(name, ms, extra="", first=None):
+        rows.append((name, first if first is not None else ms, ms, extra))
 
-    ms, t, _ = timed(b, "/api/health", None, args.repeat)
-    add("health", ms, split(t))
-    ms, t, r = timed(b, "/api/worklist", token, args.repeat)
+    ms, t, _, first = timed(b, "/api/health", None, args.repeat)
+    add("health", ms, split(t), first)
+    ms, t, r, first = timed(b, "/api/worklist", token, args.repeat)
     studies = r.json()["studies"]
-    add(f"worklist ({len(studies)} studies)", ms, split(t))
+    add(f"worklist ({len(studies)} studies)", ms, split(t), first)
 
     def open_and_series(modality: str):
         pick = next((s for s in studies if s["modality"] == modality and s["lane"] != "FAILED"), None)
         if not pick:
             return None
-        ms1, t1, r1 = timed(b, f"/api/studies/{pick['study']}", token, args.repeat)
+        ms1, t1, r1, f1 = timed(b, f"/api/studies/{pick['study']}", token, args.repeat)
         detail = r1.json()
         series = max(detail["series"], key=lambda s: s.get("instance_count", 0))
-        ms2, t2, r2 = timed(b, f"/api/studies/{pick['study']}/series/{series['series_uid']}", token, args.repeat)
-        return pick, series, (ms1, t1), (ms2, t2), r2.json()["instances"]
+        ms2, t2, r2, f2 = timed(b, f"/api/studies/{pick['study']}/series/{series['series_uid']}", token, args.repeat)
+        return pick, series, (ms1, t1, f1), (ms2, t2, f2), r2.json()["instances"]
 
     chest = open_and_series("CR")
     if chest:
-        pick, series, (ms1, t1), (ms2, t2), inst = chest
-        add("study open (chest)", ms1, split(t1))
-        add("series metadata (chest)", ms2, split(t2))
+        pick, series, (ms1, t1, f1), (ms2, t2, f2), inst = chest
+        add("study open (chest)", ms1, split(t1), f1)
+        add("series metadata (chest)", ms2, split(t2), f2)
         wall, per, nbytes, proxied = frames(b, [i["frame_url"] for i in inst[:10]], ACCEPT[args.accept], token)
         add(f"chest frames x{min(10, len(inst))}", wall,
             f"{per:.0f} ms per frame, {nbytes / 1e6:.2f} MB, {'via the API' if proxied else 'direct from the datastore'}")
     brain = open_and_series("MR")
     if brain:
-        pick, series, (ms1, t1), (ms2, t2), inst = brain
-        add("study open (brain MR)", ms1, split(t1))
-        add(f"series metadata (brain MR, {len(inst)} instances)", ms2, split(t2))
+        pick, series, (ms1, t1, f1), (ms2, t2, f2), inst = brain
+        add("study open (brain MR)", ms1, split(t1), f1)
+        add(f"series metadata (brain MR, {len(inst)} instances)", ms2, split(t2), f2)
         wall, per, nbytes, proxied = frames(b, [i["frame_url"] for i in inst[:10]], ACCEPT[args.accept], token)
         add("brain frames x10", wall,
             f"{per:.0f} ms per frame, {nbytes / 1e6:.2f} MB, {'via the API' if proxied else 'direct from the datastore'}")
     if admin:
-        ms, t, _ = timed(b, "/api/admin/pipeline", admin, args.repeat)
-        add("admin pipeline", ms, split(t))
+        ms, t, _, first = timed(b, "/api/admin/pipeline", admin, args.repeat)
+        add("admin pipeline", ms, split(t), first)
 
     print(f"\n### {args.label or args.base}  (median of {args.repeat}; frames: {args.accept} Accept)\n")
-    print("| request | ms | detail |\n|---|---:|---|")
-    for name, ms, extra in rows:
-        print(f"| {name} | {ms:.0f} | {extra} |")
+    print("| request | first call ms | median ms | server detail (last call) |\n|---|---:|---:|---|")
+    for name, first, ms, extra in rows:
+        print(f"| {name} | {first:.0f} | {ms:.0f} | {extra} |")
     return 0
 
 

@@ -152,7 +152,8 @@ export function DraftPanel({ detail, saveDraft }) {
       const saved = r.report || r.draft_review;
       setReview(saved);
       setBase(text);
-      setState(reviewed
+      setState(r.report_error ? `Not added to Reports: ${r.report_error}.`
+        : reviewed
         ? `Reviewed by ${saved.by || saved.author} at ${saved.at}. `
           + (r.report ? `Saved as report version ${Number(r.report.version)}: find it under Reports.` : "")
         : null);
