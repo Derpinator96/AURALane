@@ -41,6 +41,7 @@ export default function Worklist({ load, token }) {
   const [chosenScope, setScope] = useState(null);       // "mine" | "all"
   const [detailsWidth, setDetailsWidth] = useState(580);
   const [refresh, setRefresh] = useState(() => loadSettings().refreshSeconds);
+  const [poolTab, setPoolTab] = useState("ALL");            // "ALL" or a pool name
   const [view, setViewState] = useState(loadView);        // "list" | "board"
   const setView = (v) => {
     setViewState(v);
@@ -152,6 +153,7 @@ export default function Worklist({ load, token }) {
   }
 
   const readers = data.readers || [];
+  const emptyOwn = data.scope === "own" && data.studies.length === 0;
   const who = (row) => (row.assigned_to
     ? (row.assigned_to === data.me ? "You" : row.assigned_name || row.assigned_to) : "Unassigned");
 
@@ -159,7 +161,7 @@ export default function Worklist({ load, token }) {
     <div className="workstation-layout" data-testid="workstation-layout"
          style={{ gridTemplateColumns: `minmax(0, 1fr) 6px ${detailsWidth}px` }}>
       {panel === "simulate" && (
-        <SimulatePanel token={token} readers={readers} onClose={() => setPanel(null)} onProgress={fetchWorklist} />
+        <SimulatePanel token={token} readers={readers} me={data.me} onClose={() => setPanel(null)} onProgress={fetchWorklist} />
       )}
       {panel === "distribute" && (
         <DistributePanel token={token} readers={readers} studies={data.studies}
@@ -194,7 +196,7 @@ export default function Worklist({ load, token }) {
             </div>
 
             <div className="worklist-filter-bar">
-              {data.me && (
+              {data.me && data.scope !== "own" && (
                 <div className="scope-toggle" role="group" aria-label="Whose studies">
                   <button type="button" aria-pressed={scope === "mine"} onClick={() => setScope("mine")}
                           data-testid="scope-mine">My studies ({mine.length})</button>
@@ -244,54 +246,35 @@ export default function Worklist({ load, token }) {
               </p>
             )}
 
-            {heroStudy && activeNav === "worklist" && (
+            {!emptyOwn && heroStudy && activeNav === "worklist" && (
               <section className="hero-case-card" data-testid="hero-study-card">
-                <div className="hero-badge-strip">
-                  <span className="hero-alert-badge">TOP PRIORITY AI TRIAGE</span>
-                  <span className={`lanetag lane-${heroStudy.lane}`}>{heroStudy.lane_label || heroStudy.lane}</span>
-                  {heroStudy.clock && <span className="hero-clock">SLA TARGET: {heroStudy.clock}</span>}
-                </div>
-                <div className="hero-content-grid">
-                  <div className="hero-main-info">
-                    <div className="hero-patient-id mono">{heroStudy.patient_id || heroStudy.study}</div>
-                    <div className="hero-exam-name">{heroStudy.exam}</div>
-                    <div className="hero-driver">
-                      <span className="driver-label-text">Driving Finding:</span>{" "}
-                      <span className="bold highlight-driver">{heroStudy.driver_label || heroStudy.abstain_reason || "--"}</span>
-                    </div>
-                  </div>
-                  <div className="hero-metrics">
-                    <div className="metric-box">
-                      <span className="box-title">Acuity Score</span>
-                      <span className="box-val mono bold"><Acuity row={heroStudy} /></span>
-                    </div>
-                    <div className="metric-box">
-                      <span className="box-title">Confidence</span>
-                      <span className="box-val mono">
-                        {heroStudy.confidence != null ? `${(heroStudy.confidence * 100).toFixed(0)}%` : "--"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="hero-action-col">
-                    <button type="button"
-                            className={`btn-hero-inspect ${selectedStudyId === heroStudy.study ? "active-inspect" : ""}`}
-                            onClick={() => setSelectedStudyId(heroStudy.study)}>
-                      {selectedStudyId === heroStudy.study ? "Active in Viewer" : "Inspect Case Scans"}
-                    </button>
-                    <span className="hero-time mono">Arrived {timeUTC(heroStudy.arrived)} UTC</span>
-                  </div>
-                </div>
+                <span className="hero-alert-badge">Next up</span>
+                <span className={`lanetag lane-${heroStudy.lane}`}>{heroStudy.lane_label || heroStudy.lane}</span>
+                <span className="hero-patient-id mono">{heroStudy.patient_id || heroStudy.study}</span>
+                <span className="hero-driver">
+                  <span className="bold highlight-driver">{heroStudy.driver_label || heroStudy.abstain_reason || "--"}</span>
+                  <span className="hero-exam-name"> {heroStudy.exam}</span>
+                </span>
+                <span className="hero-spacer" />
+                <span className="hero-metric mono" title="Acuity"><Acuity row={heroStudy} /></span>
+                {heroStudy.clock && <span className="hero-clock">{heroStudy.clock}</span>}
+                <button type="button"
+                        className={`btn-hero-inspect ${selectedStudyId === heroStudy.study ? "active-inspect" : ""}`}
+                        onClick={() => setSelectedStudyId(heroStudy.study)}>
+                  {selectedStudyId === heroStudy.study ? "Active in Viewer" : "Inspect Case Scans"}
+                </button>
               </section>
             )}
 
-            <p className="note">
+            {!emptyOwn && <p className="note">
               Needs human triage is always shown and is not affected by filters.
-            </p>
+            </p>}
 
-            {view === "board" && (
+            {!emptyOwn && view === "board" && (
               <div className="board" data-testid="board">
                 {(data.lanes || []).map((l) => {
-                  const cards = pools.flatMap((p) => p.sections.flatMap((s) => s.rows)).filter((r) => r.lane === l.lane);
+                  const cards = pools.filter((p) => poolTab === "ALL" || poolTab === p.pool)
+                    .flatMap((p) => p.sections.flatMap((s) => s.rows)).filter((r) => r.lane === l.lane);
                   if (l.pinned && l.lane !== "ABSTAIN" && cards.length === 0) return null;
                   return (
                     <section key={l.lane} className={`board-col lane-${l.lane}`} data-testid={`board-col-${l.lane}`}
@@ -333,13 +316,34 @@ export default function Worklist({ load, token }) {
               </div>
             )}
 
-            {view === "list" && <div className="queue-container">
-              <div className="queue-colhead" aria-hidden="true">
-                <span>Lane / SLA</span><span>Patient ID</span><span>Modality</span><span>AI Driving Finding</span>
-                <span>Acuity</span><span>Status / Reader</span><span>Arrived</span>
+            {data.scope === "own" && data.studies.length === 0 && (
+              <section className="empty-worklist" data-testid="empty-worklist">
+                <WorklistIcon size={28} />
+                <h3>Your worklist is empty</h3>
+                <p>Studies appear here when an ingest or a distribution includes you. Use Simulate ingest
+                  to send studies to yourself or to other radiologists.</p>
+              </section>
+            )}
+
+            {(data.scope !== "own" || data.studies.length > 0) && (
+              <div className="pool-tabs" role="group" aria-label="Reading pool">
+                <button type="button" aria-pressed={poolTab === "ALL"} onClick={() => setPoolTab("ALL")}
+                        data-testid="pooltab-ALL">
+                  All pools <span className="count mono">{filteredStudies.length}</span>
+                </button>
+                {pools.map((p) => (
+                  <button key={p.pool} type="button" aria-pressed={poolTab === p.pool}
+                          onClick={() => setPoolTab(p.pool)} data-testid={`pooltab-${p.pool}`}>
+                    {p.label} <span className="count mono">{filteredStudies.filter((r) => r.pool === p.pool).length}</span>
+                  </button>
+                ))}
               </div>
+            )}
+
+            {!emptyOwn && view === "list" && <div className={`queue-container ${poolTab !== "ALL" ? "single-pool" : ""}`}>
               {pools.map((p) => (
-                <section key={p.pool} className="pool-group" data-testid={`pool-${p.pool}`} aria-label={`${p.label} reading pool`}>
+                <section key={p.pool} className="pool-group" data-testid={`pool-${p.pool}`} aria-label={`${p.label} reading pool`}
+                         hidden={poolTab !== "ALL" && poolTab !== p.pool}>
                   <div className="pool-header">
                     <h2 className="pool-title">{p.label} Reading Pool</h2>
                     <span className="pool-badge">{p.sections.reduce((a, s) => a + s.rows.length, 0)} Studies</span>

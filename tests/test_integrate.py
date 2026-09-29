@@ -232,3 +232,43 @@ def test_simulate_estimate_labels_every_line_and_fixture_says_why_not():
     from core.run import _simulator
     info = _simulator({"runtime": "fixture", "table": FixtureTable()}).info()
     assert info["available"] is False and "no pipeline" in info["reason"]
+
+
+def test_each_radiologist_sees_only_their_own_studies(app):
+    """Own scope (the local and AWS runtimes): a new reader starts empty; a
+    distribution fills each reader's screen equally; a study of another reader
+    cannot be opened; a batch with no reader is refused."""
+    app.p["worklist_scope"] = "own"
+    app.app.router.routes.clear()          # rebuild the app with the scope set
+    client = TestClient(create_app(app.p))
+    h = app.h
+    assert client.get("/api/worklist", headers=h("radiologist-1")).json()["studies"] == []
+    assert client.get("/api/worklist", headers=h("radiologist-1")).json()["scope"] == "own"
+
+    # Studies exist but belong to nobody: still nothing on any screen.
+    rows = app.p["table"].scan("worklist")
+    assert rows and client.get("/api/worklist", headers=h("radiologist-2")).json()["studies"] == []
+
+    # Give R1 the studies, then R1 deals them to R1 and R2.
+    for r in rows:
+        r["assigned_to"] = R1
+        app.p["table"].put_item("worklist", r)
+    mine = client.get("/api/worklist", headers=h("radiologist-1")).json()["studies"]
+    assert len(mine) == len(rows)
+    dealt = client.post("/api/distribute", json={"readers": [R1, R2]}, headers=h("radiologist-1"))
+    assert dealt.status_code == 200, dealt.text
+    a = client.get("/api/worklist", headers=h("radiologist-1")).json()["studies"]
+    b = client.get("/api/worklist", headers=h("radiologist-2")).json()["studies"]
+    assert a and b and abs(len(a) - len(b)) <= 1 and len(a) + len(b) == len(rows)
+    assert not {s["study"] for s in a} & {s["study"] for s in b}
+
+    # R1 cannot open, judge or draft on R2's study.
+    other = b[0]["study"]
+    assert client.get(f"/api/studies/{other}", headers=h("radiologist-1")).status_code == 403
+    assert client.post(f"/api/studies/{other}/verdict", json={"verdict": "agree"},
+                       headers=h("radiologist-1")).status_code == 403
+    assert client.get(f"/api/studies/{other}", headers=h("radiologist-2")).status_code == 200
+
+    # A batch needs at least one reader.
+    assert client.post("/api/simulate", json={"counts": {"chest": 1}, "readers": []},
+                       headers=h("radiologist-1")).status_code == 400

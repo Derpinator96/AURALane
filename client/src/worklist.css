@@ -7,7 +7,7 @@
 .workstation-details-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--column); }
 .details-upper { flex: 1 1 62%; min-height: 0; overflow: auto; }
 .details-lower {
-  flex: 0 0 34%; min-height: 160px; display: grid; place-content: center; justify-items: center; gap: 6px;
+  flex: 0 0 26%; min-height: 120px; display: grid; place-content: center; justify-items: center; gap: 6px;
   margin: 0 12px 12px; border: 1px dashed var(--line-strong); border-radius: var(--r-card); background: var(--sheet); text-align: center;
 }
 .placeholder-label { font-size: 14px; font-weight: 500; color: var(--ink-2); }
@@ -36,34 +36,30 @@
 .filter-item select { min-height: 30px; padding: 0 8px; color: var(--ink); font-size: 13px; }
 .view-toggle { display: inline-flex; gap: 4px; order: 4; flex: none; }
 
-.hero-case-card { padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-card); display: grid; gap: 12px; container-type: inline-size; }
-.hero-badge-strip { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--ink-2); }
-.hero-alert-badge { color: var(--ink-3); text-transform: none; }
-.hero-clock { margin-left: auto; color: var(--ink-3); }
-.hero-content-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px 24px; align-items: center; }
-.hero-patient-id { font-size: 16px; font-weight: 500; }
-.hero-exam-name, .hero-driver { color: var(--ink-2); font-size: 13px; }
+/* Next up: one line, not a card. */
+.hero-case-card {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px;
+  background: var(--blue-tint); border: 1px solid var(--blue-line); border-radius: var(--r-card); font-size: 13px;
+}
+.hero-alert-badge { color: var(--blue-ink); font-weight: 500; }
+.hero-patient-id { font-weight: 500; }
+.hero-driver { min-width: 0; }
+.hero-exam-name { color: var(--ink-2); }
 .highlight-driver { color: var(--ink); }
-.hero-metrics { display: flex; gap: 20px; }
-.metric-box { display: grid; gap: 2px; }
-.box-title { font-size: 12px; color: var(--ink-3); }
-.box-val { font-size: 18px; font-weight: 500; }
-.hero-action-col { display: grid; gap: 6px; justify-items: end; }
-.hero-patient-id { overflow-wrap: anywhere; }
+.hero-spacer { flex: 1; }
+.hero-metric { color: var(--ink-2); }
+.hero-clock { color: var(--ink-3); font-size: 12px; }
 .btn-hero-inspect {
-  min-height: 32px; padding: 0 12px; background: var(--sheet); border: 1px solid var(--line-strong);
+  min-height: 28px; padding: 0 12px; background: var(--sheet); border: 1px solid var(--blue-line); color: var(--blue-ink);
   border-radius: var(--r-control); font-size: 13px; font-weight: 500; cursor: pointer;
 }
-.btn-hero-inspect:hover { background: var(--blue-tint); border-color: var(--blue-line); color: var(--blue-ink); }
-.btn-hero-inspect.active-inspect { background: var(--blue-tint); border-color: var(--blue-line); color: var(--blue-ink); }
-.hero-time { color: var(--ink-3); font-size: 12px; }
+.btn-hero-inspect:hover, .btn-hero-inspect.active-inspect { background: var(--blue); border-color: var(--blue); color: #fff; }
 
 /* List view */
 .queue-container { display: flex; flex-direction: column; gap: 20px; container-type: inline-size; }
-.queue-colhead, .study-row {
+.study-row {
   display: grid; grid-template-columns: 130px 120px 100px minmax(80px, 1fr) 52px 100px 48px; gap: 12px; align-items: center;
 }
-.queue-colhead { padding: 0 12px; font-size: 12px; color: var(--ink-3); }
 .pool-group { display: flex; flex-direction: column; gap: 4px; }
 .pool-header { display: flex; align-items: center; gap: 8px; padding: 4px 0 8px; }
 .pool-title { font-size: 15px; font-weight: 500; }
@@ -158,7 +154,6 @@
 
 /* A narrow centre pane (the case panel is open beside it): two lines per row. */
 @container (max-width: 680px) {
-  .queue-colhead { display: none; }
   .study-row {
     grid-template-columns: 112px minmax(0, 1fr) minmax(0, 1fr) 44px;
     grid-template-areas: "lane finding finding acuity" "patient modality status time";
@@ -173,12 +168,6 @@
   .cell-time { grid-area: time; text-align: right; }
 }
 
-/* Case panel open wide: the hero card stacks. */
-@container (max-width: 520px) {
-  .hero-content-grid { grid-template-columns: 1fr; }
-  .hero-action-col { justify-items: start; }
-  .hero-metrics { gap: 24px; }
-}
 .center-header + .worklist-filter-bar { margin-top: -4px; }
 .workstation-center > .note { color: var(--ink-3); font-size: 12px; margin: -8px 0 0; }
 
@@ -204,3 +193,38 @@
   .worklist-filter-bar { flex-wrap: wrap; }
   .search-box { flex-basis: 100%; order: 5; }
 }
+
+/* Pool tabs, lane cards, empty state */
+.pool-tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.pool-tabs button {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 14px; background: none;
+  border: 1px solid transparent; border-radius: var(--r-pill); color: var(--ink-2); font-size: 14px; cursor: pointer;
+}
+.pool-tabs button:hover { background: var(--blue-tint); color: var(--blue-ink); }
+.pool-tabs button[aria-pressed="true"] { background: var(--blue-tint); border-color: var(--blue-line); color: var(--blue-ink); font-weight: 500; }
+.pool-tabs .count { font-size: 12px; color: var(--ink-3); }
+.pool-tabs button[aria-pressed="true"] .count { color: var(--blue-ink); }
+.pool-group[hidden] { display: none; }
+
+.queue-container { gap: 28px; }
+.pool-group { gap: 12px; }
+.pool-header { padding: 0; }
+.single-pool .pool-header { display: none; }
+.pool-title { font-size: 15px; }
+.lane-group {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r-column); overflow: hidden;
+}
+.lane-group-heading { padding: 12px 16px 8px; font-size: 13px; }
+.lane-group .lane-explain-why { padding: 0 16px 10px; color: var(--ink-3); font-size: 12px; }
+.lane-group .study-row { border-radius: 0; padding: 12px 16px; }
+.lane-group .study-row:first-of-type { border-top: 1px solid var(--line); }
+.study-row .cell-patient { font-weight: 500; }
+.cell-finding .finding-text { color: var(--ink); }
+
+.empty-worklist {
+  display: grid; justify-items: center; gap: 8px; padding: 56px 24px; text-align: center; color: var(--ink-2);
+  background: var(--column); border: 1px dashed var(--line-strong); border-radius: var(--r-column);
+}
+.empty-worklist svg { color: var(--blue); }
+.empty-worklist h3 { color: var(--ink); font-size: 16px; }
+.empty-worklist p { max-width: 46ch; font-size: 13px; }
