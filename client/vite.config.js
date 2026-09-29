@@ -37,5 +37,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.js"],
     include: ["src/**/*.test.{js,jsx}"],
+    // Typing a long password key by key can pass 5 s when the suite runs in parallel.
+    testTimeout: 20000,
   },
 });

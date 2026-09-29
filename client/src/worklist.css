@@ -143,8 +143,9 @@
 /* The study sheet: a glass panel over the blurred app. */
 .sheet {
   position: relative; display: flex; flex-direction: column; width: var(--sheet-w); max-width: 100%; height: 100%; overflow: auto;
-  background: var(--glass-strong); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
-  border-radius: var(--r-frame); box-shadow: var(--glass-hi), var(--pop-shadow);
+  /* No backdrop filter of its own: the app behind is already blurred by the overlay, and a second
+     28 px pass over it costs first-frame time for a difference nobody can see. */
+  background: var(--sheet-fill); border-radius: var(--r-frame); box-shadow: var(--glass-hi), var(--pop-shadow);
   animation: slide-in 0.22s var(--ease) both;
 }
 .sheet-close { position: absolute; top: 18px; right: 18px; z-index: 3; }

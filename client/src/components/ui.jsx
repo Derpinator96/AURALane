@@ -81,9 +81,12 @@ export function Overlay({ onClose, children, side = "center", label }) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
+  // The blur and scrim are their own layer behind the content. Content that repaints often
+  // (a WebGL viewer) then never forces the full-screen blur to be redone.
   return createPortal(
     <div className={`overlay ${side === "right" ? "overlay-right" : ""}`} data-testid="overlay"
-         onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+         onMouseDown={(e) => { if (e.target === e.currentTarget || e.target.classList.contains("overlay-scrim")) onClose(); }}>
+      <div className="overlay-scrim" aria-hidden="true" />
       {children}
     </div>,
     document.body,

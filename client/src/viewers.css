@@ -1318,3 +1318,11 @@
 .note-textarea { width: 100%; min-height: 120px; }
 .note-anchor { margin-top: -8px; }
 .mri-loading-indicator .spinner { width: 20px; height: 20px; }
+
+/* The toolbar inside a narrow sheet or a phone: smaller buttons, one line. */
+@container (max-width: 560px) {
+  .viewer-tools { bottom: 10px; padding: 4px; }
+  .viewer-tools button { padding: 0 9px; min-height: 28px; font-size: 12px; }
+  .viewer-label { display: none; }
+  .slice { margin: 0 4px; font-size: 12px; }
+}

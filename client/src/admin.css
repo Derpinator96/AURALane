@@ -1,7 +1,6 @@
 /* Admin: the same glass panels and rule-free tables as the worklist. The ten pipeline
    steps are stat cards: name, state dot, count, median and last. */
 
-.adminpage { max-width: 1240px; }
 .adminpage .panel { display: grid; gap: 14px; align-content: start; }
 .adminpage h2.card-title { margin: 0; }
 .adminpage h3 { font-size: var(--fs-body); font-weight: 500; margin: 8px 0 2px; }

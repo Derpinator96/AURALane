@@ -54,6 +54,6 @@ test("every screen carries the banner and footer, no badge, no third-party reque
   await page.getByTestId("user-menu").click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await signIn(page, "admin");
-  await expect(page.getByTestId("audit")).toBeVisible(); await check();
+  await expect(page.getByTestId("pipeline-view")).toBeVisible(); await check();
   expect(foreign).toEqual([]);
 });

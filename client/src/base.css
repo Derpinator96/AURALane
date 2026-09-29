@@ -37,11 +37,13 @@ strong, .bold { font-weight: 500; }
 
 /* Background: a fixed layer of three large blooms and faint curved line art. */
 .bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-.bg-blooms { position: absolute; inset: -10%; filter: blur(120px); }
+/* Three very large soft blooms. Each is a radial gradient that fades to nothing, which looks
+   like a 120 px blur without asking the compositor to filter a viewport-sized layer. */
+.bg-blooms { position: absolute; inset: 0; }
 .bg-blooms span { position: absolute; border-radius: 50%; }
-.bg-blooms .b1 { width: 820px; height: 820px; left: -6%; top: -18%; background: var(--bloom-blue); }
-.bg-blooms .b2 { width: 700px; height: 700px; right: -4%; top: 30%; background: var(--bloom-teal); }
-.bg-blooms .b3 { width: 900px; height: 900px; left: 28%; bottom: -34%; background: var(--bloom-mist); }
+.bg-blooms .b1 { width: 1240px; height: 1240px; left: -18%; top: -46%; background: radial-gradient(closest-side, var(--bloom-blue), transparent); }
+.bg-blooms .b2 { width: 1060px; height: 1060px; right: -14%; top: 8%; background: radial-gradient(closest-side, var(--bloom-teal), transparent); }
+.bg-blooms .b3 { width: 1300px; height: 1300px; left: 16%; bottom: -62%; background: radial-gradient(closest-side, var(--bloom-mist), transparent); }
 .bg-art { position: absolute; right: -180px; bottom: -220px; width: 900px; height: 900px; color: var(--art-stroke); }
 @media (prefers-reduced-transparency: reduce) { .bg-blooms { display: none; } }
 
@@ -50,8 +52,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* A raised white pill with an icon and a label. Every button is one. */
 .pill, .btn, .btn-primary, .btn-close, .btn-back-worklist, .btn-analyse-case, .btn-analyse-full,
-.btn-rationale-toggle, .btn-gradcam-toggle, .btn-timeline-inspect, .btn-verdict,
-.adminpage button:not(.pipe-live-row), .simulate-counts button, .modal-actions button {
+.btn-rationale-toggle, .btn-gradcam-toggle, .btn-timeline-inspect, .btn-verdict {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 38px; padding: 0 18px;
   background: var(--pill); color: var(--ink);
@@ -61,18 +62,17 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .pill:hover, .btn:hover, .btn-close:hover, .btn-back-worklist:hover, .btn-analyse-case:hover,
 .btn-analyse-full:hover, .btn-rationale-toggle:hover, .btn-gradcam-toggle:hover,
-.btn-timeline-inspect:hover, .btn-verdict:hover, .adminpage button:not(.pipe-live-row):hover:not(:disabled),
-.simulate-counts button:hover, .modal-actions button:hover:not(:disabled) {
+.btn-timeline-inspect:hover, .btn-verdict:hover {
   background: var(--pill-hover); color: var(--blue-ink);
 }
 .pill:active, .btn:active { transform: translateY(1px); }
 .pill svg, .btn svg { flex: none; }
 .pill-sm { min-height: 30px; padding: 0 14px; font-size: var(--fs-meta); }
 /* The primary action: a dark pill. */
-.pill-primary, .btn-primary, .modal-actions .btn-primary {
+.pill-primary, .btn-primary {
   background: var(--ink); color: var(--on-ink);
 }
-.pill-primary:hover, .btn-primary:hover, .modal-actions .btn-primary:hover:not(:disabled) {
+.pill-primary:hover:not(:disabled), .btn-primary:hover:not(:disabled) {
   background: var(--blue); color: #fff;
 }
 /* Quiet pills carry no raised shadow until hovered. */
@@ -214,6 +214,7 @@ tbody tr:hover td { background: var(--tint); }
 /* Signed-out: one centred glass card on the field. */
 .app-bare { display: flex; flex-direction: column; align-items: center; height: auto; min-height: 100dvh; gap: 16px; }
 .app-bare .frame { height: auto; min-height: calc(100dvh - 32px); width: 100%; align-items: center; }
+.app-bare .foot { align-self: stretch; }
 .bare-bar { display: flex; align-items: center; gap: 12px; width: 100%; padding: 16px 22px 0; flex-wrap: wrap; }
 .bare-bar .spacer { flex: 1; }
 .bare-body { flex: 1; width: 100%; display: grid; place-items: center; padding: 16px 20px; overflow: auto; }
@@ -256,16 +257,17 @@ tbody tr:hover td { background: var(--tint); }
 .pop-field { display: grid; gap: 6px; font-size: var(--fs-meta); }
 
 /* Overlay: the whole app behind blurs under a light scrim; the fade is 200 ms. */
-.overlay {
-  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px;
-  background: var(--scrim); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-  animation: fade-in 0.2s ease-out both;
+.overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; }
+.overlay-scrim {
+  position: absolute; inset: 0; background: var(--scrim);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); animation: fade-in 0.2s ease-out both;
 }
+.overlay > :not(.overlay-scrim) { position: relative; z-index: 1; }
 .overlay-right { place-items: stretch end; padding: 16px; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-  .overlay, .sheet, .toast { animation: none !important; }
+  .overlay-scrim, .sheet, .toast { animation: none !important; }
   * { transition-duration: 0.01ms !important; }
 }
 

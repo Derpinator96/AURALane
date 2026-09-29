@@ -20,7 +20,7 @@
 
 .verdict-block { display: grid; gap: 10px; justify-items: start; }
 .verdict-actions { display: flex; gap: 10px; width: 100%; }
-.verdict-actions .btn-verdict { flex: 1 1 0; min-width: 0; }
+.verdict-actions .btn-verdict { flex: 1 1 0; min-width: 0; white-space: normal; text-align: center; line-height: 1.2; padding: 8px 14px; min-height: 44px; }
 
 .sheet-viewer { display: grid; gap: 14px; container-type: inline-size; }
 .viewer-container { display: grid; gap: 12px; min-width: 0; }

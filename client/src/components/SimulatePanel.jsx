@@ -127,7 +127,7 @@ export default function SimulatePanel({ token, readers, me = null, onClose, onPr
               <>
                 <button type="button" className="pill pill-quiet" onClick={onClose}>Cancel</button>
                 <button type="button" className="pill pill-primary" disabled={!canSend} onClick={send} data-testid="simulate-send">
-                  Send {total} {total === 1 ? "study" : "studies"}
+                  {info?.available ? `Send ${total} ${total === 1 ? "study" : "studies"}` : "Send"}
                 </button>
               </>
             ) : (
