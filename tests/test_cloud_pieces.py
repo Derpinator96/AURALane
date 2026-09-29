@@ -352,3 +352,48 @@ def test_cognito_access_request_cannot_sign_in_until_approved(moto_aws):
     assert auth.login(REQUESTER, REQUESTER_PASSWORD)
     groups = idp.admin_list_groups_for_user(UserPoolId=pool, Username=REQUESTER)["Groups"]
     assert [g["GroupName"] for g in groups] == ["radiologist"]
+
+
+def test_simulate_on_aws_hands_studies_to_ingest_tasks_and_runs_nothing_in_the_api(moto_aws):
+    """Pool study -> upload/ with a predeidentified manifest -> (task) -> result
+    in intake/ -> the batch shows the lane. The API process fetches no pixels."""
+    import json as _json
+    import threading
+    import time as _time
+    import boto3
+    from core.providers.fixture import FixtureTable
+    from core.simulate import CloudDispatch, S3Pool, Simulator
+    s3 = boto3.client("s3", region_name="us-east-1")
+    s3.create_bucket(Bucket=BKT)
+    for i in range(2):
+        s3.put_object(Bucket=BKT, Key=f"pool/chest/S{i}/a.dcm", Body=b"x")
+        s3.put_object(Bucket=BKT, Key=f"pool/chest/S{i}/deid_report.json", Body=b"{}")
+    sim = Simulator(S3Pool(s3, BKT), None, FixtureTable(), "aws", workers=2,
+                    dispatch=CloudDispatch(s3, BKT, poll_s=0.05, timeout_s=20))
+
+    def task():
+        # What core/cloud_ingest.py does when a manifest lands.
+        done = set()
+        end = _time.monotonic() + 15
+        while len(done) < 2 and _time.monotonic() < end:
+            for page in s3.get_paginator("list_objects_v2").paginate(Bucket=BKT, Prefix="upload/"):
+                for o in page.get("Contents", []):
+                    if o["Key"].endswith("_ready.json") and o["Key"] not in done:
+                        m = _json.loads(s3.get_object(Bucket=BKT, Key=o["Key"])["Body"].read())
+                        assert m["predeidentified"] and m["model_id"] == "cxr-densenet-v1"
+                        assert m["report_key"].endswith("deid_report.json")
+                        s3.put_object(Bucket=BKT, Key=f"intake/{m['batch']}/{m['item']}.json",
+                                      Body=_json.dumps({"status": "SCORED", "lane": "URGENT"}).encode())
+                        done.add(o["Key"])
+            _time.sleep(0.05)
+
+    t = threading.Thread(target=task)
+    t.start()
+    state = sim.start({"chest": 2}, [], "test")
+    end = _time.monotonic() + 20
+    while sim.status(state["batch"])["running"] and _time.monotonic() < end:
+        _time.sleep(0.1)
+    t.join()
+    items = sim.status(state["batch"])["items"]
+    assert [i["status"] for i in items] == ["done", "done"], items
+    assert {i["lane"] for i in items} == {"URGENT"}

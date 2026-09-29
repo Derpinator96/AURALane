@@ -103,7 +103,42 @@ def main() -> int:
             at=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
             outcome="ok", duration_ms=round((time.perf_counter() - start) * 1000, 3),
             detail={"channels": sorted(volumes), "segmentation": bool(seg)}))
+    _backfill_ct(args, table, ds_port, blob)
     return 0
+
+
+def _backfill_ct(args, table, ds_port, blob) -> None:
+    """Head CT rows ingested before the 3D view: the series with the most
+    slices, read back from the datastore, as evidence/<study>/ct.nii.gz."""
+    from core.types import AuditEvent, StudyRef
+    from core.volumes import ct_volume_bytes
+    rows = [r for r in table.scan("worklist") if r.get("modality") == "CT"
+            and r.get("datastore_id") and (not args.study or r["study"] == args.study)
+            and not ((r.get("evidence") or {}).get("volumes") or {}).get("CT")]
+    print(f"{len(rows)} CT studies without a volume")
+    for row in rows:
+        start = time.perf_counter()
+        ref = StudyRef(row["study"], row["datastore_id"])
+        series = max(ds_port.get_metadata(ref).series, key=lambda s: s.instance_count)
+        headers = [pydicom.Dataset.from_json(i)
+                   for i in ds_port.series_metadata(ref, series.series_uid)]
+        with ThreadPoolExecutor(16) as pool:
+            frames = dict(zip((str(h.SOPInstanceUID) for h in headers), pool.map(
+                lambda h: ds_port.frame_pixels(ref, series.series_uid, str(h.SOPInstanceUID)),
+                headers)))
+        key = blob.put(f"evidence/{row['study']}/ct.nii.gz", ct_volume_bytes(
+            headers, pixels=lambda h: frames[str(h.SOPInstanceUID)]))
+        row = table.get_item("worklist", {"study": row["study"]})
+        row["evidence"] = {**(row.get("evidence") or {}),
+                           "volumes": {**((row.get("evidence") or {}).get("volumes") or {}),
+                                       "CT": key}}
+        table.put_item("worklist", row)
+        table.append_audit(AuditEvent(
+            actor="backfill", action="volume_backfill", study=row["study"],
+            at=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+            outcome="ok", duration_ms=round((time.perf_counter() - start) * 1000, 3),
+            detail={"channels": ["CT"], "slices": len(headers)}))
+        print(f"  {row['study'][-12:]} CT: {len(headers)} slices")
 
 
 if __name__ == "__main__":

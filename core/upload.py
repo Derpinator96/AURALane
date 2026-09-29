@@ -35,11 +35,11 @@ def new_batch() -> str:
 
 
 def _manifest(s3, bucket: str, batch: str, item: str, keys: list[str],
-              site_state: str | None, modality: str | None) -> str:
+              site_state: str | None, modality: str | None, **extra) -> str:
     key = f"{UPLOAD}{batch}/{item}/{MANIFEST}"
     body = {"batch": batch, "item": item, "keys": keys, "site_state": site_state,
             "modality": modality, "uploaded_at": datetime.datetime.now(
-                datetime.timezone.utc).isoformat(timespec="seconds")}
+                datetime.timezone.utc).isoformat(timespec="seconds"), **extra}
     s3.put_object(Bucket=bucket, Key=key, Body=json.dumps(body).encode(),
                   ContentType="application/json")
     return key
@@ -67,6 +67,31 @@ def copy_study(s3, bucket: str, source_prefix: str, batch: str, item: str,
                                                 CopySource={"Bucket": bucket, "Key": ks[1]}),
                       zip(keys, src)))
     return _manifest(s3, bucket, batch, item, keys, site_state, modality)
+
+
+def copy_pool_study(s3, bucket: str, pool_prefix: str, batch: str, item: str, *,
+                    model_id: str, run_id: str, site_state: str | None = None,
+                    modality: str | None = None) -> tuple[str, int]:
+    """A staged, already de-identified pool study (stage_pool.py) -> upload/,
+    server-side, with its edge report, then the manifest. The manifest marks it
+    predeidentified: the ingest task checks the marks and does not clean it
+    again. -> (manifest key, instances)."""
+    src = [o["Key"] for page in s3.get_paginator("list_objects_v2").paginate(
+        Bucket=bucket, Prefix=pool_prefix) for o in page.get("Contents", [])]
+    dcm = [k for k in src if k.endswith(".dcm")]
+    report = next((k for k in src if k.endswith("/deid_report.json")), None)
+    keys = [f"{UPLOAD}{batch}/{item}/{i:05d}.dcm" for i in range(len(dcm))]
+    pairs = list(zip(keys, dcm))
+    report_key = f"{UPLOAD}{batch}/{item}/deid_report.json" if report else None
+    if report:
+        pairs.append((report_key, report))
+    with ThreadPoolExecutor(16) as pool:
+        list(pool.map(lambda ks: s3.copy_object(Bucket=bucket, Key=ks[0],
+                                                CopySource={"Bucket": bucket, "Key": ks[1]}),
+                      pairs))
+    return _manifest(s3, bucket, batch, item, keys, site_state, modality,
+                     predeidentified=True, model_id=model_id, run_id=run_id,
+                     report_key=report_key), len(dcm)
 
 
 def corpus_catalogue(s3, bucket: str) -> dict[str, list[str]]:

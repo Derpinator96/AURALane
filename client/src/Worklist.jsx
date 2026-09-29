@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { arrangePools, READ_FILTERS, SORTS, timeUTC, isUnread } from "./worklist.js";
 import Sidebar from "./components/Sidebar.jsx";
 import LatestCasePanel from "./components/LatestCasePanel.jsx";
@@ -50,17 +50,23 @@ export default function Worklist({ load, token }) {
     document.body.style.cursor = "col-resize";
   };
 
+  // A failed refresh (the API restarting, a dropped connection) keeps the list on
+  // screen and says so; the next refresh clears it. Only a failed first load
+  // shows the error, and that retries every few seconds.
+  const [stale, setStale] = useState(false);
+  const loaded = useRef(false);
   const fetchWorklist = useCallback(() => {
-    load().then((d) => setData(d)).catch((e) => setError(e));
+    load().then((d) => { loaded.current = true; setData(d); setError(null); setStale(false); })
+      .catch((e) => { if (loaded.current) setStale(true); else setError(e); });
   }, [load]);
 
   useEffect(() => { fetchWorklist(); }, [fetchWorklist]);
 
   useEffect(() => {
-    if (!refresh) return undefined;
-    const t = setInterval(fetchWorklist, refresh * 1000);
+    if (!refresh && !error) return undefined;
+    const t = setInterval(fetchWorklist, (error ? 5 : refresh) * 1000);
     return () => clearInterval(t);
-  }, [fetchWorklist, refresh]);
+  }, [fetchWorklist, refresh, error]);
 
   const mine = useMemo(() => (data?.me ? (data.studies || []).filter((s) => s.assigned_to === data.me) : []),
     [data]);
@@ -145,6 +151,7 @@ export default function Worklist({ load, token }) {
                onSpecialtyChange={setSpecialtyFilter} counts={counts} />
 
       <main className="workstation-center" data-testid="workstation-center">
+        {stale && <p className="note" role="status">Lost contact with the API. Showing the last list; retrying.</p>}
         {activeNav === "history" && (
           <PatientHistoryView studies={filteredStudies} onSelectStudy={setSelectedStudyId}
                               selectedStudyId={selectedStudyId} />

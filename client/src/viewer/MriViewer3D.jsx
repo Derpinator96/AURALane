@@ -140,6 +140,7 @@ export default function MriViewer3D({
   studyId,
   token,
   onUnavailable = null,
+  modality = "MR",
   initialSequence = SEQ_ID[loadSettings().mrSequence] || "t1ce",
   isAlzheimer = false,
   annotations = [],
@@ -151,9 +152,10 @@ export default function MriViewer3D({
   isAddNoteMode = false,
   onToggleAddNoteMode = null,
 }) {
-  const isAlz = isAlzheimer || (studyId && studyId.toLowerCase().includes("alz"));
-  const [sequence, setSequence] = useState(isAlz ? "t1" : initialSequence);
-  const [showSeg, setShowSeg] = useState(!isAlz);
+  const isCT = modality === "CT";
+  const isAlz = !isCT && (isAlzheimer || (studyId && studyId.toLowerCase().includes("alz")));
+  const [sequence, setSequence] = useState(isCT ? "ct" : isAlz ? "t1" : initialSequence);
+  const [showSeg, setShowSeg] = useState(!isAlz && !isCT);
   const [opacity, setOpacity] = useState(0.7);
   const [metrics, setMetrics] = useState(null);
   const [viewLayout, setViewLayout] = useState("mpr"); // 'mpr' | '3d' | 'axial'
@@ -214,7 +216,7 @@ export default function MriViewer3D({
 
   // Fetch quantitative volumetric metrics (tumor studies)
   useEffect(() => {
-    if (isAlz) return;
+    if (isAlz || isCT) return;
     let active = true;
     // The brain model's own volumes (adapters/brats.py), from the API.
     api.metrics(token, studyId).then((data) => { if (active && data) setMetrics(data); }).catch(() => {});
@@ -322,8 +324,11 @@ export default function MriViewer3D({
       let volumes;
       try {
         const vol = await api.volume(token, studyId, sequence);
-        volumes = [{ url: vol.url, name: vol.name, colormap: "gray", opacity: 1.0 }];
-        if (showSeg && !isAlz) {
+        // Head CT is in Hounsfield units: the brain window (0 to 90 HU) is what a
+        // reader uses, and it renders the scalp surface in the 3D view.
+        volumes = [{ url: vol.url, name: vol.name, colormap: "gray", opacity: 1.0,
+                    ...(isCT ? { cal_min: 0, cal_max: 90 } : {}) }];
+        if (showSeg && !isAlz && !isCT) {
           const seg = await api.segmentation(token, studyId).catch(() => null);
           if (seg) volumes.push({ url: seg.url, name: seg.name, colormap: "red", opacity: opacity });
         }
@@ -418,7 +423,16 @@ export default function MriViewer3D({
     <div className={`mri-3d-workstation ${isAddNoteMode ? "pinpoint-active-mode" : ""}`} data-testid="mri-3d-workstation">
       {/* Top Clinical MPR Workstation Toolbar */}
       <div className="mri-toolbar">
-        {isAlz ? (
+        {isCT ? (
+          <div className="toolbar-group">
+            <span className="toolbar-label">Head CT:</span>
+            <div className="segmented-group">
+              <span className="segmented-btn active" style={{ cursor: "default" }}>
+                Brain window, 0 to 90 HU
+              </span>
+            </div>
+          </div>
+        ) : isAlz ? (
           <div className="toolbar-group">
             <span className="toolbar-label">MR Modality:</span>
             <div className="segmented-group">
@@ -451,7 +465,7 @@ export default function MriViewer3D({
           </div>
         )}
 
-        {!isAlz && (
+        {!isAlz && !isCT && (
           <div className="toolbar-group segmentation-controls">
             <span className="toolbar-label">AI Segmentation:</span>
             <button

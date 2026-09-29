@@ -252,7 +252,7 @@ def check_edge_deid(cleaned: list) -> None:
 
 
 def _evidence(entry: dict, study: str, findings: Findings, inputs: dict, raw: Any,
-              blob: BlobPort, d: dict) -> Findings:
+              blob: BlobPort, d: dict, cleaned: list | None = None) -> Findings:
     """Volume models: the model's NIfTI inputs and its segmentation, to
     evidence/<study>/ for the 3D viewer. Every model: record what evidence the
     row points at."""
@@ -272,6 +272,15 @@ def _evidence(entry: dict, study: str, findings: Findings, inputs: dict, raw: An
         if findings.findings and pred and Path(pred).exists():
             evidence["segmentation"] = blob.put(f"evidence/{study}/segmentation.nii.gz",
                                                 Path(pred).read_bytes())
+    if entry["modality"] == "CT" and cleaned:
+        # The head CT as a volume for the 3D viewer. Best effort: the worklist row
+        # and the Grad-CAM do not depend on it.
+        try:
+            from core.volumes import ct_volume_bytes
+            evidence["volumes"] = {"CT": blob.put(f"evidence/{study}/ct.nii.gz",
+                                                  ct_volume_bytes(cleaned))}
+        except Exception as e:
+            d["ct_volume_error"] = f"{type(e).__name__}: {e}"
     d["keys"] = sorted(k for k, v in evidence.items() if isinstance(v, (str, dict))
                        and k not in ("regional", "ct", "channels"))
     return Findings(findings=findings.findings, meta=findings.meta, evidence=evidence)
@@ -386,7 +395,7 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
                               lane=t["lane"], triage=t, findings=findings, run_id=run.id)
 
             with run.step("evidence", service=service(blob)) as d:
-                findings = _evidence(entry, run.study, findings, inputs, raw, blob, d)
+                findings = _evidence(entry, run.study, findings, inputs, raw, blob, d, cleaned)
                 verdict.findings = findings
 
             with run.step("persist", table="worklist", service=service(table)):

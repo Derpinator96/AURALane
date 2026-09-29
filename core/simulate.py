@@ -145,9 +145,14 @@ def _now() -> str:
 class Simulator:
     def __init__(self, pool, ingest_one: Callable[..., Any] | None, table, runtime: str,
                  on_study: Callable[[dict, dict | None, str], None] | None = None,
-                 workers: int = 1, unavailable: str | None = None):
+                 workers: int = 1, unavailable: str | None = None,
+                 dispatch: Callable[..., Any] | None = None):
         """ingest_one(paths, edge_reports=, model_id=, run_id=) -> Verdict.
+        dispatch(item, batch, index, set_fields, audit_receive) -> Verdict-like,
+        instead of ingest_one: the study is handed to an ingest task in AWS
+        (CloudDispatch) and nothing is fetched or run in this process.
         on_study(row, reader, actor): called when a study is scored, to assign it."""
+        self.dispatch = dispatch
         self.pool, self.ingest_one, self.table = pool, ingest_one, table
         self.runtime, self.on_study, self.workers = runtime, on_study, workers
         self.unavailable = unavailable
@@ -261,17 +266,25 @@ class Simulator:
             tmp = Path(tempfile.mkdtemp(prefix="auralane-sim-"))
             try:
                 start = time.perf_counter()
-                paths, reports = self.pool.fetch(item["type"], item["study"], tmp)
-                self._audit(item, "receive", start, {
-                    "run_id": item["run_id"], "batch": batch, "instances": len(paths),
-                    "source": f"{self.pool.where}{item['type']}/{item['study']}/",
-                    "service": "Amazon S3 (staged pool)" if self.runtime == "aws"
-                               else "local staged pool"})
-                if not paths:
-                    raise FileNotFoundError(f"no DICOM under {item['type']}/{item['study']}")
-                self._set(batch, i, status="running")
-                v = self.ingest_one(paths, edge_reports=reports, model_id=item["model_id"],
-                                    run_id=item["run_id"])
+                if self.dispatch is not None:
+                    v = self.dispatch(
+                        item, batch, i, lambda **f: self._set(batch, i, **f),
+                        lambda n: self._audit(item, "receive", start, {
+                            "run_id": item["run_id"], "batch": batch, "instances": n,
+                            "source": f"{self.pool.where}{item['type']}/{item['study']}/",
+                            "service": "Amazon S3 (staged pool), copied to upload/"}))
+                else:
+                    paths, reports = self.pool.fetch(item["type"], item["study"], tmp)
+                    self._audit(item, "receive", start, {
+                        "run_id": item["run_id"], "batch": batch, "instances": len(paths),
+                        "source": f"{self.pool.where}{item['type']}/{item['study']}/",
+                        "service": "Amazon S3 (staged pool)" if self.runtime == "aws"
+                                   else "local staged pool"})
+                    if not paths:
+                        raise FileNotFoundError(f"no DICOM under {item['type']}/{item['study']}")
+                    self._set(batch, i, status="running")
+                    v = self.ingest_one(paths, edge_reports=reports, model_id=item["model_id"],
+                                        run_id=item["run_id"])
                 reader = None
                 row = self.table.get_item("worklist", {"study": item["study"]})
                 if row is not None and self.on_study is not None:
@@ -293,7 +306,8 @@ class Simulator:
         mr_gate = threading.Semaphore(1)
 
         def gated(i, item):
-            if item["type"] == "brain":
+            # Dispatched studies run in their own tasks in AWS: no shared memory.
+            if item["type"] == "brain" and self.dispatch is None:
                 with mr_gate:
                     return one(i, item)
             return one(i, item)
@@ -308,6 +322,47 @@ class Simulator:
         self.table.append_audit(AuditEvent(
             actor="simulate", action=action, study=item["study"], at=_now(), outcome="ok",
             duration_ms=round((time.perf_counter() - start) * 1000, 3), detail=detail))
+
+
+class CloudDispatch:
+    """Hands a pool study to an ingest task in AWS and waits for its result.
+
+    The study is copied server-side from pool/ to upload/sim-<batch>/<item>/ with
+    a manifest; the manifest's arrival starts one Fargate task (core/cloud_ingest.py,
+    2 vCPU, 4 GB) that checks the edge de-identification, imports into
+    HealthImaging, calls the models and writes the worklist row. The task writes
+    intake/sim-<batch>/<item>.json when it finishes. This process holds no pixels
+    and runs no model, so a batch cannot exhaust the API's memory.
+    """
+
+    def __init__(self, s3, bucket: str, site_state: str | None = None,
+                 timeout_s: float = 40 * 60, poll_s: float = 5.0, pool_prefix: str = "pool/"):
+        self.s3, self.bucket, self.site_state = s3, bucket, site_state
+        self.timeout_s, self.poll_s, self.pool_prefix = timeout_s, poll_s, pool_prefix
+
+    def __call__(self, item: dict, batch: str, index: int, set_fields, audit_receive):
+        from types import SimpleNamespace
+        from core.upload import RESULTS, copy_pool_study
+        name = f"{index:03d}"
+        _, n = copy_pool_study(
+            self.s3, self.bucket, f"{self.pool_prefix}{item['type']}/{item['study']}/",
+            f"sim-{batch}", name, model_id=item["model_id"], run_id=item["run_id"],
+            site_state=self.site_state, modality=item["modality"])
+        if not n:
+            raise FileNotFoundError(f"no DICOM under {item['type']}/{item['study']}")
+        audit_receive(n)
+        set_fields(status="running")
+        key = f"{RESULTS}sim-{batch}/{name}.json"
+        deadline = time.monotonic() + self.timeout_s
+        while time.monotonic() < deadline:
+            try:
+                r = json.loads(self.s3.get_object(Bucket=self.bucket, Key=key)["Body"].read())
+                return SimpleNamespace(status=r.get("status"), lane=r.get("lane"),
+                                       error=r.get("error"))
+            except self.s3.exceptions.NoSuchKey:
+                time.sleep(self.poll_s)
+        raise TimeoutError(f"the ingest task wrote no result in {int(self.timeout_s // 60)} min "
+                           f"(see the IngestTask log group in CloudWatch)")
 
 
 def study_uid(path: Path) -> str:

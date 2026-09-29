@@ -62,3 +62,53 @@ def series_to_nifti(datasets, pixels=None) -> nib.Nifti1Image:
                     for d in slices], axis=-1)
     vol = np.round(vol).astype(np.int16).transpose(1, 0, 2)  # (rows, cols, k) -> (i, j, k)
     return nib.Nifti1Image(vol, LPS_TO_RAS @ lps)
+
+
+def ct_volume_bytes(datasets, pixels=None) -> bytes:
+    """A head CT study -> gzip NIfTI (int16 Hounsfield units), for the 3D viewer.
+
+    Takes the axial series with the most slices, sorts by position along the slice
+    normal and uses the median spacing, so a slightly uneven series still renders
+    (this is for looking at, not measuring: the models read the DICOM, not this).
+    pixels(ds), when given, supplies each instance's stored pixels (headers read
+    from a datastore carry none).
+    """
+    import os
+    import tempfile
+    by_series: dict[str, list] = {}
+    for d in datasets:
+        if hasattr(d, "ImageOrientationPatient") and hasattr(d, "ImagePositionPatient"):
+            by_series.setdefault(str(getattr(d, "SeriesInstanceUID", "")), []).append(d)
+    if not by_series:
+        raise ValueError("no positioned axial images")
+    series = max(by_series.values(), key=len)
+    slices = sort_slices(series)
+    iop = np.array(slices[0].ImageOrientationPatient, dtype=float)
+    row_dir, col_dir = iop[:3], iop[3:]
+    normal = np.cross(row_dir, col_dir)
+    pos = np.array([d.ImagePositionPatient for d in slices], dtype=float)
+    if len(slices) > 1:
+        along = pos @ normal
+        step = normal * float(np.median(np.diff(along)))
+    else:
+        step = normal * float(getattr(slices[0], "SliceThickness", 1.0))
+    dr, dc = (float(x) for x in slices[0].PixelSpacing)
+    lps = np.eye(4)
+    lps[:3, 0] = row_dir * dc
+    lps[:3, 1] = col_dir * dr
+    lps[:3, 2] = step
+    lps[:3, 3] = pos[0]
+    get = pixels or (lambda d: d.pixel_array)
+    shape = get(slices[0]).shape
+    vol = np.stack([apply_modality_lut(get(d), d) for d in slices if get(d).shape == shape],
+                   axis=-1)
+    vol = np.clip(np.round(vol), -1024, 3071).astype(np.int16).transpose(1, 0, 2)
+    img = nib.Nifti1Image(vol, LPS_TO_RAS @ lps)
+    fd, tmp = tempfile.mkstemp(suffix=".nii.gz")
+    os.close(fd)
+    try:
+        nib.save(img, tmp)
+        with open(tmp, "rb") as f:
+            return f.read()
+    finally:
+        os.unlink(tmp)
