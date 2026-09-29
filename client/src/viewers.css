@@ -41,39 +41,6 @@
   width: 100%;
 }
 
-/* 1. Terminal / Notebook Diagnostic Header (Exact format from CT_Mehak) */
-.ct-diagnostic-header {
-  background: #09090b;
-  color: #e4e4e7;
-  border: 1px solid #27272a;
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 11.5px;
-  line-height: 1.6;
-  box-shadow: var(--shadow);
-}
-
-.ct-diagnostic-header .meta-line {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-
-.ct-diagnostic-header .meta-key {
-  color: #a1a1aa;
-  font-weight: 500;
-}
-
-.ct-diagnostic-header .meta-val {
-  color: #f4f4f5;
-  font-weight: 500;
-}
-
-.ct-diagnostic-header .meta-finding {
-  color: #38bdf8;
-  font-weight: 500;
-}
-
 /* Toolbar Controls */
 .ct-toolbar-strip {
   display: flex;
@@ -82,15 +49,14 @@
   gap: 12px;
   flex-wrap: wrap;
   padding: 8px 12px;
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: var(--glass);
   border-radius: 8px;
 }
 
 .ct-mode-switcher {
   display: flex;
   gap: 4px;
-  background: var(--tag-bg);
+  background: var(--tint);
   padding: 2px;
   border-radius: 6px;
 }
@@ -114,7 +80,7 @@
 .ct-mode-btn.active {
   background: #ffffff;
   color: var(--ink);
-  box-shadow: var(--shadow);
+  box-shadow: var(--glass-hi);
   font-weight: 500;
 }
 
@@ -215,7 +181,6 @@
   background: #000000;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #27272a;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
@@ -261,7 +226,6 @@
   padding: 2px 6px;
   border-radius: 3px;
   pointer-events: none;
-  border: 1px solid rgba(56, 189, 248, 0.3);
 }
 
 .slice-badge, .colormap-badge {
@@ -280,7 +244,8 @@
 .ct-lime-bbox {
   position: absolute;
   box-sizing: border-box;
-  border: 2.5px solid #00ff00;
+  outline: 2.5px solid #00ff00;
+  outline-offset: -1px;
   pointer-events: none;
   box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
   animation: subtle-pulse 2.5s infinite ease-in-out;
@@ -363,144 +328,6 @@
   display: block;
 }
 
-/* Caption Card */
-.ct-caption-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.caption-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.caption-bold {
-  font-weight: 500;
-  color: var(--ink);
-}
-
-.caption-target-chip {
-  background: var(--tag-bg);
-  border: 1px solid var(--line);
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 10.5px;
-  color: var(--ink);
-}
-
-.caption-text {
-  margin: 0;
-  color: var(--ink-2);
-  line-height: 1.4;
-}
-
-/* Findings Section */
-.case-panel-findings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.section-heading {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink-3);
-
-  letter-spacing: 0;
-  margin: 0;
-}
-
-.findings-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.findings-table th {
-  text-align: left;
-  padding: 6px 10px;
-  background: var(--tag-bg);
-  color: var(--ink-3);
-  font-size: 10.5px;
-
-}
-
-.findings-table td {
-  padding: 7px 10px;
-  border-top: 1px solid var(--line);
-}
-
-.findings-table tr.driver-row td {
-  background: var(--tag-bg);
-  font-weight: 500;
-}
-
-/* Verdict Section */
-.case-panel-verdict-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-
-.verdict-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.verdict-title {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--ink);
-}
-
-.verdict-status-note {
-  font-size: 11px;
-  color: var(--ink-2);
-}
-
-.verdict-actions {
-  display: flex;
-  gap: 10px;
-}
-
-/* Draft Note */
-.case-panel-draft {
-  margin-top: 6px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 12px;
-  background: var(--tag-bg);
-}
-
-.case-panel-draft summary {
-  cursor: pointer;
-  font-weight: 500;
-  color: var(--ink-2);
-}
-
-.draft-content {
-  font-size: 11px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  margin: 8px 0 0;
-  color: var(--ink-2);
-}
-
 /* --------------------------------------------------------------------------
    3D NiiVue MPR Workstation Styles (PACS Grade)
 -------------------------------------------------------------------------- */
@@ -512,7 +339,6 @@
   padding: 16px;
   border-radius: 12px;
   color: #f4f4f5;
-  border: 1px solid #27272a;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
@@ -523,7 +349,6 @@
   gap: 12px;
   flex-wrap: wrap;
   padding-bottom: 12px;
-  border-bottom: 1px solid #27272a;
 }
 
 .toolbar-group {
@@ -546,7 +371,6 @@
   background: #18181b;
   padding: 3px;
   border-radius: 8px;
-  border: 1px solid #27272a;
 }
 
 .segmented-btn {
@@ -569,7 +393,7 @@
 
 .segmented-btn.active {
   background: var(--ink);
-  color: var(--sheet);
+  color: var(--pill);
 }
 
 .segmentation-controls {
@@ -584,7 +408,6 @@
   gap: 6px;
   background: #18181b;
   color: #a1a1aa;
-  border: 1px solid #3f3f46;
   font-size: 11.5px;
   font-weight: 500;
   padding: 5px 10px;
@@ -594,13 +417,11 @@
 }
 
 .btn-toggle:hover {
-  border-color: #71717a;
   color: #ffffff;
 }
 
 .btn-toggle.active {
   background: rgba(0, 0, 0, 0.2);
-  border-color: var(--ink);
   color: #a1a1aa;
 }
 
@@ -624,7 +445,6 @@
   background: #18181b;
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1px solid #27272a;
 }
 
 .opacity-slider {
@@ -636,7 +456,6 @@
 
 .btn-tool-action {
   background: #18181b;
-  border: 1px solid #27272a;
   color: #a1a1aa;
   font-size: 11px;
   font-weight: 500;
@@ -652,9 +471,8 @@
 }
 
 .btn-tool-action.active {
-  background: var(--tag-bg);
+  background: var(--tint);
   color: var(--ink);
-  border-color: var(--line-strong);
 }
 
 /* Multi-Planar Orthogonal Viewports Grid */
@@ -680,7 +498,6 @@
   background: #000000;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #27272a;
   height: 100%;
   display: flex;
   align-items: center;
@@ -693,7 +510,6 @@
   left: 8px;
   background: rgba(9, 9, 11, 0.85);
   backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #f4f4f5;
   font-size: 10px;
   font-weight: 500;
@@ -761,7 +577,6 @@
   gap: 10px;
   flex-wrap: wrap;
   padding-top: 12px;
-  border-top: 1px solid #27272a;
 }
 
 .metrics-group {
@@ -781,7 +596,6 @@
 
 .metric-chip {
   background: #18181b;
-  border: 1px solid #27272a;
   padding: 5px 10px;
   border-radius: 6px;
   font-size: 11.5px;
@@ -812,24 +626,31 @@
 
 .metric-chip.validation {
   background: rgba(0, 0, 0, 0.15);
-  border-color: rgba(0, 0, 0, 0.4);
   color: #a1a1aa;
 }
 .metric-chip.validation .metric-title { color: #a1a1aa; }
 .metric-chip.validation .metric-val { color: #ffffff; }
 
-/* The 2D Cornerstone viewer (main's rules; the redesign dropped them, which
-   left the viewport at zero height). */
+/* The 2D Cornerstone viewer: a solid dark canvas with one floating glass pill toolbar. */
 .viewer { display: flex; flex-direction: column; gap: 6px; }
-.viewer-tools { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-.viewer-tools button { padding: 4px 10px; border: 1px solid var(--line); border-radius: 3px;
-  background: var(--card); color: inherit; font: inherit; font-size: 12px; cursor: pointer; }
-.viewer-tools button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); }
-.slice { margin-left: 8px; }
-.viewer-label { margin-left: auto; font-weight: 500; letter-spacing: 0; }
-.viewport-wrap { position: relative; }
-.viewport { width: 100%; height: calc(100vh - 260px); min-height: 420px; background: #000; }
+.viewport-wrap { position: relative; border-radius: var(--r-card); overflow: hidden; background: #000; }
+.viewport { width: 100%; height: min(72vh, 760px); min-height: 420px; background: #000; }
+.viewer-tools {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 6;
+  display: flex; align-items: center; gap: 2px; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 20px);
+  padding: 5px; background: rgba(20, 24, 32, 0.74); border-radius: var(--r-pill); color: #fff;
+  box-shadow: 0 14px 34px -12px rgba(0, 0, 0, 0.7);
+}
+.viewer-tools button {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; background: transparent; color: rgba(255, 255, 255, 0.88);
+  border: 0; border-radius: var(--r-pill); box-shadow: none; font: inherit; font-size: 12.5px; cursor: pointer;
+}
+.viewer-tools button:hover { background: rgba(255, 255, 255, 0.16); }
+.viewer-tools button[aria-pressed="true"] { background: #ffffff; color: #16181d; }
+.slice { margin: 0 8px; font-size: 12.5px; color: rgba(255, 255, 255, 0.78); }
+.viewer-label { margin: 0 10px 0 4px; font-weight: 500; letter-spacing: 0; font-size: 12.5px; color: rgba(255, 255, 255, 0.78); }
 .overlay-layer { position: absolute; pointer-events: none; image-rendering: auto; }
+.pinpoint-active-mode .viewport, .pinpoint-active-mode .mri-canvas { cursor: crosshair; }
 
 /* Viewer viewport inside the case panel */
 /* The 2D viewer inside the latest-case panel: a panel-sized viewport. */
@@ -842,14 +663,13 @@
    Clinician Pinpoint Notes & Annotations Styling (PACS Grade)
 -------------------------------------------------------------------------- */
 .study-annotations-card {
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: var(--glass);
   border-radius: 12px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--glass-hi);
 }
 
 .annotations-header {
@@ -866,8 +686,7 @@
 }
 
 .annotations-count-badge {
-  background: var(--tag-bg);
-  border: 1px solid var(--line);
+  background: var(--tint);
   color: var(--ink);
   font-size: 11px;
   font-weight: 500;
@@ -876,8 +695,7 @@
 }
 
 .btn-add-pinpoint, .btn-pin-mode {
-  background: var(--tag-bg);
-  border: 1px solid var(--line-strong);
+  background: var(--tint);
   color: var(--ink);
   font-size: 11.5px;
   font-weight: 500;
@@ -891,15 +709,13 @@
 }
 
 .btn-add-pinpoint:hover, .btn-pin-mode:hover {
-  background: var(--tag-bg);
+  background: var(--tint);
   color: var(--ink);
-  border-color: var(--ink);
 }
 
 .btn-add-pinpoint.active, .btn-pin-mode.active {
   background: var(--ink);
-  color: var(--sheet);
-  border-color: var(--ink);
+  color: var(--pill);
 }
 
 .pin-mode-banner, .mri-pin-instruction-hud, .ct-pin-instruction-hud, .cxr-pin-instruction-hud {
@@ -907,7 +723,6 @@
   align-items: center;
   gap: 8px;
   background: rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(0, 0, 0, 0.35);
   color: #a1a1aa;
   font-size: 11.5px;
   padding: 8px 12px;
@@ -940,8 +755,7 @@
 }
 
 .annotation-item-card {
-  background: var(--tag-bg);
-  border: 1px solid var(--line);
+  background: var(--tint);
   border-radius: 8px;
   padding: 10px 12px;
   display: flex;
@@ -952,13 +766,11 @@
 }
 
 .annotation-item-card:hover {
-  border-color: var(--ink);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .annotation-item-card.selected {
-  border-color: var(--ink);
-  background: var(--tag-bg);
+  background: var(--tint);
   box-shadow: 0 0 0 1px var(--ink);
 }
 
@@ -1021,7 +833,6 @@
   background: rgba(0, 0, 0, 0.05);
   padding: 2px 5px;
   border-radius: 3px;
-  border: 1px solid var(--line);
 }
 
 .ann-card-actions {
@@ -1032,7 +843,6 @@
 
 .btn-ann-action {
   background: transparent;
-  border: 1px solid var(--line);
   color: var(--ink-2);
   font-size: 10.5px;
   font-weight: 500;
@@ -1043,14 +853,12 @@
 }
 
 .btn-ann-action:hover {
-  background: var(--card);
+  background: var(--glass);
   color: var(--ink);
-  border-color: var(--ink-2);
 }
 
 .btn-ann-action.delete-btn:hover {
   color: #ef4444;
-  border-color: #ef4444;
   background: rgba(239, 68, 68, 0.1);
 }
 
@@ -1063,7 +871,6 @@
 .btn-ann-action.delete-confirm {
   background: #ef4444;
   color: #ffffff;
-  border-color: #ef4444;
 }
 
 .ann-text-body {
@@ -1080,7 +887,6 @@
   justify-content: space-between;
   font-size: 10px;
   padding-top: 4px;
-  border-top: 1px solid var(--line);
 }
 
 /* --------------------------------------------------------------------------
@@ -1113,16 +919,15 @@
   width: 10px;
   height: 10px;
   background: #ef4444;
-  border: 2px solid #ffffff;
   border-radius: 50%;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.8), 0 2px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 2px #ffffff, 0 0 8px rgba(239, 68, 68, 0.8), 0 2px 4px rgba(0, 0, 0, 0.4);
   transition: transform 0.15s ease;
 }
 
 .pin-pulse {
   position: absolute;
   inset: -4px;
-  border: 2px solid #ef4444;
+  box-shadow: 0 0 0 2px #ef4444;
   border-radius: 50%;
   opacity: 0.6;
   animation: pin-ripple 2s infinite ease-out;
@@ -1137,7 +942,6 @@
 .pin-marker-point.selected .pin-dot {
   transform: scale(1.3);
   background: #38bdf8;
-  border-color: #ffffff;
   box-shadow: 0 0 12px #38bdf8, 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
@@ -1149,7 +953,6 @@
   background: rgba(9, 9, 11, 0.92);
   backdrop-filter: blur(6px);
   color: #f4f4f5;
-  border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 6px 10px;
   border-radius: 6px;
   font-size: 11px;
@@ -1160,153 +963,6 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   pointer-events: none;
   z-index: 40;
-}
-
-/* --------------------------------------------------------------------------
-   Clinician Note Editor Modal
--------------------------------------------------------------------------- */
-.note-editor-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-  animation: fade-in 0.15s ease-out;
-}
-
-.note-editor-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  width: 100%;
-  max-width: 480px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-  animation: scale-up 0.2s ease-out;
-}
-
-@keyframes scale-up {
-  0% { transform: scale(0.95); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.note-editor-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 12px;
-}
-
-.header-title-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.editor-icon {
-  font-size: 16px;
-}
-
-.editor-title {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--ink);
-  margin: 0;
-}
-
-.btn-modal-close {
-  background: transparent;
-  border: none;
-  color: var(--ink-2);
-  font-size: 16px;
-  cursor: pointer;
-  padding: 4px;
-}
-.btn-modal-close:hover {
-  color: var(--ink);
-}
-
-.note-spatial-hud {
-  background: var(--tag-bg);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 11.5px;
-}
-
-.spatial-hud-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.hud-label {
-  color: var(--ink-2);
-  font-weight: 500;
-}
-
-.hud-val {
-  color: var(--ink);
-}
-
-.text-accent {
-  color: var(--ink);
-  font-weight: 500;
-}
-
-.note-editor-form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.editor-input-label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink);
-}
-
-.note-textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  background: var(--card);
-  color: var(--ink);
-  font-family: inherit;
-  font-size: 13px;
-  line-height: 1.5;
-  resize: vertical;
-  min-height: 90px;
-  outline: none;
-  transition: border-color 0.15s ease;
-}
-
-.note-textarea:focus {
-  border-color: var(--ink);
-  box-shadow: 0 0 0 2px var(--tag-bg);
-}
-
-.note-editor-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
 }
 
 /* --------------------------------------------------------------------------
@@ -1355,8 +1011,7 @@
   height: 18px;
   border-radius: 50%;
   background: #ef4444;
-  border: 2px solid #ffffff;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.9), 0 0 4px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 0 2px #ffffff, 0 0 10px rgba(239, 68, 68, 0.9), 0 0 4px rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1369,8 +1024,7 @@
 
 .mri-pin-marker.selected .mri-pin-core {
   background: #a1a1aa;
-  border-color: var(--tag-bg);
-  box-shadow: 0 0 14px rgba(139, 92, 246, 1.0), 0 0 6px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 0 0 2px #ffffff, 0 0 14px rgba(47, 107, 242, 1.0), 0 0 6px rgba(0, 0, 0, 0.9);
 }
 
 .mri-pin-pulse {
@@ -1379,15 +1033,15 @@
   height: 32px;
   border-radius: 50%;
   background: rgba(239, 68, 68, 0.35);
-  border: 1px solid rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.6);
   animation: mri-pin-pulse-anim 2s infinite ease-out;
   pointer-events: none;
   z-index: 1;
 }
 
 .mri-pin-marker.selected .mri-pin-pulse {
-  background: rgba(139, 92, 246, 0.4);
-  border-color: rgba(139, 92, 246, 0.8);
+  background: rgba(47, 107, 242, 0.4);
+  box-shadow: 0 0 0 1px rgba(47, 107, 242, 0.8);
 }
 
 @keyframes mri-pin-pulse-anim {
@@ -1404,7 +1058,6 @@
 .mri-pin-popover {
   position: absolute;
   background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(139, 92, 246, 0.6);
   backdrop-filter: blur(10px);
   border-radius: 8px;
   padding: 8px 12px;
@@ -1434,8 +1087,10 @@
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  border: 5px solid transparent;
-  border-top-color: rgba(15, 23, 42, 0.95);
+  width: 10px;
+  height: 6px;
+  background: rgba(15, 23, 42, 0.95);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
 .mri-pin-popover.popover-below {
@@ -1450,8 +1105,10 @@
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  border: 5px solid transparent;
-  border-bottom-color: rgba(15, 23, 42, 0.95);
+  width: 10px;
+  height: 6px;
+  background: rgba(15, 23, 42, 0.95);
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
 }
 
 .mri-pin-popover.popover-align-left {
@@ -1479,7 +1136,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 4px;
 }
 
@@ -1495,7 +1151,6 @@
   border-radius: 4px;
   background: rgba(239, 68, 68, 0.25);
   color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.4);
 }
 
 .popover-note-text {
@@ -1518,7 +1173,6 @@
   bottom: 12px;
   right: 12px;
   background: rgba(15, 23, 42, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(6px);
   border-radius: 8px;
   padding: 6px 10px;
@@ -1541,7 +1195,7 @@
   height: 20px;
   border-radius: 50%;
   background: #ef4444;
-  border: 1px solid #ffffff;
+  box-shadow: 0 0 0 1px #ffffff;
   color: #ffffff;
   font-size: 10px;
   font-weight: 500;
@@ -1565,12 +1219,10 @@
   gap: 6px;
   margin-top: 6px;
   padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .btn-popover-action {
   background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 4px;
   color: #f1f5f9;
   font-size: 10px;
@@ -1581,72 +1233,25 @@
 }
 
 .btn-popover-action:hover {
-  background: rgba(139, 92, 246, 0.3);
-  border-color: #a1a1aa;
+  background: rgba(47, 107, 242, 0.3);
   color: #ffffff;
 }
 
 .btn-popover-focus {
-  background: rgba(139, 92, 246, 0.25);
-  border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(47, 107, 242, 0.25);
   color: #a1a1aa;
 }
 
 .btn-popover-delete {
   color: #fca5a5;
-  border-color: rgba(239, 68, 68, 0.3);
   margin-left: auto;
 }
 
 .btn-popover-delete:hover {
   background: rgba(239, 68, 68, 0.35);
-  border-color: #ef4444;
 }
 
-/* Quick Clinical Template Chips */
-.editor-quick-templates {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.quick-templates-label {
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--ink-2);
-}
-
-.template-chips-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.btn-template-chip {
-  background: var(--tag-bg);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--ink);
-  font-size: 11px;
-  font-weight: 500;
-  padding: 4px 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-align: left;
-}
-
-.btn-template-chip:hover {
-  background: var(--tag-bg);
-  border-color: var(--ink);
-  color: var(--ink);
-  transform: translateY(-1px);
-}
-
-.editor-shortcut-hint {
-  font-size: 10.5px;
-  color: var(--ink-3);
-  margin-right: auto;
-}
+.template-chips-row { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .mri-pin-marker.in-slice .mri-pin-core {
   box-shadow: 0 0 12px rgba(239, 68, 68, 1.0), 0 0 0 2px rgba(255, 255, 255, 0.8);
@@ -1664,3 +1269,52 @@
 @container (max-width: 430px) {
   .ct-triview-grid, .ct-dualview-grid { grid-template-columns: 1fr; }
 }
+
+/* ---------------------------------------------------------------------------
+   Glass toolbars over solid dark canvases. The images and volumes stay on their
+   own opaque dark canvas; only the controls around them are glass.
+--------------------------------------------------------------------------- */
+.ct-gradcam-container { display: grid; gap: 12px; }
+.ct-toolbar-strip {
+  padding: 6px 8px; width: fit-content; max-width: 100%; gap: 10px 14px;
+  background: var(--glass); border-radius: var(--r-pill); box-shadow: var(--glass-hi);
+}
+.ct-mode-switcher { background: transparent; padding: 0; gap: 2px; border-radius: var(--r-pill); }
+.ct-mode-btn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 14px; border-radius: var(--r-pill);
+  font-size: var(--fs-meta); font-weight: 400; color: var(--ink-2); background: transparent; box-shadow: none;
+}
+.ct-mode-btn:hover { color: var(--ink); }
+.ct-mode-btn.active { background: var(--pill); color: var(--ink); box-shadow: var(--pill-shadow); font-weight: 500; }
+.ct-toggle-item { color: var(--ink-2); font-size: var(--fs-meta); }
+.ct-panel-frame, .ct-single-wrapper, .ct-gradcam-stage, .ct-composite-wrapper { border-radius: var(--r-card); overflow: hidden; background: #000; }
+.ct-panel-title { font-size: var(--fs-meta); font-weight: 400; color: var(--ink-2); }
+
+.mri-3d-workstation { background: #0c0e12; border-radius: var(--r-card); padding: 12px; box-shadow: none; }
+.mri-toolbar { padding-bottom: 8px; gap: 8px; }
+.segmented-group { background: rgba(255, 255, 255, 0.08); border-radius: var(--r-pill); padding: 4px; gap: 2px; }
+.segmented-btn { border-radius: var(--r-pill); padding: 6px 14px; color: rgba(255, 255, 255, 0.72); }
+.segmented-btn:hover { color: #ffffff; }
+.segmented-btn.active { background: #ffffff; color: #16181d; }
+.btn-toggle, .btn-tool-action {
+  border-radius: var(--r-pill); padding: 6px 14px; background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.86);
+}
+.btn-toggle:hover, .btn-tool-action:hover { background: rgba(255, 255, 255, 0.16); }
+.btn-toggle.active, .btn-tool-action.active { background: #ffffff; color: #16181d; }
+.viewport-cell { border-radius: 14px; }
+.mri-loading-indicator { gap: 10px; }
+
+/* Notes on the analysis page and the pin tools */
+.btn-add-pinpoint, .btn-pin-mode {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 14px; border-radius: var(--r-pill);
+  background: var(--pill); color: var(--ink); box-shadow: var(--pill-shadow); font-size: var(--fs-meta); font-weight: 500; cursor: pointer;
+}
+.btn-add-pinpoint:hover, .btn-pin-mode:hover { background: var(--pill-hover); color: var(--blue-ink); }
+.btn-add-pinpoint.active, .btn-pin-mode.active { background: var(--ink); color: var(--on-ink); }
+.btn-ann-action { border-radius: var(--r-pill); background: var(--pill); box-shadow: var(--pill-shadow); }
+.annotation-item-card { border-radius: var(--r-small); }
+.study-annotations-card { padding: 20px; }
+.annotations-count-badge, .ann-coords-tag { border-radius: var(--r-pill); }
+.note-textarea { width: 100%; min-height: 120px; }
+.note-anchor { margin-top: -8px; }
+.mri-loading-indicator .spinner { width: 20px; height: 20px; }
