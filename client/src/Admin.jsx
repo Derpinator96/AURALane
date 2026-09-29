@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { timeUTC } from "./worklist.js";
 import { Assignments, Pipeline } from "./AdminOps.jsx";
 
@@ -21,7 +21,7 @@ function useLoad(load) {
 
 function Loaded({ state, what, children }) {
   if (state.error) return <p className="error" role="alert">Could not load {what}: {String(state.error.message)}</p>;
-  if (!state.data) return <p>Loading {what}.</p>;
+  if (!state.data) return <p className="note">Loading {what}.</p>;
   return children(state.data);
 }
 
@@ -33,26 +33,29 @@ export function Audit({ load }) {
   return (
     <Loaded state={state} what="the audit log">
       {(d) => (
-        <>
-          <p className="note">Append only: the table refuses updates and deletes. Newest first; showing {d.events.length} of {d.total}.</p>
+        <section className="panel">
+          <div className="card-head">
+            <h2 className="card-title">Audit log</h2>
+            <span className="chip chip-quiet">Showing {d.events.length} of {d.total}, newest first</span>
+          </div>
           <table className="admin" data-testid="audit">
             <thead><tr><th>Time (UTC)</th><th>Actor</th><th>Action</th><th>Study</th><th>Outcome</th><th>ms</th><th>Detail</th></tr></thead>
             <tbody>
               {d.events.map((e) => (
                 <tr key={e.event_id}>
                   <td className="mono">{e.at?.slice(0, 10)} {timeUTC(e.at)}</td>
-                  <td className="mono">{e.actor}</td>
+                  <td className="mono-id">{e.actor}</td>
                   <td>{e.action}</td>
-                  <td className="mono">{e.study}</td>
+                  <td className="mono-id">{e.study}</td>
                   <td>{e.outcome}</td>
                   <td className="mono num">{e.duration_ms}</td>
-                  <td className="mono detail">{detailText(e.detail)}</td>
+                  <td className="mono-id detail">{detailText(e.detail)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {d.events.length === 0 && <p>No audit events yet.</p>}
-        </>
+          {d.events.length === 0 && <p className="empty-line">No audit events yet</p>}
+        </section>
       )}
     </Loaded>
   );
@@ -63,14 +66,17 @@ export function LaneMix({ load }) {
   return (
     <Loaded state={state} what="the lane mix">
       {(d) => (
-        <>
+        <section className="panel">
+          <div className="card-head">
+            <h2 className="card-title">Lane mix</h2>
+            {d.placed_by_human != null && (
+              <span className="chip" data-testid="placed-by-human">
+                Placed by a human after the system abstained: <strong className="mono">{d.placed_by_human}</strong>
+                {" "}of <span className="mono">{d.total}</span> studies
+              </span>
+            )}
+          </div>
           <p className="note">{d.basis}.</p>
-          {d.placed_by_human != null && (
-            <p data-testid="placed-by-human">
-              Placed by a human after the system abstained: <strong className="mono">{d.placed_by_human}</strong>
-              {" "}of <span className="mono">{d.total}</span> studies.
-            </p>
-          )}
           <table className="admin" data-testid="lane-mix">
             <thead><tr><th>Lane</th><th>Studies</th><th>Share</th><th className="barcol" aria-hidden="true" /></tr></thead>
             <tbody>
@@ -84,7 +90,7 @@ export function LaneMix({ load }) {
               ))}
             </tbody>
           </table>
-        </>
+        </section>
       )}
     </Loaded>
   );
@@ -99,68 +105,72 @@ export function Thresholds({ load }) {
     <Loaded state={state} what="the thresholds">
       {(d) => (
         <>
-          <p className="note">
-            Read only. Lane floors and the abstention band are set in triage.py, operating points in
-            models/registry.json. Changing one re-lanes every study, so it is a reviewed code change,
-            not a setting.
-          </p>
-          <h2>Lanes by acuity</h2>
-          <table className="admin" data-testid="lane-floors">
-            <thead><tr><th>Lane</th><th>Acuity at least</th><th>Clock</th></tr></thead>
-            <tbody>
-              {d.lanes.map((l) => (
-                <tr key={l.lane} className={`lane-${l.lane}`}>
-                  <td className="lanetag">{l.lane}</td><td className="mono num">{l.acuity_floor}</td><td>{l.clock}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <h2>Abstention</h2>
-          <p data-testid="abstain-band">
-            If the driving finding's signal is between <span className="mono">{d.abstain_band[0]}</span> and{" "}
-            <span className="mono">{d.abstain_band[1]}</span>, no lane is assigned and a radiologist places the study.
-          </p>
-          <h2>Operating points per model</h2>
-          {d.models.map((m) => (
-            <div key={m.id} className="opoints">
-              <h3 className="mono">{m.id}</h3>
-              {m.z_anchor && (
-                <p>Each finding is scored against its own reference distribution ({m.reference}). Signal is 0 at
-                  z = <span className="mono">{m.z_anchor[0]}</span> and 1 at z = <span className="mono">{m.z_anchor[1]}</span>.</p>
-              )}
-              {m.anchors && (
-                <table className="admin">
-                  <thead><tr><th>Finding</th><th>Signal 0 at</th><th>Signal 1 at</th><th>Unit</th></tr></thead>
-                  <tbody>
-                    {Object.entries(m.anchors).map(([k, [lo, hi]]) => (
-                      <tr key={k}><td className="mono">{k}</td><td className="mono num">{lo}</td><td className="mono num">{hi}</td><td>{ANCHOR_UNITS[k] || ""}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-              {m.anchors && Object.keys(m.urgency).filter((k) => !(k in m.anchors)).map((k) => (
-                <p key={k}><span className="mono">{k}</span> has no anchor of its own: {m.adapter} derives it from the anchored findings.</p>
-              ))}
-              {m.mask_check && (
-                <>
-                  <p>Segmentation check, run before scoring. Failing any row sends the study to a radiologist as not automatically verified.</p>
-                  <table className="admin" data-testid="mask-check">
-                    <thead><tr><th>Criterion</th><th>Must be</th></tr></thead>
+          <section className="panel">
+            <div className="card-head">
+              <h2 className="card-title">Lanes by acuity</h2>
+              <span className="chip chip-quiet">Read only: a change re-lanes every study</span>
+            </div>
+            <table className="admin" data-testid="lane-floors">
+              <thead><tr><th>Lane</th><th>Acuity at least</th><th>Clock</th></tr></thead>
+              <tbody>
+                {d.lanes.map((l) => (
+                  <tr key={l.lane} className={`lane-${l.lane}`}>
+                    <td className="lanetag">{l.lane}</td><td className="mono num">{l.acuity_floor}</td><td>{l.clock}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+          <section className="panel">
+            <h2 className="card-title">Abstention</h2>
+            <p data-testid="abstain-band">
+              If the driving finding's signal is between <span className="mono">{d.abstain_band[0]}</span> and{" "}
+              <span className="mono">{d.abstain_band[1]}</span>, no lane is assigned and a radiologist places the study.
+            </p>
+          </section>
+          <section className="panel">
+            <h2 className="card-title">Operating points per model</h2>
+            {d.models.map((m) => (
+              <div key={m.id} className="opoints">
+                <h3 className="mono-id">{m.id}</h3>
+                {m.z_anchor && (
+                  <p>Each finding is scored against its own reference distribution ({m.reference}). Signal is 0 at
+                    z = <span className="mono">{m.z_anchor[0]}</span> and 1 at z = <span className="mono">{m.z_anchor[1]}</span>.</p>
+                )}
+                {m.anchors && (
+                  <table className="admin">
+                    <thead><tr><th>Finding</th><th>Signal 0 at</th><th>Signal 1 at</th><th>Unit</th></tr></thead>
                     <tbody>
-                      <tr><td>Share of predicted tumour inside the brain</td><td className="mono num">at least {m.mask_check.inside_brain_min}</td></tr>
-                      <tr><td>Predicted edema on FLAIR, z against the rest of the brain</td><td className="mono num">above {m.mask_check.flair_edema_z_min}</td></tr>
-                      <tr><td>Predicted enhancing tumour on T1c, z against the rest of the brain</td><td className="mono num">above {m.mask_check.t1c_et_z_min}</td></tr>
-                      <tr><td>Largest connected piece, share of the whole tumour</td><td className="mono num">at least {m.mask_check.largest_component_min}</td></tr>
+                      {Object.entries(m.anchors).map(([k, [lo, hi]]) => (
+                        <tr key={k}><td className="mono-id">{k}</td><td className="mono num">{lo}</td><td className="mono num">{hi}</td><td>{ANCHOR_UNITS[k] || ""}</td></tr>
+                      ))}
                     </tbody>
                   </table>
-                  <p className="note">The largest-piece criterion is expected to misfire on multifocal disease (metastases, multifocal glioma); it abstains rather than ranks, and is the first to loosen if it fires on real data.</p>
-                </>
-              )}
-              {m.min_tumor_ml != null && (
-                <p>Whole tumour below <span className="mono">{m.min_tumor_ml}</span> ml abstains: the model was trained only on scans with tumours.</p>
-              )}
-            </div>
-          ))}
+                )}
+                {m.anchors && Object.keys(m.urgency).filter((k) => !(k in m.anchors)).map((k) => (
+                  <p key={k}><span className="mono-id">{k}</span> has no anchor of its own: {m.adapter} derives it from the anchored findings.</p>
+                ))}
+                {m.mask_check && (
+                  <>
+                    <p>Segmentation check, run before scoring. Failing any row sends the study to a radiologist as not automatically verified.</p>
+                    <table className="admin" data-testid="mask-check">
+                      <thead><tr><th>Criterion</th><th>Must be</th></tr></thead>
+                      <tbody>
+                        <tr><td>Share of predicted tumour inside the brain</td><td className="mono num">at least {m.mask_check.inside_brain_min}</td></tr>
+                        <tr><td>Predicted edema on FLAIR, z against the rest of the brain</td><td className="mono num">above {m.mask_check.flair_edema_z_min}</td></tr>
+                        <tr><td>Predicted enhancing tumour on T1c, z against the rest of the brain</td><td className="mono num">above {m.mask_check.t1c_et_z_min}</td></tr>
+                        <tr><td>Largest connected piece, share of the whole tumour</td><td className="mono num">at least {m.mask_check.largest_component_min}</td></tr>
+                      </tbody>
+                    </table>
+                    <p className="note">The largest-piece criterion is expected to misfire on multifocal disease; it abstains rather than ranks.</p>
+                  </>
+                )}
+                {m.min_tumor_ml != null && (
+                  <p>Whole tumour below <span className="mono">{m.min_tumor_ml}</span> ml abstains: the model was trained only on scans with tumours.</p>
+                )}
+              </div>
+            ))}
+          </section>
         </>
       )}
     </Loaded>
@@ -172,18 +182,17 @@ export function Registry({ load }) {
   return (
     <Loaded state={state} what="the model registry">
       {(d) => (
-        <>
-          <p className="note">From models/registry.json, validated at startup. Adding a model is an entry and an adapter; triage does not change.</p>
+        <div className="cards-grid">
           {d.models.map((m) => (
-            <div key={m.id} className="model" data-testid="model">
-              <h2 className="mono">{m.id}</h2>
+            <section key={m.id} className="panel model" data-testid="model">
+              <h2 className="mono-id">{m.id}</h2>
               <dl>
                 <dt>Modality</dt><dd>{m.modality} {m.body_part}</dd>
                 <dt>Read by</dt><dd>{m.reading_pool} reading pool</dd>
-                <dt>Runs on</dt><dd className="mono">{m.runtime}</dd>
-                <dt>Input</dt><dd className="mono">{m.input.format}, {m.input.dims}D{m.input.channels ? `, ${m.input.channels.join(" ")}` : ""}</dd>
-                <dt>Output</dt><dd className="mono">{m.output_type}</dd>
-                <dt>Adapter</dt><dd className="mono">{m.adapter}</dd>
+                <dt>Runs on</dt><dd className="mono-id">{m.runtime}</dd>
+                <dt>Input</dt><dd className="mono-id">{m.input.format}, {m.input.dims}D{m.input.channels ? `, ${m.input.channels.join(" ")}` : ""}</dd>
+                <dt>Output</dt><dd className="mono-id">{m.output_type}</dd>
+                <dt>Adapter</dt><dd className="mono-id">{m.adapter}</dd>
               </dl>
               <table className="admin">
                 <thead><tr><th>Finding</th><th>Urgency weight</th></tr></thead>
@@ -193,9 +202,9 @@ export function Registry({ load }) {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </section>
           ))}
-        </>
+        </div>
       )}
     </Loaded>
   );
@@ -236,33 +245,27 @@ export function Intake({ load, start }) {
   }
 
   if (error && !state) return <p className="error" role="alert">Could not load the intake: {String(error.message)}</p>;
-  if (!state) return <p>Loading the intake.</p>;
+  if (!state) return <p className="note">Loading the intake.</p>;
   const c = state.catalogue || {};
   const items = state.items || [];
   return (
-    <section data-testid="intake">
-      <p className="note">
-        {state.runtime === "aws"
-          ? "Copies real studies from the corpus in S3 into the upload area; each one starts its own ingest task in AWS (de-identification, HealthImaging, the model, the worklist)."
-          : "Ingests real studies from this machine's corpus through the full pipeline, in this process."}
-        {" "}Every brain MR and head CT study available, chest X-rays to make up {INTAKE_COUNT}, in a shuffled
-        arrival order. Lanes come from the models; only the arrival order is simulated. New rows appear on
-        the radiologists' worklist as each study finishes.
-      </p>
-      <p className="note">
-        Corpus on this host: {c.CR ?? 0} chest, {c.MR ?? 0} brain MR, {c.CT ?? 0} head CT.
-        Runtime: <span className="mono">{state.runtime}</span>.
-        {state.runtime === "aws" && " Each study is a HealthImaging import and a model call; costs in docs/AWS-COSTS.md."}
+    <section className="panel" data-testid="intake">
+      <div className="card-head">
+        <h2 className="card-title">Simulated intake</h2>
+        <button type="button" className="pill pill-primary" onClick={onStart} disabled={!state.available || state.running || busy}
+                data-testid="intake-start">
+          {state.running ? "Intake running" : `Ingest ${INTAKE_COUNT} studies`}
+        </button>
+      </div>
+      <p className="meta">
+        Corpus on this host: {c.CR ?? 0} chest, {c.MR ?? 0} brain MR, {c.CT ?? 0} head CT. Runtime: <span className="mono-id">{state.runtime}</span>.
+        {" "}Lanes come from the models; only the arrival order is simulated.
       </p>
       {!state.available && <p className="error" data-testid="intake-unavailable">Not available on this API: {state.reason}.</p>}
-      <button type="button" onClick={onStart} disabled={!state.available || state.running || busy}
-              data-testid="intake-start">
-        {state.running ? "Intake running" : `Ingest ${INTAKE_COUNT} studies`}
-      </button>
       {error && <p className="error" role="alert">{String(error.message)}</p>}
       {state.total != null && (
         <>
-          <p className="note" data-testid="intake-progress">
+          <p className="chip chip-quiet" data-testid="intake-progress">
             {state.running ? "Running" : "Finished"}: {state.done} scored, {state.failed} failed, of {state.total}
             {state.by ? `; started by ${state.by} at ${timeUTC(state.started_at)} UTC` : ""}.
           </p>
@@ -273,7 +276,7 @@ export function Intake({ load, start }) {
                 <tr key={i} className={it.lane ? `lane-${it.lane}` : ""}>
                   <td className="mono num">{i + 1}</td>
                   <td>{it.modality}</td>
-                  <td className="mono detail">{it.source}</td>
+                  <td className="mono-id detail">{it.source}</td>
                   <td>{it.status}{it.error ? `: ${it.error}` : ""}</td>
                   <td className="lanetag">{it.lane || "--"}</td>
                   <td className="mono num">{it.seconds ?? "--"}</td>
@@ -311,38 +314,34 @@ export function AccessRequests({ load, decide }) {
   return (
     <Loaded state={state} what="access requests">
       {(d) => (
-        <>
-          <p className="note">
-            The waitlist: accounts created from the sign-in page, waiting for a role. Each person
-            chose their own password; it is held by the identity provider, never by AURALANE. A
-            waiting account cannot sign in.
-          </p>
+        <section className="panel">
+          <h2 className="card-title">Waitlist</h2>
           <table className="admin" data-testid="access-requests">
             <thead><tr><th>Requested (UTC)</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th /></tr></thead>
             <tbody>
               {d.requests.map((r) => (
                 <tr key={r.username}>
                   <td className="mono">{r.requested_at?.slice(0, 10)} {timeUTC(r.requested_at)}</td>
-                  <td className="mono">{r.username}</td>
-                  <td className="mono">{r.email}</td>
+                  <td className="mono-id">{r.username}</td>
+                  <td className="mono-id">{r.email}</td>
                   <td>{r.role}</td>
                   <td>{r.status}{r.decided_by ? ` by ${r.decided_by}` : ""}</td>
                   <td>
                     {r.status === "pending" && (
-                      <>
-                        <button type="button" disabled={busy === r.username}
-                                onClick={() => onDecide(r.username, "approve")}>Approve</button>{" "}
-                        <button type="button" disabled={busy === r.username}
+                      <span className="row-actions">
+                        <button type="button" className="pill pill-sm pill-primary" disabled={busy === r.username}
+                                onClick={() => onDecide(r.username, "approve")}>Approve</button>
+                        <button type="button" className="pill pill-sm" disabled={busy === r.username}
                                 onClick={() => onDecide(r.username, "reject")}>Reject</button>
-                      </>
+                      </span>
                     )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {d.requests.length === 0 && <p>No access requests.</p>}
-        </>
+          {d.requests.length === 0 && <p className="empty-line">No access requests</p>}
+        </section>
       )}
     </Loaded>
   );
@@ -352,7 +351,7 @@ const TABS = [["pipeline", "Pipeline"], ["assignments", "Assignments"], ["audit"
               ["lanes", "Lane mix"], ["thresholds", "Thresholds"], ["models", "Model registry"],
               ["intake", "Simulated intake"]];
 
-// The sidebar (Shell.jsx) lists these, grouped; the routes below are unchanged.
+// The top bar (Shell.jsx) lists these, grouped; the routes below are unchanged.
 export const ADMIN_TABS = TABS;
 export const ADMIN_GROUPS = [
   { label: "Operations", tabs: TABS.filter(([p]) => ["pipeline", "assignments", "audit", "intake"].includes(p)) },
@@ -363,22 +362,25 @@ export const ADMIN_GROUPS = [
 export default function Admin({ loadAudit, loadLaneMix, loadModels, loadIntake, startIntake,
                                 superadmin = false, loadAccess, decideAccess,
                                 loadPipeline, loadPipelineStudy, loadAssignments, reassign }) {
+  const { pathname } = useLocation();
+  const title = TABS.concat([["access", "Waitlist"]]).find(([p]) => pathname.startsWith(`/admin/${p}`))?.[1] || "Cloud console";
+  useEffect(() => { document.title = `${title} · AURALane`; }, [title]);
   return (
-    <main className="adminpage">
-      <p className="note">Admins configure and audit the system. Studies are opened by radiologists only.</p>
+    <main className="page adminpage">
+      <header className="page-head"><h1 className="page-title">{title}</h1></header>
       <Routes>
-        <Route index element={<Navigate to="pipeline" replace />} />
+        <Route index element={<Navigate to="/admin/pipeline" replace />} />
         <Route path="pipeline" element={loadPipeline
-          ? <Pipeline load={loadPipeline} loadStudy={loadPipelineStudy} /> : <Navigate to="../audit" replace />} />
+          ? <Pipeline load={loadPipeline} loadStudy={loadPipelineStudy} /> : <Navigate to="/admin/audit" replace />} />
         <Route path="assignments" element={loadAssignments
-          ? <Assignments load={loadAssignments} reassign={reassign} /> : <Navigate to="../audit" replace />} />
+          ? <Assignments load={loadAssignments} reassign={reassign} /> : <Navigate to="/admin/audit" replace />} />
         <Route path="audit" element={<Audit load={loadAudit} />} />
         <Route path="lanes" element={<LaneMix load={loadLaneMix} />} />
         <Route path="thresholds" element={<Thresholds load={loadModels} />} />
         <Route path="models" element={<Registry load={loadModels} />} />
         <Route path="intake" element={<Intake load={loadIntake} start={startIntake} />} />
         {superadmin && <Route path="access" element={<AccessRequests load={loadAccess} decide={decideAccess} />} />}
-        <Route path="*" element={<Navigate to="pipeline" replace />} />
+        <Route path="*" element={<Navigate to="/admin/pipeline" replace />} />
       </Routes>
     </main>
   );

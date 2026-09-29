@@ -29,15 +29,15 @@ function Timeline({ study, load, onClose }) {
   useEffect(() => { load(study).then(setT).catch((e) => setError(e.message)); }, [study, load]);
   const max = t ? Math.max(...t.steps.map((s) => s.duration_ms), 1) : 1;
   return (
-    <section className="pipe-timeline" data-testid="pipeline-timeline" aria-label="Study timeline">
+    <section className="panel pipe-timeline" data-testid="pipeline-timeline" aria-label="Study timeline">
       <div className="pipe-timeline-head">
-        <h3>Study <span className="mono">{short(study)}</span>{t && <> {t.modality}, <span className={`lanetag lane-${t.lane}`}>{t.lane}</span></>}</h3>
-        <button type="button" onClick={onClose}>Close</button>
+        <h3>Study <span className="mono-id">{short(study)}</span>{t && <> {t.modality}, <span className={`lanetag lane-${t.lane}`}>{t.lane}</span></>}</h3>
+        <button type="button" className="pill pill-sm" onClick={onClose}>Close</button>
       </div>
       {error && <p className="error">{error}</p>}
       {t && (
         <>
-          <p className="note">End to end {secs(t.end_to_end_ms)}, model {t.model_id || "--"}, run <span className="mono">{t.run_id}</span>.</p>
+          <p className="note">End to end {secs(t.end_to_end_ms)}, model {t.model_id || "--"}, run <span className="mono-id">{t.run_id}</span>.</p>
           <table className="admin pipe-steps">
             <thead><tr><th>Step</th><th>Service</th><th>Duration</th><th /></tr></thead>
             <tbody>
@@ -71,11 +71,11 @@ export function Pipeline({ load, loadStudy }) {
 
   return (
     <div className="pipeline-view" data-testid="pipeline-view">
-      <p className="note">{data.basis} Refreshes every 2 seconds. {running ? "A simulate batch is running." : ""}</p>
+      {running && <p className="chip pipe-running">A simulate batch is running</p>}
 
       <ol className="pipe-flow" data-testid="pipe-flow">
         {stages.map((s) => (
-          <li key={s.stage} className={`pipe-stage ${s.count === 0 && s.failed === 0 ? "idle" : ""}`}>
+          <li key={s.stage} className={`card pipe-stage ${s.count === 0 && s.failed === 0 ? "idle" : ""}`}>
             <span className="pipe-label">{s.label}</span>
             <span className="pipe-service">{s.service || "no runs yet"}</span>
             <span className="pipe-count mono">{s.count}</span>
@@ -92,9 +92,10 @@ export function Pipeline({ load, loadStudy }) {
         </div>
       )}
 
-      <h2 className="pipe-h">Simulated studies since this API started</h2>
+      <section className="panel">
+      <h2 className="card-title">Simulated studies since this API started</h2>
       {data.live.length === 0 ? (
-        <p className="note">No simulate batch since this API started. Start one from the radiologist screen.</p>
+        <p className="empty-line">No simulate batch yet</p>
       ) : (
         <div className="pipe-live" data-testid="pipe-live">
           {data.live.map((l) => {
@@ -102,7 +103,7 @@ export function Pipeline({ load, loadStudy }) {
             return (
               <button type="button" key={l.study} className={`pipe-live-row ${l.failed ? "failed" : ""}`}
                       onClick={() => setOpen(l.study)} title="Show this study's timeline">
-                <span className="pipe-live-id mono">{l.type} {short(l.study)}</span>
+                <span className="pipe-live-id mono-id">{l.type} {short(l.study)}</span>
                 <span className="pipe-track" style={{ gridTemplateColumns: `repeat(${stages.length}, 1fr)` }}>
                   {stages.map((s, i) => (
                     <span key={s.stage}
@@ -118,12 +119,13 @@ export function Pipeline({ load, loadStudy }) {
           })}
         </div>
       )}
+      </section>
 
       {open && <Timeline study={open} load={loadStudy} onClose={() => setOpen(null)} />}
 
       <div className="pipe-totals">
-        <section>
-          <h2 className="pipe-h">Today ({data.totals.day}, UTC): {data.totals.studies} studies</h2>
+        <section className="panel">
+          <h2 className="card-title">Today ({data.totals.day}, UTC): {data.totals.studies} studies</h2>
           <table className="admin" data-testid="pipe-today">
             <thead><tr><th>Modality</th>{LANES.map((l) => <th key={l}>{l === "ABSTAIN" ? "HUMAN" : l}</th>)}<th>End to end, median</th></tr></thead>
             <tbody>
@@ -144,14 +146,14 @@ export function Pipeline({ load, loadStudy }) {
             </tbody>
           </table>
         </section>
-        <section>
-          <h2 className="pipe-h">Latest runs</h2>
-          {data.recent.length === 0 ? <p className="note">No pipeline runs recorded in this runtime.</p> : (
+        <section className="panel">
+          <h2 className="card-title">Latest runs</h2>
+          {data.recent.length === 0 ? <p className="empty-line">No pipeline runs recorded</p> : (
             <table className="admin">
               <tbody>
                 {data.recent.map((r) => (
                   <tr key={r.study} className="clickable" onClick={() => setOpen(r.study)}>
-                    <td className="mono">{short(r.study)}</td><td>{r.modality}</td>
+                    <td className="mono-id">{short(r.study)}</td><td>{r.modality}</td>
                     <td>{r.lane && <span className={`lanetag lane-${r.lane}`}>{r.lane}</span>}</td>
                     <td className="mono num">{secs(r.end_to_end_ms)}</td>
                     <td>{r.failed ? "failed" : ""}</td>
@@ -185,8 +187,9 @@ export function Assignments({ load, reassign }) {
   }
 
   return (
-    <div data-testid="assignments">
-      <p className="note">{data.clock} TODO: automatic reassignment.</p>
+    <div className="assignments" data-testid="assignments">
+      <section className="panel">
+      {data.clock && <p className="meta">{data.clock}</p>}
       <table className="admin" data-testid="assignments-readers">
         <thead>
           <tr><th>Reader</th><th>Pools</th>{data.lanes.map((l) => <th key={l}>{data.lane_labels[l]}</th>)}
@@ -203,14 +206,16 @@ export function Assignments({ load, reassign }) {
           ))}
         </tbody>
       </table>
-      <p className="note">{data.unassigned} unassigned.</p>
+      <p className="chip chip-quiet">{data.unassigned} unassigned</p>
+      </section>
+      <section className="panel">
       {msg && <p className="error" role="alert">{msg}</p>}
       <table className="admin" data-testid="assignments-studies">
         <thead><tr><th>Study</th><th>Lane</th><th>Pool</th><th>Arrived UTC</th><th>Opened</th><th>Reader</th></tr></thead>
         <tbody>
           {data.studies.map((s) => (
             <tr key={s.study} className={s.overdue ? "overdue" : ""} data-testid="assignment-row">
-              <td className="mono" title={s.study}>{short(s.study)}</td>
+              <td className="mono-id" title={s.study}>{short(s.study)}</td>
               <td><span className={`lanetag lane-${s.lane}`}>{s.lane_label}</span></td>
               <td>{s.pool}</td>
               <td className="mono">{timeUTC(s.arrived)}</td>
@@ -227,6 +232,7 @@ export function Assignments({ load, reassign }) {
           ))}
         </tbody>
       </table>
+      </section>
     </div>
   );
 }
