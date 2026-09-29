@@ -31,11 +31,11 @@
 .series-dot-0 { --dot: var(--blue); }
 .series-dot-1 { --dot: var(--navy); }
 .series-dot-2 { --dot: var(--lane-repeat); }
-.series-dot-idle { --dot: rgba(47, 107, 242, 0.24); }
+.series-dot-idle { --dot: var(--tick-idle); }
 .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .gauge { position: relative; width: min(100%, 300px); margin: 4px auto 0; }
 .gauge svg { display: block; width: 100%; height: auto; }
-.gauge .tick { stroke: rgba(47, 107, 242, 0.2); stroke-width: 6; }
+.gauge .tick { stroke: var(--tick-idle); stroke-width: 6; }
 .gauge .tick.on { stroke: var(--blue); }
 .gauge-centre { position: absolute; inset: auto 0 6px 0; display: grid; justify-items: center; gap: 0; }
 .gauge-number { font-size: var(--fs-stat); font-weight: 500; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
@@ -71,6 +71,7 @@
 .lane-group { display: flex; flex-direction: column; gap: 2px; }
 .lane-group-heading { display: flex; align-items: center; gap: 8px; padding: 12px 14px 6px; font-size: var(--fs-meta); font-weight: 500; }
 .lane-group-heading .clock, .lane-group-heading .count { color: var(--ink-2); font-weight: 400; }
+.lane-note { padding: 0 14px 6px 30px; color: var(--ink-2); font-size: var(--fs-meta); }
 
 .study-row {
   display: grid; grid-template-columns: 184px minmax(120px, 1fr) 118px 104px minmax(150px, 184px) 46px 46px 34px; gap: 10px;

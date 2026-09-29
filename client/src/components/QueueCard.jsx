@@ -220,6 +220,9 @@ export default function QueueCard({
                     {s.clock && <span className="clock"> · {s.clock}</span>}
                     <span className="count mono"> ({s.rows.length})</span>
                   </h3>
+                  {s.lane === "FAILED" && s.rows.length > 0 && (
+                    <p className="lane-note">Processing did not complete. The study is still in PACS; read it there.</p>
+                  )}
                   {s.rows.map((row) => (
                     <Row key={row.study} row={row} selected={row.study === selectedStudyId}
                          next={row.study === nextUpId} who={who} onSelect={onSelect} />

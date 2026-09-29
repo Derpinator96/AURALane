@@ -69,7 +69,7 @@
 .abstain-why { display: grid; gap: 8px; font-size: var(--fs-body); }
 .abstain-why p { margin: 0; }
 .band { position: relative; height: 10px; margin: 10px 4px 4px; border-radius: var(--r-pill); background: var(--tint); }
-.band-zone { position: absolute; top: 0; bottom: 0; border-radius: var(--r-pill); background: rgba(61, 90, 158, 0.3); }
+.band-zone { position: absolute; top: 0; bottom: 0; border-radius: var(--r-pill); background: var(--band-zone); }
 .band-marker { position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 3px var(--pill); }
 .tray-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .tray-form { display: grid; gap: 14px; }
@@ -119,7 +119,7 @@
 .study-analysis-sidebar { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .study-analysis-sidebar > * {
   background: var(--glass); border-radius: var(--r-card); padding: 20px; min-width: 0;
-  box-shadow: var(--glass-hi), 0 14px 30px -22px rgba(30, 52, 92, 0.3);
+  box-shadow: var(--glass-hi), var(--card-shadow);
 }
 .study-analysis-sidebar > .tray { background: var(--glass-strong); }
 .analysis-lane-card { display: grid; gap: 10px; }

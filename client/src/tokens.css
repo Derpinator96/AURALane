@@ -58,6 +58,13 @@
   --field-hover: rgba(255, 255, 255, 0.92);
   --tint: rgba(22, 24, 29, 0.05);            /* quiet fills: tracks, hovers, pressed */
   --scrim: rgba(255, 255, 255, 0.42);
+  --scroll-thumb: rgba(90, 100, 118, 0.35);
+  --check-off: rgba(90, 100, 118, 0.26);
+  --check-hover: rgba(47, 107, 242, 0.3);
+  --card-shadow: 0 14px 30px -22px rgba(30, 52, 92, 0.3);
+  --tick-idle: rgba(47, 107, 242, 0.2);
+  --band-zone: rgba(61, 90, 158, 0.3);
+  --on-accent: #ffffff;
 
   --ink: #16181d;
   --ink-2: #404856;
@@ -129,6 +136,13 @@
   --field-hover: rgba(255, 255, 255, 0.13);
   --tint: rgba(255, 255, 255, 0.07);
   --scrim: rgba(20, 23, 28, 0.5);
+  --scroll-thumb: rgba(180, 190, 206, 0.28);
+  --check-off: rgba(255, 255, 255, 0.2);
+  --check-hover: rgba(110, 163, 245, 0.4);
+  --card-shadow: 0 14px 30px -22px rgba(0, 0, 0, 0.6);
+  --tick-idle: rgba(110, 163, 245, 0.22);
+  --band-zone: rgba(110, 156, 240, 0.34);
+  --on-accent: #ffffff;
 
   --ink: #eceff4;
   --ink-2: #b4bcc9;
