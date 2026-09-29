@@ -41,7 +41,7 @@ test("a radiologist's verdict appears in the admin audit log; admins cannot open
   await page.screenshot({ path: "test-results/admin-models.png", fullPage: true });
 
   await page.goto("/studies/fixture-cr-ST-028");
-  await expect(page).toHaveURL(/\/admin\/audit$/);
+  await expect(page).toHaveURL(/\/admin\/pipeline$/);
   const token = await page.evaluate(() => JSON.parse(sessionStorage.getItem("auralane.session")).token);
   const res = await page.request.get("/api/studies/fixture-cr-ST-028", { headers: { Authorization: `Bearer ${token}` } });
   expect(res.status()).toBe(403);

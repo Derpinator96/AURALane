@@ -50,8 +50,9 @@ test("every screen carries the banner and footer, no badge, no third-party reque
   await signIn(page, "radiologist");
   await expect(page.getByTestId("study-row").first()).toBeVisible(); await check();
   await page.goto("/studies/fixture-cr-ST-028");
-  await expect(page.getByRole("button", { name: "Agree", exact: true })).toBeVisible(); await check();
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByRole("button", { name: "Agree with the lane" })).toBeVisible(); await check();
+  await page.getByTestId("user-menu").click();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
   await signIn(page, "admin");
   await expect(page.getByTestId("audit")).toBeVisible(); await check();
   expect(foreign).toEqual([]);

@@ -26,7 +26,7 @@ test("chest study displays, overlay is on when it opens and follows zoom", async
   await expect(page.getByRole("note", { name: "Non-diagnostic notice" })).toBeVisible();
 
   await expect(page.getByTestId("rationale-toggle")).toHaveText("Triage rationale: ON");
-  await expect(page.getByTestId("draft-panel")).toContainText("Draft, template generated, radiologist to review");
+  await expect(page.getByTestId("draft-panel")).toContainText("EXAMINATION");
   const layer = page.getByTestId("overlay-layer");
   await expect(layer).toBeVisible();
   const before = await layer.boundingBox();
