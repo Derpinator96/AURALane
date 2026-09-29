@@ -436,7 +436,9 @@
   box-shadow: 0 0 6px #10b981;
 }
 
-.slider-label {
+/* The dark chip belongs to the dark MRI toolbar only; everywhere else a slider label is
+   plain text on the glass (see study.css). */
+.mri-3d-workstation .slider-label {
   font-size: 11px;
   color: #a1a1aa;
   display: flex;
