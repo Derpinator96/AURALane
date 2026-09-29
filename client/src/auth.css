@@ -1,19 +1,18 @@
-/* Sign in, request access, privacy and terms: a single centred sheet. */
+/* Sign in, request access, privacy and terms: one centred glass card. */
 
-.login h1 { font-size: 18px; margin: 0 0 16px; }
-.login form { display: grid; gap: 12px; }
-.login label { display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); }
-.login input { width: 100%; }
-.login form > button { width: 100%; min-height: 36px; background: var(--sheet); border: 1px solid var(--ink); border-radius: var(--r-control); font-weight: 500; cursor: pointer; }
-.login form > button:hover:not(:disabled) { background: var(--hover); }
-.login .note { margin-top: 12px; }
-.login .note a, .legal a { text-decoration: underline; text-underline-offset: 2px; }
-.login .error { margin-top: 4px; }
+.login h1 { font-size: 30px; letter-spacing: -0.03em; margin: 0 0 22px; line-height: 1.1; }
+.login form { display: grid; gap: 18px; }
+.login .form-grid { gap: 16px; }
+.login input, .login select { width: 100%; }
+.login .wide { width: 100%; min-height: 44px; }
+.login .caption { margin-top: 14px; }
+.login .pill-quiet { margin-top: 14px; }
+.login .error { margin: 0; }
 
-.legal { max-width: 720px; margin: 0 auto; padding: 24px; }
-.sheet-body > .legal { padding: 32px 24px 48px; }
-.bare-sheet .legal { padding: 0; }
-.legal h1 { font-size: 18px; margin: 0 0 8px; }
-.legal h2 { font-size: 15px; margin: 24px 0 4px; }
-.legal p { color: var(--ink-2); margin: 4px 0 8px; }
+.legal { max-width: 720px; margin: 0 auto; padding: 8px 4px 16px; }
+.legal h1 { font-size: 34px; margin: 0 0 12px; letter-spacing: -0.03em; }
+.legal h2 { font-size: var(--fs-card); margin: 28px 0 6px; }
+.legal p { color: var(--ink-2); margin: 6px 0 10px; }
+.legal a { text-decoration: underline; text-underline-offset: 2px; color: var(--blue-ink); }
 .legal .admin { margin-top: 8px; }
+.bare-card .legal { padding: 0; }
