@@ -113,7 +113,13 @@ def to_uint16(data):
     which is deliberately not guessed at here.
     """
     if not np.issubdtype(data.dtype, np.integer):
-        raise NotImplementedError(f"{data.dtype} input: only integer volumes are handled")
+        # A float volume is accepted only when every value is a whole number
+        # (some BraTS exports store integer intensities as float32): the cast is
+        # then exact, and the read-back check still compares value for value.
+        if not (np.isfinite(data).all() and np.array_equal(data, np.round(data))):
+            raise NotImplementedError(f"{data.dtype} input with fractional values: only integer "
+                                      f"volumes are handled")
+        data = np.round(data).astype(np.int64)
     lo, hi = int(data.min()), int(data.max())
     intercept = min(lo, 0)
     if hi - intercept > 65535:

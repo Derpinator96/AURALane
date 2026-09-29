@@ -32,6 +32,7 @@ from __future__ import annotations
 import datetime
 import hashlib
 import hmac
+import logging
 import os
 import secrets
 import threading
@@ -43,7 +44,7 @@ from urllib.parse import quote, urlencode
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, PlainTextResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from pydantic import BaseModel, Field
 
 import triage
@@ -51,6 +52,8 @@ from core import assign as assignment
 from core import pipeline_view
 from core.registry import Registry
 from core.types import AuditEvent, Principal, StudyRef
+
+log = logging.getLogger("core.api")
 
 DISCLAIMER = "NON-DIAGNOSTIC; DECISION SUPPORT ONLY"
 NO_STUDY = "-"
@@ -141,7 +144,8 @@ class AnnotationPatch(BaseModel):
 UNASSIGNED = "Unassigned"          # no registered model for the study's modality
 CLOCK_MIN = {name: mins for name, _, _, mins in triage.LANES}
 # The NIfTI the 3D viewer can load, by the name the client asks for.
-SEQUENCES = {"t1c": "T1c", "t1ce": "T1c", "t1": "T1", "t2": "T2", "flair": "FLAIR"}
+SEQUENCES = {"t1c": "T1c", "t1ce": "T1c", "t1": "T1", "t2": "T2", "flair": "FLAIR",
+             "ct": "CT"}
 
 # Origins allowed to call the API from a browser when none are configured: the
 # Vite dev server and vite preview. In development the proxy makes every call
@@ -180,6 +184,18 @@ def create_app(p: dict, registry: Registry | None = None,
                cors_origins: list[str] | None = None) -> FastAPI:
     registry = registry or Registry()               # startup error on a bad registry
     app = FastAPI(title="AURALane API")
+
+    # An unhandled error must still carry the CORS headers, or the browser reports
+    # it as "Failed to fetch" and hides the cause. Added before CORSMiddleware, so
+    # it sits inside it.
+    @app.middleware("http")
+    async def _errors_as_json(request, call_next):
+        try:
+            return await call_next(request)
+        except Exception as e:                       # noqa: BLE001
+            log.exception("unhandled error on %s %s", request.method, request.url.path)
+            return JSONResponse({"detail": f"server error: {type(e).__name__}: {e}"},
+                                status_code=500)
     # The hosted client is on another origin. Tokens travel in the Authorization
     # header, never in a cookie, so credentials stay off; a wildcard origin can
     # therefore never be combined with credentials.
@@ -595,7 +611,7 @@ def create_app(p: dict, registry: Registry | None = None,
         key = (_evidence(study).get("volumes") or {}).get(channel)
         if not key:
             raise HTTPException(404, f"no {sequence} volume stored for this study; volumes are "
-                                     f"kept for brain MR ingested by this build")
+                                     f"kept for brain MR and head CT ingested by this build")
         return {"url": blob_url(key), "name": f"{channel.lower()}.nii.gz", "sequence": channel}
 
     @app.get("/api/studies/{study}/segmentation")

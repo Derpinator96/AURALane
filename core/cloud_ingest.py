@@ -55,10 +55,20 @@ def main() -> int:
                 state=state if state in states() else None,
                 enabled=os.environ.get("AURALANE_REGIONAL_PRIOR", "on").lower() != "off")
             p = run.providers(for_ingest=True)
+            extra = {}
+            identity = DynamoIdentityMap(os.environ["AURALANE_IDENTITY_TABLE"])
+            if manifest.get("predeidentified"):
+                # Staged and de-identified at the edge (scripts/stage_pool.py):
+                # checked here, not cleaned again.
+                identity, report = None, {}
+                if manifest.get("report_key"):
+                    report = json.loads(s3.get_object(
+                        Bucket=bucket, Key=manifest["report_key"])["Body"].read())
+                extra = {"edge_reports": report, "model_id": manifest.get("model_id"),
+                         "run_id": manifest.get("run_id")}
             v = ingest(files, blob=p["blob"], datastore=p["datastore"], table=p["table"],
-                       inference=p["inference"], registry=Registry(),
-                       identity=DynamoIdentityMap(os.environ["AURALANE_IDENTITY_TABLE"]),
-                       regional=regional)
+                       inference=p["inference"], registry=Registry(), identity=identity,
+                       regional=regional, **extra)
         result.update(status=v.status, lane=v.lane, error=v.error,
                       study=v.ref.study_uid if v.ref else None)
     except Exception as e:                           # recorded, then the task exits non-zero
@@ -70,7 +80,8 @@ def main() -> int:
         # The raw upload is gone once processed; the 1-day lifecycle is the backstop.
         with ThreadPoolExecutor(16) as pool:
             list(pool.map(lambda k: s3.delete_object(Bucket=bucket, Key=k),
-                          manifest["keys"] + [manifest_key]))
+                          manifest["keys"] + [manifest_key]
+                          + ([manifest["report_key"]] if manifest.get("report_key") else [])))
     print(json.dumps(result), flush=True)
     return 0 if result["status"] == "SCORED" else 1
 

@@ -283,7 +283,17 @@ def _simulator(prov: dict):
         if missing:
             return Simulator(None, None, table, runtime,
                              unavailable=f"{', '.join(missing)} not set on this API")
-        pool = S3Pool(boto3.client("s3", region_name=REGION), os.environ["AURALANE_BUCKET"])
+        s3 = boto3.client("s3", region_name=REGION)
+        pool = S3Pool(s3, os.environ["AURALANE_BUCKET"])
+        if os.environ.get("AURALANE_SIMULATE_IN_API", "").lower() != "on":
+            # Each study runs in its own Fargate ingest task (core/cloud_ingest.py):
+            # the hosted API is small and holds no pixels. In-API ingest stays
+            # behind AURALANE_SIMULATE_IN_API=on for a machine with the memory.
+            from core.simulate import CloudDispatch
+            return Simulator(pool, None, table, runtime, on_study=on_study, workers=8,
+                             dispatch=CloudDispatch(
+                                 s3, os.environ["AURALANE_BUCKET"],
+                                 site_state=os.environ.get("AURALANE_SITE_STATE") or None))
         local = threading.local()        # boto3 resources are per thread
 
         def ingest_one(paths, **kw):

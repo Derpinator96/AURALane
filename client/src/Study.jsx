@@ -322,6 +322,7 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
   const [opacity, setOpacity] = useState(0.6);
   const [busy, setBusy] = useState(false);
   const [view3D, setView3D] = useState(true);
+  const [ctView, setCtView] = useState("gradcam");   // head CT: "gradcam" | "3d"
 
   // Clinician Pinpoint Annotations State
   const [annotations, setAnnotations] = useState([]);
@@ -436,7 +437,8 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
   const isMR = detail.study.modality === "MR";
   const isCT = detail.study.modality === "CT";
   const has3D = Boolean(detail.evidence?.volumes);
-  const show3D = isMR && has3D && view3D;
+  const hasCtVolume = isCT && Boolean(detail.evidence?.volumes?.CT);
+  const show3D = (isMR && has3D && view3D) || (hasCtVolume && (ctView === "3d" || !hasCtGradcam(detail.evidence_urls || {})));
   const ev = detail.evidence || {};
   const urls = detail.evidence_urls || {};
   const overlay = rationale && urls.gradcam_layer_png && ev.gradcam_box && ev.gradcam_coverage !== 0
@@ -466,6 +468,14 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
                 </button>
               </div>
             )}
+            {hasCtVolume && hasCtGradcam(detail.evidence_urls || {}) && (
+              <div className="view-mode-toggle" role="group" aria-label="Viewer mode">
+                <button type="button" className={`mode-btn ${ctView === "gradcam" ? "active" : ""}`}
+                        onClick={() => setCtView("gradcam")}>Grad-CAM</button>
+                <button type="button" className={`mode-btn ${ctView === "3d" ? "active" : ""}`}
+                        onClick={() => setCtView("3d")}>3D volume</button>
+              </div>
+            )}
             {detail.series.length > 1 && !show3D && (
               <div className="series-switch" role="group" aria-label="Series">
                 {detail.series.map((s) => (
@@ -485,11 +495,12 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
         )}
 
         <div className="viewer-viewport-container">
-          {isCT && hasCtGradcam(urls) ? (
+          {isCT && hasCtGradcam(urls) && !show3D ? (
             <CtGradcamView evidence={ev} urls={urls} show={rationale} {...noteProps} />
           ) : show3D ? (
             <Suspense fallback={<p className="note">Loading the 3D viewer.</p>}>
-              <MriViewer3D studyId={id} token={token} onUnavailable={() => setView3D(false)}
+              <MriViewer3D studyId={id} token={token} modality={isCT ? "CT" : "MR"}
+                           onUnavailable={() => { setView3D(false); setCtView("gradcam"); }}
                            onEditAnnotation={handleEditAnnotation}
                            onDeleteAnnotation={handleDeleteAnnotation} {...noteProps} />
             </Suspense>
