@@ -1,22 +1,29 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AbstentionTray, { HumanLaneNote } from "./components/AbstentionTray.jsx";
 import CtGradcamView, { hasCtGradcam } from "./components/CtGradcamView.jsx";
 import { FindingSelector, gradcamLayer, selectedCaption } from "./components/GradcamFindings.jsx";
 import AnnotationsPanel from "./components/AnnotationsPanel.jsx";
 import NoteEditorModal from "./components/NoteEditorModal.jsx";
+import { DraftPanel } from "./components/DraftPanel.jsx";
+import { LazyView } from "./components/ErrorBoundary.jsx";
 import { api, loadSession } from "./api.js";
 import { timeUTC } from "./worklist.js";
-import { CheckIcon, ClockIcon } from "./components/Icons.jsx";
+import { CheckIcon, ChevronIcon, ClockIcon } from "./components/Icons.jsx";
+import { Spinner } from "./components/ui.jsx";
 
-// The viewer pulls in Cornerstone and its codecs; load it only on this page.
-const Viewer = lazy(() => import("./viewer/Viewer.jsx"));
-const MriViewer3D = lazy(() => import("./viewer/MriViewer3D.jsx"));
+// The viewer pulls in Cornerstone and its codecs; load it only on this page. A chunk that
+// fails to load shows "failed to load, Retry" in its place instead of a blank app.
+const loadViewer = () => import("./viewer/Viewer.jsx");
+const loadMri = () => import("./viewer/MriViewer3D.jsx");
+const loadingLine = <div className="loading-line"><Spinner label="Loading" /></div>;
+
+export { DraftPanel };
 
 const fmt = (v, d = 3) => (v == null ? "--" : Number(v).toFixed(d));
 
 function Patient({ study }) {
-  return <span className="mono bold">{study.patient_id || study.study}</span>;
+  return <span className="mono-id bold">{study.patient_id || study.study}</span>;
 }
 
 // What the rationale is for this study, in words. Grad-CAM for chest, the
@@ -47,7 +54,8 @@ export function Rationale({ detail, on, onToggle, opacity, onOpacity, selected =
   return (
     <div className="rationale" data-testid="rationale">
       <button type="button" aria-pressed={on} disabled={!drawable && !urls.overlay_png}
-              onClick={onToggle} data-testid="rationale-toggle" className="btn-rationale-toggle">
+              onClick={onToggle} data-testid="rationale-toggle" className="pill pill-sm btn-rationale-toggle"
+              title="A sanity check on why the study was placed where it was, not a localisation.">
         Triage rationale: {on ? "ON" : "OFF"}
       </button>
       {on && drawable && (
@@ -59,8 +67,7 @@ export function Rationale({ detail, on, onToggle, opacity, onOpacity, selected =
         </label>
       )}
       <p className="note" data-testid="rationale-caption">
-        {selectedCaption(ev, selected) || rationaleText(detail)}{" "}
-        {(drawable || urls.overlay_png) && "A sanity check on why the study was placed where it was, not a localisation."}
+        {selectedCaption(ev, selected) || rationaleText(detail)}
         {ev.gradcam_note ? ` ${ev.gradcam_note}` : ""}
       </p>
     </div>
@@ -111,103 +118,6 @@ function SegmentationRationale({ detail }) {
   );
 }
 
-// The draft the template wrote (no language model), editable by the reader.
-// Saved and "Mark as reviewed" go to the API and are audited; the text is not
-// in the audit.
-export function DraftPanel({ detail, saveDraft }) {
-  const s = detail.study;
-  // What the panel opens with: the latest saved report, else the reader's saved edit
-  // (rows from before reports existed), else the draft generated from the findings.
-  const opening = detail.report?.text ?? detail.draft_review?.text ?? detail.draft ?? "";
-  const [text, setText] = useState(opening);
-  const [base, setBase] = useState(opening);            // what the box held when last loaded or saved
-  const [review, setReview] = useState(detail.report || detail.draft_review || null);
-  const [state, setState] = useState(null);
-  const [confirmRegen, setConfirmRegen] = useState(false);
-
-  useEffect(() => {
-    const next = detail.report?.text ?? detail.draft_review?.text ?? detail.draft ?? "";
-    setText(next);
-    setBase(next);
-    setReview(detail.report || detail.draft_review || null);
-    setState(null);
-    setConfirmRegen(false);
-  }, [detail.study.study]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (!detail.draft) return null;
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(text);
-      setState("Copied.");
-    } catch {
-      setState("The browser did not allow copying; select the text instead.");
-    }
-  }
-
-  async function save(reviewed) {
-    setState("Saving.");
-    try {
-      const r = await saveDraft(s.study, text, reviewed);
-      const saved = r.report || r.draft_review;
-      setReview(saved);
-      setBase(text);
-      setState(r.report_error ? `Not added to Reports: ${r.report_error}.`
-        : reviewed
-        ? `Reviewed by ${saved.by || saved.author} at ${saved.at}. `
-          + (r.report ? `Saved as report version ${Number(r.report.version)}: find it under Reports.` : "")
-        : null);
-    } catch (e) {
-      setState(`Not saved: ${e.message}`);
-    }
-  }
-
-  // A fresh draft from the stored findings; asks first when the box holds edits.
-  function regenerate(force = false) {
-    if (!force && text !== base && text !== detail.draft) {
-      setConfirmRegen(true);
-      return;
-    }
-    setText(detail.draft);
-    setConfirmRegen(false);
-    setState("Draft regenerated from the stored findings. Save it to keep it.");
-  }
-
-  const reviewedNow = Boolean(review && (review.reviewed || review.status === "reviewed"));
-  const who = review && (review.by || review.author_name || review.author);
-  return (
-    <section className="draft-panel" data-testid="draft-panel" aria-label="Draft report">
-      <h4 className="card-section-title">Draft, template generated, radiologist to review</h4>
-      <p className="draft-meta">
-        Driving finding: <strong>{s.driver_label || "none"}</strong>. Lane: <strong>{s.lane_label || s.lane}</strong>.
-      </p>
-      <textarea className="draft-text mono" value={text} rows={14} data-testid="draft-text"
-                aria-label="Draft text" onChange={(e) => { setText(e.target.value); setState(null); }} />
-      {confirmRegen && (
-        <div className="regen-confirm" role="alert">
-          <span>Replace your edits with a fresh draft?</span>
-          <button type="button" className="btn" onClick={() => regenerate(true)}>Replace</button>
-          <button type="button" className="btn" onClick={() => setConfirmRegen(false)}>Keep my edits</button>
-        </div>
-      )}
-      <div className="draft-actions">
-        <button type="button" onClick={copy}>Copy</button>
-        <button type="button" onClick={() => regenerate(false)} data-testid="draft-regenerate">Regenerate draft</button>
-        {saveDraft && <button type="button" onClick={() => save(false)}>Save draft</button>}
-        {saveDraft && (
-          <button type="button" className="btn-primary" onClick={() => save(true)}
-                  data-testid="draft-reviewed">Mark as reviewed</button>
-        )}
-      </div>
-      <p className="note" data-testid="draft-status" role="status">
-        {state || (reviewedNow ? `Reviewed by ${who} at ${review.at}.`
-                   : review ? `Saved as a draft by ${who} at ${review.at}, not yet marked reviewed.`
-                   : "Not reviewed.")}
-      </p>
-    </section>
-  );
-}
-
 // Chest only: the site's regional prior (core/regional.py), shown for the
 // finding that set the lane. The factor is exactly what multiplied its signal.
 export function RegionalContext({ regional, driver, driverLabel }) {
@@ -245,11 +155,11 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
       <div className={`analysis-lane-card lane-${s.lane}`}>
         <div className="lane-header-row">
           <span className="lane-badge-text">{s.lane_label || s.lane}</span>
-          {s.clock && <span className="lane-sla-target mono"><ClockIcon size={13} /> {s.clock}</span>}
+          {s.clock && <span className="chip chip-quiet lane-sla-target"><ClockIcon size={13} /> {s.clock}</span>}
         </div>
         <div className="lane-meta-row">
           <span className="meta-acuity">
-            Acuity: <strong className="mono">{s.lane === "ABSTAIN" || s.lane === "FAILED" ? "--" : fmt(s.acuity, 1)}</strong>
+            Acuity: <strong className="mono-id">{s.lane === "ABSTAIN" || s.lane === "FAILED" ? "--" : fmt(s.acuity, 1)}</strong>
           </span>
           <span className="meta-driver">Driving finding: <strong>{s.driver_label || "--"}</strong></span>
         </div>
@@ -268,13 +178,13 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
           <dt>Exam</dt><dd>{s.exam}</dd>
           <dt>Driving finding</dt><dd>{s.driver_label || "--"}</dd>
           <dt>Acuity</dt>
-          <dd className="mono">{s.lane === "ABSTAIN" || s.lane === "FAILED" ? "--" : fmt(s.acuity, 1)}</dd>
+          <dd className="mono-id">{s.lane === "ABSTAIN" || s.lane === "FAILED" ? "--" : fmt(s.acuity, 1)}</dd>
           <dt>Confidence</dt>
           <dd>
             {brain ? "None: the brain model reports volumes, not a probability"
-                   : <><span className="mono">{fmt(s.confidence)}</span> <span className="note">temperature-scaled model output for the driving finding</span></>}
+                   : <span className="mono-id">{fmt(s.confidence)}</span>}
           </dd>
-          <dt>Model</dt><dd className="mono">{s.model_id || "--"}</dd>
+          <dt>Model</dt><dd className="mono-id">{s.model_id || "--"}</dd>
           <dt>Arrived</dt><dd className="mono">{s.arrived ? `${timeUTC(s.arrived)} UTC` : "--"}</dd>
         </dl>
       </div>
@@ -298,7 +208,6 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
       <div className="study-findings-card">
         <div className="findings-header">
           <h4 className="card-section-title">Findings</h4>
-          <span className="findings-sub">Signal 0 to 1 against each finding's own operating point</span>
         </div>
         {detail.findings.length === 0 ? (
           <p className="note" data-testid="no-findings">
@@ -325,8 +234,8 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
                              style={{ width: `${Math.min(100, Math.max(0, sig * 100))}%` }} />
                       </div>
                     </td>
-                    <td className="mono num bold">{fmt(f.signal)}</td>
-                    <td className="mono num text-soft">{fmt(f.urgency, 2)}</td>
+                    <td className="mono-id num bold">{fmt(f.signal)}</td>
+                    <td className="mono-id num text-soft">{fmt(f.urgency, 2)}</td>
                   </tr>
                 );
               })}
@@ -341,7 +250,7 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
         <Verdict study={s} onVerdict={onVerdict} busy={busy} />
       )}
 
-      {s.source && <div className="study-source-footer mono"><span>Source: {s.source}</span></div>}
+      {s.source && <div className="study-source-footer"><span>Source: <span className="mono-id">{s.source}</span></span></div>}
     </aside>
   );
 }
@@ -478,7 +387,7 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
     return <main className="study-page-layout"><p className="error" role="alert">{String(error.message || error)}</p></main>;
   }
   if (!detail) {
-    return <main className="study-page-layout loading-state"><p>Loading the study.</p></main>;
+    return <main className="study-page-layout loading-state"><Spinner label="Loading the study" /><p>Loading the study</p></main>;
   }
 
   const isMR = detail.study.modality === "MR";
@@ -497,9 +406,9 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
       <div className="study-main-viewport">
         <div className="study-header-hud">
           <div className="hud-left-section">
-            <Link to="/" className="btn-back-worklist">Back to worklist</Link>
+            <Link to="/" className="pill pill-sm btn-back-worklist"><ChevronIcon size={14} className="flip" />Back to worklist</Link>
             <div className="hud-study-tag">
-              <span className="hud-patient mono">{detail.study.patient_id || detail.study.study}</span>
+              <span className="hud-patient mono-id">{detail.study.patient_id || detail.study.study}</span>
               <span className={`mod-badge mod-${detail.study.modality}`}>{detail.study.exam || detail.study.modality}</span>
               <span className={`lanetag lane-${detail.study.lane}`}>{detail.study.lane_label || detail.study.lane}</span>
             </div>
@@ -546,20 +455,18 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
           {isCT && hasCtGradcam(urls) && !show3D ? (
             <CtGradcamView evidence={ev} urls={urls} show={rationale} {...noteProps} />
           ) : show3D ? (
-            <Suspense fallback={<p className="note">Loading the 3D viewer.</p>}>
-              <MriViewer3D studyId={id} token={token} modality={isCT ? "CT" : "MR"}
-                           onUnavailable={() => { setView3D(false); setCtView("gradcam"); }}
-                           onEditAnnotation={handleEditAnnotation}
-                           onDeleteAnnotation={handleDeleteAnnotation} {...noteProps} />
-            </Suspense>
+            <LazyView load={loadMri} what="Viewer" fallback={loadingLine}
+                      studyId={id} token={token} modality={isCT ? "CT" : "MR"}
+                      onUnavailable={() => { setView3D(false); setCtView("gradcam"); }}
+                      onEditAnnotation={handleEditAnnotation}
+                      onDeleteAnnotation={handleDeleteAnnotation} {...noteProps} />
           ) : !current || current.instance_count === 0 ? (
             <div className="viewer-empty-placeholder"><p>No images for this study in this runtime.</p></div>
           ) : !instances ? (
-            <p className="note">Loading the series.</p>
+            loadingLine
           ) : (
-            <Suspense fallback={<p className="note">Loading the viewer.</p>}>
-              <Viewer instances={instances} overlay={overlay} label={current.description} {...noteProps} />
-            </Suspense>
+            <LazyView load={loadViewer} what="Viewer" fallback={loadingLine}
+                      instances={instances} overlay={overlay} label={current.description} {...noteProps} />
           )}
         </div>
       </div>

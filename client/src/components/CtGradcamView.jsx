@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { PinIcon } from "./Icons.jsx";
 
 /**
  * Head CT Grad-CAM Visualization Component (CT_Mehak triagelane-ct pipeline).
  * Features:
- * 1. Diagnostic metadata: target_class_name, target_layer, bounding_box, centroid.
+ * 1. The finding, its slice and its share of the brain, as chips.
  * 2. Real-time adjustable Overlay Opacity slider (0% to 100%).
  * 3. Localized region lime-green bounding box and centroid toggle.
  * 4. Flexible View Modes:
@@ -26,8 +27,9 @@ export default function CtGradcamView({
   onRequestNewNote = null,
   isAddNoteMode = false,
   onToggleAddNoteMode = null,
+  initialMode = "triview",
 }) {
-  const [viewMode, setViewMode] = useState("triview"); // 'triview' | 'dual' | 'single'
+  const [viewMode, setViewMode] = useState(initialMode); // 'triview' | 'dual' | 'single'
   const [showBox, setShowBox] = useState(true);
   const [showCentroid, setShowCentroid] = useState(true);
   const [overlayAlpha, setOverlayAlpha] = useState(0.45);
@@ -38,10 +40,10 @@ export default function CtGradcamView({
   const cols = evidence.frame_cols || 512;
   const box = evidence.gradcam_bbox || null;
   const centroid = evidence.gradcam_centroid || null;
-  const finding = evidence.gradcam_finding || "subarachnoid";
+  const finding = evidence.gradcam_finding || "finding";
   const targetClass = finding.toLowerCase();
-  const targetLayer =
-    evidence.gradcam_target_layer || "vit backbone, last transformer block, layernorm_before";
+  const sliceNo = evidence.gradcam_slice_index != null ? evidence.gradcam_slice_index + 1 : null;
+  const coverage = evidence.gradcam_coverage != null ? (evidence.gradcam_coverage * 100).toFixed(1) : null;
 
   // Handle clicking on CT frame to place pinpoint note
   const handleFrameClick = (e, panelName) => {
@@ -147,32 +149,11 @@ export default function CtGradcamView({
 
   return (
     <div className={`ct-gradcam-container ${isAddNoteMode ? "pinpoint-active-mode" : ""}`} data-testid="ct-gradcam-view">
-      {/* 1. Terminal / Notebook Diagnostic Metadata Header */}
-      <div className="ct-diagnostic-header mono" data-testid="ct-diagnostic-header">
-        <div className="meta-line">
-          <span className="meta-key">target_class_name:</span>{" "}
-          <span className="meta-val meta-finding">{targetClass}</span>
-        </div>
-        <div className="meta-line">
-          <span className="meta-key">target_layer:</span>{" "}
-          <span className="meta-val">{targetLayer}</span>
-        </div>
-        {viewMode !== "dual" && box && (
-          <div className="meta-line">
-            <span className="meta-key">bounding_box:</span>{" "}
-            <span className="meta-val">
-              {`{'row_min': ${box.row_min}, 'row_max': ${box.row_max}, 'col_min': ${box.col_min}, 'col_max': ${box.col_max}}`}
-            </span>
-          </div>
-        )}
-        {viewMode !== "dual" && centroid && (
-          <div className="meta-line">
-            <span className="meta-key">centroid:</span>{" "}
-            <span className="meta-val">
-              {`{'row': ${centroid.row}, 'col': ${centroid.col}}`}
-            </span>
-          </div>
-        )}
+      {/* The finding, its slice and its share of the brain. Only what the API sent. */}
+      <div className="ct-chips" data-testid="ct-chips">
+        <span className="chip">{targetClass}</span>
+        {sliceNo != null && <span className="chip chip-quiet">slice {sliceNo}</span>}
+        {coverage != null && <span className="chip chip-quiet">{coverage}% of brain volume</span>}
       </div>
 
       {/* Mode Switcher and Interactive Opacity / Localization Toolbar */}
@@ -210,16 +191,16 @@ export default function CtGradcamView({
               type="button"
               className={`ct-mode-btn btn-pin-mode ${isAddNoteMode ? "active" : ""}`}
               onClick={onToggleAddNoteMode}
-              title="Click anywhere on the CT slice to drop a note"
+              title="Click the CT slice to drop a note"
             >
-              📍 {isAddNoteMode ? "Pin Active" : "Add Note"}
+              <PinIcon size={15} />{isAddNoteMode ? "Pin Active" : "Add Note"}
             </button>
           )}
 
           {/* Opacity Adjustment Slider */}
           {viewMode !== "dual" && (
             <div className="ct-slider-control">
-              <span className="slider-label">Overlay Opacity:</span>
+              <span className="slider-label">Opacity</span>
               <input
                 type="range"
                 min="0"
@@ -264,13 +245,6 @@ export default function CtGradcamView({
           )}
         </div>
       </div>
-
-      {isAddNoteMode && (
-        <div className="ct-pin-instruction-hud">
-          <span className="pulse-dot"></span>
-          <span><strong>Pinpoint Active:</strong> Click any location on the CT slice image to drop a spatially anchored note.</span>
-        </div>
-      )}
 
       {/* 2. Visualizer Presentation: Tri-View (Default) */}
       {viewMode === "triview" && (
@@ -487,23 +461,15 @@ export default function CtGradcamView({
   );
 }
 
+// Kept for callers that want the chips on their own; the view already shows them.
 export function CtGradcamCaption({ evidence = {} }) {
-  const n = (evidence.gradcam_slice_index ?? 0) + 1;
-  const finding = evidence.gradcam_finding || "Subarachnoid";
-  const coverage = evidence.gradcam_coverage != null ? (evidence.gradcam_coverage * 100).toFixed(1) : "7.2";
-  const targetLayer =
-    evidence.gradcam_target_layer || "vit backbone, last transformer block, layernorm_before";
-
+  const n = evidence.gradcam_slice_index != null ? evidence.gradcam_slice_index + 1 : null;
+  const coverage = evidence.gradcam_coverage != null ? (evidence.gradcam_coverage * 100).toFixed(1) : null;
   return (
-    <div className="ct-caption-card" data-testid="ct-gradcam-caption">
-      <div className="caption-title-row">
-        <span className="caption-bold">ViT Transformer Localization:</span>
-        <span className="caption-target-chip mono">{targetLayer}</span>
-      </div>
-      <p className="caption-text">
-        Grad-CAM attention highlighted <strong className="highlight-text">{finding}</strong> hemorrhage on slice{" "}
-        <strong>{n}</strong> ({coverage}% of brain volume). The lime bounding box localizes the high-acuity region.
-      </p>
+    <div className="ct-chips" data-testid="ct-gradcam-caption">
+      {evidence.gradcam_finding && <span className="chip">{evidence.gradcam_finding.toLowerCase()}</span>}
+      {n != null && <span className="chip chip-quiet">slice {n}</span>}
+      {coverage != null && <span className="chip chip-quiet">{coverage}% of brain volume</span>}
     </div>
   );
 }

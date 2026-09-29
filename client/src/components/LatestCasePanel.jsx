@@ -1,15 +1,19 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
-import { DraftPanel, rationaleText } from "../Study.jsx";
-import CtGradcamView, { CtGradcamCaption, hasCtGradcam } from "./CtGradcamView.jsx";
+import { rationaleText } from "../Study.jsx";
+import CtGradcamView, { hasCtGradcam } from "./CtGradcamView.jsx";
 import AbstentionTray, { HumanLaneNote } from "./AbstentionTray.jsx";
+import { DraftPanel } from "./DraftPanel.jsx";
+import { LazyView } from "./ErrorBoundary.jsx";
 import { FindingSelector, gradcamLayer, selectedCaption } from "./GradcamFindings.jsx";
-import { WorklistIcon } from "./Icons.jsx";
+import { ArrowUpRightIcon } from "./Icons.jsx";
+import { Spinner } from "./ui.jsx";
 
-// Cornerstone (2D) and NiiVue (3D) load only when a study needs them.
-const Viewer = lazy(() => import("../viewer/Viewer.jsx"));
-const MriViewer3D = lazy(() => import("../viewer/MriViewer3D.jsx"));
+// Cornerstone (2D) and NiiVue (3D) load only when a study needs them. A chunk that fails
+// to load shows "failed to load, Retry" in its own place; the sheet stays.
+const loadViewer = () => import("../viewer/Viewer.jsx");
+const loadMri = () => import("../viewer/MriViewer3D.jsx");
 
 const fmt = (v, d = 3) => (v == null ? "--" : Number(v).toFixed(d));
 
@@ -33,11 +37,10 @@ function SeriesView({ token, detail, overlay }) {
     return <p className="note">{detail.datastore_note || "No images for this study in this runtime."}</p>;
   }
   if (error) return <p className="error">Could not load the images: {error}</p>;
-  if (!instances) return <p className="note">Loading the images from the datastore.</p>;
+  if (!instances) return <div className="loading-line"><Spinner label="Loading the images" /></div>;
   return (
-    <Suspense fallback={<p className="note">Loading the viewer.</p>}>
-      <Viewer instances={instances} overlay={overlay} label={series.description} />
-    </Suspense>
+    <LazyView load={loadViewer} what="Viewer" fallback={<div className="loading-line"><Spinner label="Loading the viewer" /></div>}
+              instances={instances} overlay={overlay} label={series.description} />
   );
 }
 
@@ -79,25 +82,17 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
     }
   };
 
-  if (!studyId) {
-    return (
-      <div className="case-details-empty">
-        <div className="empty-icon"><WorklistIcon size={32} /></div>
-        <h3>Select a Study</h3>
-        <p>Click any study row from the AI Worklist to inspect scans, AI findings, and volumetric measurements.</p>
-      </div>
-    );
-  }
+  if (!studyId) return null;
   if (loading) {
     return (
       <div className="case-details-loading">
-        <div className="clinical-spinner"></div>
-        <p>Loading case data for <span className="mono">{studyId}</span>.</p>
+        <Spinner label="Loading the study" />
+        <p>Loading <span className="mono-id">{studyId}</span></p>
       </div>
     );
   }
   if (error || !detail) {
-    return <div className="case-details-error"><p className="error-text">Could not load study {studyId}: {error}</p></div>;
+    return <div className="case-details-error"><p className="error-text" role="alert">Could not load study {studyId}: {error}</p></div>;
   }
 
   const s = detail.study;
@@ -111,6 +106,8 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
   const layer = gradcamLayer(ev, urls, selectedFinding);
   const heat = layer.drawable;
   const overlay = showGradcam && heat ? { url: layer.url, box: ev.gradcam_box, opacity } : null;
+  const finding = s.lane === "FAILED" ? s.error : s.driver_label || s.abstain_reason || "No finding";
+  const scored = s.lane !== "ABSTAIN" && s.lane !== "FAILED" && s.acuity != null;
 
   // A study a reader placed or set aside is refetched: its draft and lane text change.
   const changed = async (row) => {
@@ -124,49 +121,57 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
     }
   };
 
+  const analyse = (
+    <button type="button" className="pill pill-sm" data-testid="btn-analyse-header"
+            onClick={() => navigate(`/studies/${encodeURIComponent(studyId)}`)}>
+      Full analysis<ArrowUpRightIcon size={14} />
+    </button>
+  );
+
   return (
     <div className="latest-case-panel" data-testid="latest-case-panel">
-      <div className="case-panel-header">
-        <div className="header-meta">
-          <div className="panel-title-row">
-            <span className="live-dot"></span>
-            <h2 className="panel-title">LATEST CASE DETAILS</h2>
-            <button type="button" className="btn-analyse-case" data-testid="btn-analyse-header"
-                    onClick={() => navigate(`/studies/${encodeURIComponent(studyId)}`)}>Analyse</button>
-          </div>
-          <div className="study-identifiers">
-            <span className="patient-tag mono">{s.patient_id || s.study}</span>
-            <span className="exam-tag">{s.exam || `${s.modality} Study`}</span>
-            <span className="pool-tag">{s.pool} Pool</span>
-            <span className="pool-tag">{s.assigned_name ? `Reader: ${s.assigned_name}` : "Unassigned"}</span>
-          </div>
+      <header className="sheet-head">
+        <span className={`lanetag lane-${s.lane}`}>{s.lane_label || s.lane}</span>
+        <h2 className="sheet-title">{finding}</h2>
+        <div className="sheet-ids">
+          <span className="mono-id">{s.patient_id || s.study}</span>
+          <span className="chip chip-quiet">{s.pool} pool</span>
+          {scored && <span className="chip chip-quiet">Acuity <span className="mono-id">{fmt(s.acuity, 1)}</span></span>}
         </div>
-        <div className={`lane-badge lane-${s.lane}`}>
-          <span className="lane-text">{s.lane_label || s.lane}</span>
-          {s.clock && <span className="lane-clock">SLA: {s.clock}</span>}
-        </div>
-      </div>
+      </header>
 
       <HumanLaneNote study={s} />
       <AbstentionTray detail={detail} token={token} me={me} onChanged={changed} onLeft={onLeft} />
 
-      <div className="case-panel-viewer-section">
+      {s.lane !== "FAILED" && (
+        <div className="verdict-block" data-testid="verdict-section">
+          <div className="verdict-actions">
+            <button type="button" disabled={busy} onClick={() => handleVerdict("agree")} aria-pressed={v?.value === "agree"}
+                    className="pill btn-verdict btn-agree">Agree · {s.lane_label || s.lane}</button>
+            <button type="button" disabled={busy} onClick={() => handleVerdict("disagree")} aria-pressed={v?.value === "disagree"}
+                    title="Disagree with the lane and escalate" className="pill btn-verdict btn-disagree">Escalate</button>
+          </div>
+          {v && (
+            <p className="chip chip-quiet" data-testid="sheet-verdict-status">
+              <span className="dot" style={{ "--dot": v.value === "agree" ? "var(--ok)" : "var(--alert-ink)" }} />
+              {v.value === "agree" ? "Agreed" : "Disagreed"} by {v.by}
+            </p>
+          )}
+        </div>
+      )}
+
+      <section className="sheet-viewer">
         {isMR && (
           <div className="viewer-container mri-tumor-view" data-testid="mr-view">
-            <div className="viewer-header-info">
-              <span className="viewer-title">Brain MRI: 2D MPR and 3D volume (NiiVue)</span>
-              <span className="viewer-hint">Axial, coronal, sagittal and 3D, synchronised</span>
-            </div>
+            <div className="viewer-bar"><h3 className="sec-title">Brain MRI</h3>{analyse}</div>
             {has3D ? (
-              <Suspense fallback={<p className="note">Loading the 3D viewer.</p>}>
-                <MriViewer3D studyId={studyId} token={token} onUnavailable={() => setNo3D(true)} />
-              </Suspense>
+              <LazyView load={loadMri} what="Viewer" fallback={<div className="loading-line"><Spinner label="Loading the 3D viewer" /></div>}
+                        studyId={studyId} token={token} onUnavailable={() => setNo3D(true)} />
             ) : (
               <>
                 {urls.overlay_png && <img src={urls.overlay_png} alt="Segmentation overlay" className="cxr-base-img" />}
                 <p className="note" data-testid="no-3d">
-                  No 3D volume is stored for this study (ingested before volumes were kept, or its
-                  mask failed the check). {urls.overlay_png ? "Showing the model's segmentation outline." : ""}
+                  No 3D volume is stored for this study. {urls.overlay_png ? "Showing the model's segmentation outline." : ""}
                 </p>
               </>
             )}
@@ -176,44 +181,42 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
 
         {isCR && (
           <div className="viewer-container cxr-view" data-testid="cxr-view">
-            <div className="viewer-header-info">
-              <span className="viewer-title">Chest Radiography</span>
-              {heat && (
-                <button type="button" className={`btn-gradcam-toggle ${showGradcam ? "active" : ""}`}
-                        aria-pressed={showGradcam} onClick={() => setShowGradcam(!showGradcam)}
-                        data-testid="gradcam-toggle">
-                  {showGradcam ? "Grad-CAM Heatmap: ON" : "Grad-CAM Heatmap: OFF"}
+            <div className="viewer-bar"><h3 className="sec-title">Chest X-ray</h3>{analyse}</div>
+            {heat && (
+              <div className="glass-toolbar">
+                <button type="button" className="pill pill-sm btn-gradcam-toggle" aria-pressed={showGradcam}
+                        onClick={() => setShowGradcam(!showGradcam)} data-testid="gradcam-toggle"
+                        title="A sanity check on why the study was placed where it was, not a localisation.">
+                  Grad-CAM {showGradcam ? "on" : "off"}
                 </button>
-              )}
-            </div>
-            {showGradcam && heat && (
-              <label className="slider-label">
-                <span>Opacity {Math.round(opacity * 100)}%</span>
-                <input type="range" min="0.1" max="1" step="0.05" value={opacity}
-                       onChange={(e) => setOpacity(parseFloat(e.target.value))} aria-label="Grad-CAM opacity" />
-              </label>
+                {showGradcam && (
+                  <label className="slider-label">
+                    <span>Opacity {Math.round(opacity * 100)}%</span>
+                    <input type="range" min="0.1" max="1" step="0.05" value={opacity}
+                           onChange={(e) => setOpacity(parseFloat(e.target.value))} aria-label="Grad-CAM opacity" />
+                  </label>
+                )}
+              </div>
             )}
             <FindingSelector ev={ev} selected={selectedFinding} onSelect={setSelectedFinding} />
             <SeriesView token={token} detail={detail} overlay={overlay} />
-            <p className="evidence-caption"><span className="bold">Grad-CAM Explanation:</span>{" "}
-              {selectedCaption(ev, selectedFinding) || rationaleText(detail)}</p>
+            <p className="evidence-caption">{selectedCaption(ev, selectedFinding) || rationaleText(detail)}</p>
           </div>
         )}
 
         {isCT && (
           <div className="viewer-container ct-view" data-testid="ct-view">
-            <div className="viewer-header-info">
-              <span className="viewer-title">Head CT (Axial Non-Contrast)</span>
-              <button type="button" className={`btn-gradcam-toggle ${showGradcam ? "active" : ""}`}
-                      onClick={() => setShowGradcam(!showGradcam)} disabled={!hasCtGradcam(urls)}
-                      data-testid="ct-gradcam-toggle">
-                {showGradcam ? "Grad-CAM Heatmap: ON" : "Grad-CAM Heatmap: OFF"}
-              </button>
-            </div>
+            <div className="viewer-bar"><h3 className="sec-title">Head CT</h3>{analyse}</div>
             {hasCtGradcam(urls) ? (
               <>
-                <CtGradcamView evidence={ev} urls={urls} show={showGradcam} />
-                <CtGradcamCaption evidence={ev} />
+                <div className="glass-toolbar">
+                  <button type="button" className="pill pill-sm btn-gradcam-toggle" aria-pressed={showGradcam}
+                          onClick={() => setShowGradcam(!showGradcam)} data-testid="ct-gradcam-toggle"
+                          title="A sanity check on why the study was placed where it was, not a localisation.">
+                    Grad-CAM {showGradcam ? "on" : "off"}
+                  </button>
+                </div>
+                <CtGradcamView evidence={ev} urls={urls} show={showGradcam} initialMode="single" />
                 {detail.decision_reason && <p className="evidence-caption">{detail.decision_reason}</p>}
               </>
             ) : (
@@ -222,17 +225,17 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
                 <p className="note viewer-empty" data-testid="ct-no-gradcam">
                   {s.lane === "FAILED"
                     ? "Processing failed, so there is no Grad-CAM for this study."
-                    : "No Grad-CAM image is stored for this study (scored before the CT endpoint drew one)."}
+                    : "No Grad-CAM image is stored for this study."}
                 </p>
-                <p className="evidence-caption"><span className="bold">CT AI Finding:</span> {rationaleText(detail)}</p>
+                <p className="evidence-caption">{rationaleText(detail)}</p>
               </>
             )}
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="case-panel-findings-section">
-        <h3 className="section-heading">AI Triage Findings & Signals</h3>
+      <section className="sheet-findings">
+        <h3 className="sec-title">Findings</h3>
         {detail.findings && detail.findings.length > 0 ? (
           <table className="findings-table">
             <thead><tr><th>Finding</th><th className="num">Signal</th><th className="num">Urgency</th></tr></thead>
@@ -241,10 +244,10 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
                 <tr key={f.name} className={f.name === s.driver ? "driver-row" : ""}>
                   <td className="finding-name">
                     {f.label || f.name}
-                    {f.name === s.driver && <span className="driver-tag">Driving Finding</span>}
+                    {f.name === s.driver && <span className="chip chip-quiet driver-tag">Driver</span>}
                   </td>
-                  <td className="mono num">{fmt(f.signal)}</td>
-                  <td className="mono num">{fmt(f.urgency, 2)}</td>
+                  <td className="mono-id num">{fmt(f.signal)}</td>
+                  <td className="mono-id num">{fmt(f.urgency, 2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -253,42 +256,15 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
           <p className="note">{s.abstain_reason || "No abnormal findings flagged by the model."}</p>
         )}
         {isMR && ev.volumes_cm3 && (
-          <p className="note mono">
-            Whole tumour {ev.volumes_cm3.whole_tumour} cm3, core {ev.volumes_cm3.tumour_core} cm3,
-            enhancing {ev.volumes_cm3.enhancing} cm3 (the model's segmentation)
-          </p>
+          <div className="ct-chips">
+            <span className="chip chip-quiet">Whole tumour {ev.volumes_cm3.whole_tumour} cm3</span>
+            <span className="chip chip-quiet">Core {ev.volumes_cm3.tumour_core} cm3</span>
+            <span className="chip chip-quiet">Enhancing {ev.volumes_cm3.enhancing} cm3</span>
+          </div>
         )}
-      </div>
-
-      {s.lane !== "FAILED" && (
-        <div className="case-panel-verdict-section" data-testid="verdict-section">
-          <div className="verdict-header">
-            <span className="verdict-title">Triage Lane Assignment</span>
-            <span className="verdict-status-note">
-              {v ? `Status: ${v.value === "agree" ? "Agreed" : "Disagreed"} by ${v.by}` : "Pending Radiologist Verdict"}
-            </span>
-          </div>
-          <div className="verdict-actions">
-            <button type="button" disabled={busy} onClick={() => handleVerdict("agree")}
-                    className={`btn-verdict btn-agree ${v?.value === "agree" ? "selected" : ""}`}>
-              Agree with {s.lane_label || s.lane}
-            </button>
-            <button type="button" disabled={busy} onClick={() => handleVerdict("disagree")}
-                    className={`btn-verdict btn-disagree ${v?.value === "disagree" ? "selected" : ""}`}>
-              Disagree / Escalate
-            </button>
-          </div>
-        </div>
-      )}
+      </section>
 
       <DraftPanel detail={detail} saveDraft={(id, text, reviewed) => api.saveDraft(token, id, text, reviewed)} />
-
-      <div className="case-panel-analyse-cta">
-        <button type="button" className="btn-analyse-full" data-testid="btn-analyse-bottom"
-                onClick={() => navigate(`/studies/${encodeURIComponent(studyId)}`)}>
-          Analyse Case Scans in Full Detail
-        </button>
-      </div>
     </div>
   );
 }
