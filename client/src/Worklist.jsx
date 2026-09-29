@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { arrangePools, READ_FILTERS, SORTS, timeUTC, isUnread } from "./worklist.js";
-import Sidebar from "./components/Sidebar.jsx";
+import { useLocation } from "react-router-dom";
+import { arrangePools, isUnread } from "./worklist.js";
+import { displayName } from "./dashboard.js";
+import Sidebar, { TITLES } from "./components/Sidebar.jsx";
 import LatestCasePanel from "./components/LatestCasePanel.jsx";
 import PatientHistoryView from "./components/PatientHistoryView.jsx";
 import ReportsView from "./components/ReportsView.jsx";
 import SettingsView from "./components/SettingsView.jsx";
 import SimulatePanel from "./components/SimulatePanel.jsx";
 import DistributePanel from "./components/DistributePanel.jsx";
-import { BoardIcon, ClockIcon, CloseIcon, ListIcon, SearchIcon, UserIcon, WorklistIcon } from "./components/Icons.jsx";
-import { Slot } from "./Shell.jsx";
+import QueueCard from "./components/QueueCard.jsx";
+import { ArrivalsCard, GaugeCard, ReadersCard, StatRow } from "./components/DashboardCards.jsx";
+import ErrorBoundary, { Failed } from "./components/ErrorBoundary.jsx";
+import { CloseIcon, PlayIcon, UsersIcon } from "./components/Icons.jsx";
+import { Overlay } from "./components/ui.jsx";
 import { loadSettings } from "./settings.js";
 
-const LANE_FILTERS = ["ALL", "CRITICAL", "URGENT", "EXPEDITED", "ROUTINE"];
 const VIEW_KEY = "auralane.worklistView";
 
 function loadView() {
@@ -22,27 +26,24 @@ function loadView() {
   }
 }
 
-function Acuity({ row }) {
-  if (row.lane === "ABSTAIN" || row.lane === "FAILED" || row.acuity == null) return "--";
-  return Number(row.acuity).toFixed(1);
-}
-
 export default function Worklist({ load, token }) {
+  const location = useLocation();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [sort, setSort] = useState("priority");
   const [lane, setLane] = useState("ALL");
   const [read, setRead] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [query, setQuery] = useState("");
   const [activeNav, setActiveNav] = useState("worklist");
-  const [specialtyFilter, setSpecialtyFilter] = useState("ALL");
+  const [specialty, setSpecialty] = useState("ALL");
   const [selectedStudyId, setSelectedStudyId] = useState(null);
   const [panel, setPanel] = useState(null);             // "simulate" | "distribute"
   const [chosenScope, setScope] = useState(null);       // "mine" | "all"
-  const [detailsWidth, setDetailsWidth] = useState(580);
   const [refresh, setRefresh] = useState(() => loadSettings().refreshSeconds);
-  const [poolTab, setPoolTab] = useState("ALL");            // "ALL" or a pool name
-  const [view, setViewState] = useState(loadView);        // "list" | "board"
+  const [poolTab, setPoolTab] = useState("ALL");        // "ALL" or a pool name
+  const [onlyTriage, setOnlyTriage] = useState(false);
+  const [view, setViewState] = useState(loadView);      // "list" | "board"
+  const searchRef = useRef(null);
   const setView = (v) => {
     setViewState(v);
     try {
@@ -50,24 +51,6 @@ export default function Worklist({ load, token }) {
     } catch {
       // Storage unavailable: the choice lasts until reload.
     }
-  };
-
-  const startResize = (e) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startWidth = detailsWidth;
-    const onMouseMove = (moveEvent) => {
-      const delta = startX - moveEvent.clientX;
-      setDetailsWidth(Math.max(350, Math.min(1000, startWidth + delta)));
-    };
-    const onMouseUp = () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-      document.body.style.cursor = "default";
-    };
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-    document.body.style.cursor = "col-resize";
   };
 
   // A failed refresh (the API restarting, a dropped connection) keeps the list on
@@ -95,24 +78,21 @@ export default function Worklist({ load, token }) {
     };
   }, [fetchWorklist, refresh, error]);
 
+  // The top bar's search button: go to the worklist tab and put the cursor in its search field.
+  useEffect(() => {
+    const go = () => { setActiveNav("worklist"); setTimeout(() => searchRef.current?.focus(), 30); };
+    window.addEventListener("auralane:search", go);
+    if (location.state?.focusSearch) go();
+    return () => window.removeEventListener("auralane:search", go);
+  }, [location.state]);
+
+  useEffect(() => { document.title = `${TITLES[activeNav]} · AURALane`; }, [activeNav]);
+
   const mine = useMemo(() => (data?.me ? (data.studies || []).filter((s) => s.assigned_to === data.me) : []),
     [data]);
   // My studies when something is assigned to me; otherwise the whole queue.
   const scope = chosenScope ?? (mine.length ? "mine" : "all");
-
-  // The panel on the right exists only while a study is selected. Esc closes it,
-  // unless a dialog is open or the reader is typing in a field.
-  useEffect(() => {
-    if (!selectedStudyId) return undefined;
-    const onKey = (e) => {
-      if (e.key !== "Escape" || e.defaultPrevented || panel) return;
-      if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || "")) return;
-      if (document.querySelector('[role="dialog"]')) return;
-      setSelectedStudyId(null);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [selectedStudyId, panel]);
+  const scopeStudies = useMemo(() => (scope === "mine" ? mine : data?.studies || []), [scope, mine, data]);
 
   const handleVerdictUpdate = (studyId, updatedStudy) => {
     setData((prev) => prev && {
@@ -121,27 +101,29 @@ export default function Worklist({ load, token }) {
   };
 
   const filteredStudies = useMemo(() => {
-    if (!data || !data.studies) return [];
-    let list = scope === "mine" ? mine : data.studies;
-    if (specialtyFilter === "MR") list = list.filter((s) => s.modality === "MR");
-    else if (specialtyFilter === "CR") list = list.filter((s) => s.modality === "CR" || s.modality === "DX");
-    else if (specialtyFilter === "CT") list = list.filter((s) => s.modality === "CT");
+    let list = scopeStudies;
+    if (specialty === "MR") list = list.filter((s) => s.modality === "MR");
+    else if (specialty === "CR") list = list.filter((s) => s.modality === "CR" || s.modality === "DX");
+    else if (specialty === "CT") list = list.filter((s) => s.modality === "CT");
     if (activeNav === "recent") list = list.filter((s) => !isUnread(s));
-    const q = searchQuery.toLowerCase().trim();
+    const q = query.toLowerCase().trim();
     if (q) {
       list = list.filter((s) => [s.patient_id, s.study, s.exam, s.driver, s.driver_label, s.assigned_name]
         .some((v) => v && String(v).toLowerCase().includes(q)));
     }
     return list;
-  }, [data, scope, mine, specialtyFilter, activeNav, searchQuery]);
+  }, [scopeStudies, specialty, activeNav, query]);
 
   const pools = useMemo(
-    () => (data ? arrangePools(filteredStudies, data.pools, data.lanes, { sort, lane, read }) : []),
-    [data, filteredStudies, sort, lane, read]);
+    () => (data ? arrangePools(filteredStudies, data.pools, data.lanes,
+                               { sort, lane, read, only: onlyTriage ? "ABSTAIN" : null }) : []),
+    [data, filteredStudies, sort, lane, read, onlyTriage]);
 
-  const heroStudy = useMemo(() => {
+  // The study to read next: the first unread critical one, else the first unread. Its row
+  // is the first of its pool and lane, and is raised.
+  const nextUpId = useMemo(() => {
     const unread = filteredStudies.filter((s) => isUnread(s));
-    return unread.find((s) => s.lane === "CRITICAL") || unread[0] || null;
+    return (unread.find((s) => s.lane === "CRITICAL") || unread[0])?.study ?? null;
   }, [filteredStudies]);
 
   const counts = useMemo(() => ({
@@ -166,13 +148,25 @@ export default function Worklist({ load, token }) {
   }
 
   const readers = data.readers || [];
-  const emptyOwn = data.scope === "own" && data.studies.length === 0;
+  const laneLabels = Object.fromEntries((data.lanes || []).map((l) => [l.lane, l.label]));
   const who = (row) => (row.assigned_to
     ? (row.assigned_to === data.me ? "You" : row.assigned_name || row.assigned_to) : "Unassigned");
+  const name = displayName(data.me, readers);
+  const onWorklist = activeNav === "worklist";
+
+  const queue = (
+    <QueueCard
+      title={onWorklist ? "Worklist" : "Read cases"} recent={activeNav === "recent"}
+      data={data} scope={scope} setScope={setScope} mine={mine} pools={pools}
+      poolTab={poolTab} setPoolTab={setPoolTab} view={view} setView={setView}
+      filteredStudies={filteredStudies} selectedStudyId={selectedStudyId} onSelect={setSelectedStudyId}
+      nextUpId={onWorklist ? nextUpId : null} query={query} setQuery={setQuery} searchRef={searchRef}
+      filters={{ lane, setLane, read, setRead, sort, setSort, specialty, setSpecialty }}
+      onlyTriage={onlyTriage} clearTriage={() => setOnlyTriage(false)} who={who} />
+  );
 
   return (
-    <div className={`workstation-layout ${selectedStudyId ? "with-panel" : ""}`} data-testid="workstation-layout"
-         style={{ gridTemplateColumns: selectedStudyId ? `minmax(0, 1fr) 6px ${detailsWidth}px` : "minmax(0, 1fr)" }}>
+    <div className="page" data-testid="workstation-layout">
       {panel === "simulate" && (
         <SimulatePanel token={token} readers={readers} me={data.me} onClose={() => setPanel(null)} onProgress={fetchWorklist} />
       )}
@@ -181,259 +175,64 @@ export default function Worklist({ load, token }) {
                          onClose={() => setPanel(null)} onDone={fetchWorklist} />
       )}
 
-      <Sidebar activeNav={activeNav} onNavChange={setActiveNav} specialtyFilter={specialtyFilter}
-               onSpecialtyChange={setSpecialtyFilter} counts={counts} />
+      <Sidebar activeNav={activeNav} onNavChange={setActiveNav} counts={counts} />
 
-      <main className="workstation-center" data-testid="workstation-center">
-        {stale && <p className="note" role="status">Lost contact with the API. Showing the last list; retrying.</p>}
-        {activeNav === "history" && (
-          <PatientHistoryView studies={filteredStudies} onSelectStudy={setSelectedStudyId}
-                              selectedStudyId={selectedStudyId} />
+      <header className="page-head">
+        <h1 className="page-title">
+          {onWorklist ? (name ? `Welcome back, ${name}` : "Welcome back") : TITLES[activeNav]}
+        </h1>
+        {onWorklist && (
+          <div className="page-actions">
+            <button type="button" className="pill pill-primary" onClick={() => setPanel("simulate")}
+                    data-testid="btn-simulate"><PlayIcon size={15} />Simulate ingest</button>
+            <button type="button" className="pill" onClick={() => setPanel("distribute")}
+                    disabled={readers.length === 0} data-testid="btn-distribute"><UsersIcon size={16} />Distribute worklist</button>
+          </div>
         )}
-        {activeNav === "reports" && <ReportsView token={token} studies={data.studies} me={data.me} />}
-        {activeNav === "settings" && <SettingsView onChange={(s) => setRefresh(s.refreshSeconds)} />}
+      </header>
 
-        {(activeNav === "worklist" || activeNav === "recent") && (
-          <>
-            <div className="center-header">
-              {/* Not shown; kept for screen readers and the test that checks the wording. */}
-              <p className="sr-only">Grouped by reading pool because a neuroradiologist reads the MRI and a chest radiologist reads the X-ray; studies are ranked within a pool, never across.</p>
-              <Slot name="actions">
-                <div className="center-action-buttons">
-                  <button type="button" className="btn" onClick={() => setPanel("distribute")}
-                          disabled={readers.length === 0} data-testid="btn-distribute">Distribute worklist</button>
-                  <button type="button" className="btn btn-primary" onClick={() => setPanel("simulate")}
-                          data-testid="btn-simulate">Simulate ingest</button>
-                </div>
-              </Slot>
+      {stale && <p className="note" role="status">Lost contact with the API. Showing the last list; retrying.</p>}
+
+      {activeNav === "history" && (
+        <PatientHistoryView studies={filteredStudies} onSelectStudy={setSelectedStudyId}
+                            selectedStudyId={selectedStudyId} />
+      )}
+      {activeNav === "reports" && <ReportsView token={token} />}
+      {activeNav === "settings" && <SettingsView onChange={(s) => setRefresh(s.refreshSeconds)} />}
+
+      {onWorklist && (
+        <div className="dash">
+          <div className="dash-main">
+            <StatRow studies={scopeStudies} laneLabels={laneLabels} onlyTriage={onlyTriage}
+                     onToggleTriage={() => {
+                       setOnlyTriage((v) => !v);
+                       document.querySelector('[data-testid="queue-card"]')?.scrollIntoView?.({ block: "start" });
+                     }} />
+            <div className="chart-row">
+              <ArrivalsCard studies={scopeStudies} pools={data.pools} />
+              <GaugeCard studies={scopeStudies} scopeLabel={scope === "mine" ? "My worklist" : "All studies"} />
             </div>
-
-            <div className="worklist-filter-bar">
-              {data.me && data.scope !== "own" && (
-                <div className="scope-toggle" role="group" aria-label="Whose studies">
-                  <button type="button" aria-pressed={scope === "mine"} onClick={() => setScope("mine")}
-                          data-testid="scope-mine">My studies ({mine.length})</button>
-                  <button type="button" aria-pressed={scope === "all"} onClick={() => setScope("all")}
-                          data-testid="scope-department">All studies ({data.studies.length})</button>
-                </div>
-              )}
-              <div className="search-box">
-                <span className="search-icon"><SearchIcon size={14} /></span>
-                <input type="text" placeholder="Search patient, study ID, finding, reader" value={searchQuery}
-                       onChange={(e) => setSearchQuery(e.target.value)} className="search-input" aria-label="Search" />
-                {searchQuery && <button type="button" className="search-clear" onClick={() => setSearchQuery("")}>Clear</button>}
-              </div>
-              <div className="filter-dropdowns">
-                <label className="filter-item"><span>Lane:</span>
-                  <select value={lane} onChange={(e) => setLane(e.target.value)} aria-label="Lane filter">
-                    {LANE_FILTERS.map((l) => <option key={l} value={l}>{l === "ALL" ? "All lanes" : l}</option>)}
-                  </select>
-                </label>
-                <label className="filter-item"><span>Status:</span>
-                  <select value={read} onChange={(e) => setRead(e.target.value)} aria-label="Read filter">
-                    {Object.entries(READ_FILTERS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </label>
-                <label className="filter-item"><span>Sort:</span>
-                  <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">
-                    {Object.entries(SORTS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </label>
-              </div>
-              <div className="view-toggle" role="group" aria-label="Worklist view">
-                <button type="button" className="icon-btn" aria-pressed={view === "list"} title="List view"
-                        aria-label="List view" onClick={() => setView("list")} data-testid="view-list">
-                  <ListIcon size={16} />
-                </button>
-                <button type="button" className="icon-btn" aria-pressed={view === "board"} title="Board view"
-                        aria-label="Board view" onClick={() => setView("board")} data-testid="view-board">
-                  <BoardIcon size={16} />
-                </button>
-              </div>
-            </div>
-
-            {scope === "mine" && mine.length === 0 && (
-              <p className="note" data-testid="mine-empty">
-                Nothing is assigned to you.{" "}
-                <button type="button" className="linklike" onClick={() => setScope("all")}>Show all studies</button>
-              </p>
-            )}
-
-            {!emptyOwn && heroStudy && activeNav === "worklist" && (
-              <section className="hero-case-card" data-testid="hero-study-card">
-                <span className="hero-alert-badge">Next up</span>
-                <span className={`lanetag lane-${heroStudy.lane}`}>{heroStudy.lane_label || heroStudy.lane}</span>
-                <span className="hero-patient-id mono">{heroStudy.patient_id || heroStudy.study}</span>
-                <span className="hero-driver">
-                  <span className="bold highlight-driver">{heroStudy.driver_label || heroStudy.abstain_reason || "--"}</span>
-                  <span className="hero-exam-name"> {heroStudy.exam}</span>
-                </span>
-                <span className="hero-spacer" />
-                <span className="hero-metric mono" title="Acuity"><Acuity row={heroStudy} /></span>
-                {heroStudy.clock && <span className="hero-clock">{heroStudy.clock}</span>}
-                <button type="button"
-                        className={`btn-hero-inspect ${selectedStudyId === heroStudy.study ? "active-inspect" : ""}`}
-                        onClick={() => setSelectedStudyId(heroStudy.study)}>
-                  {selectedStudyId === heroStudy.study ? "Active in Viewer" : "Inspect Case Scans"}
-                </button>
-              </section>
-            )}
-
-            {!emptyOwn && <p className="note">
-              Needs human triage is always shown and is not affected by filters.
-            </p>}
-
-            {!emptyOwn && view === "board" && (
-              <div className="board" data-testid="board">
-                {(data.lanes || []).map((l) => {
-                  const cards = pools.filter((p) => poolTab === "ALL" || poolTab === p.pool)
-                    .flatMap((p) => p.sections.flatMap((s) => s.rows)).filter((r) => r.lane === l.lane);
-                  if (l.pinned && l.lane !== "ABSTAIN" && cards.length === 0) return null;
-                  return (
-                    <section key={l.lane} className={`board-col lane-${l.lane}`} data-testid={`board-col-${l.lane}`}
-                             aria-label={l.label}>
-                      <h3 className="board-col-head">
-                        <span className="lane-dot" aria-hidden="true" />
-                        <span className="lanename">{l.label}</span>
-                        <span className="count mono">{cards.length}</span>
-                        {l.clock && <span className="clock mono">{l.clock}</span>}
-                      </h3>
-                      {l.lane === "ABSTAIN" && (
-                        <p className="lane-explain-why">Model confidence was not sufficient to assign a lane. A radiologist picks it.</p>
-                      )}
-                      {cards.map((row) => (
-                        <article key={row.study} className={`board-card ${row.study === selectedStudyId ? "selected" : ""}`}
-                                 data-testid="board-card" data-study={row.study}>
-                          <div className="card-head">
-                            <span className="card-title">
-                              {row.lane === "FAILED" ? row.error : row.driver_label || row.abstain_reason || "--"}
-                            </span>
-                            <span className="tag">{row.exam || row.modality}</span>
-                          </div>
-                          <div className="card-meta"><UserIcon size={14} /><span className="mono">{row.patient_id || row.study}</span></div>
-                          <div className="card-meta"><ClockIcon size={14} /><span className="mono">{timeUTC(row.arrived)} UTC</span></div>
-                          <div className="card-meta"><WorklistIcon size={14} />
-                            <span>Acuity <span className="mono"><Acuity row={row} /></span></span></div>
-                          <div className="card-meta"><UserIcon size={14} /><span>{who(row)}</span></div>
-                          {row.human_lane && <div className="card-meta">Lane set by {row.human_lane.by_name || row.human_lane.by}</div>}
-                          {row.overdue && l.lane === "CRITICAL" && (
-                            <div className="card-alert">Not opened within the {l.clock || "lane"} clock</div>
-                          )}
-                          <button type="button" className="btn card-open" onClick={() => setSelectedStudyId(row.study)}>
-                            Open study
-                          </button>
-                        </article>
-                      ))}
-                    </section>
-                  );
-                })}
-              </div>
-            )}
-
-            {data.scope === "own" && data.studies.length === 0 && (
-              <section className="empty-worklist" data-testid="empty-worklist">
-                <WorklistIcon size={28} />
-                <h3>Your worklist is empty</h3>
-                <p>Studies appear here when an ingest or a distribution includes you. Use Simulate ingest
-                  to send studies to yourself or to other radiologists.</p>
-              </section>
-            )}
-
-            {(data.scope !== "own" || data.studies.length > 0) && (
-              <div className="pool-tabs" role="group" aria-label="Reading pool">
-                <button type="button" aria-pressed={poolTab === "ALL"} onClick={() => setPoolTab("ALL")}
-                        data-testid="pooltab-ALL">
-                  All pools <span className="count mono">{filteredStudies.length}</span>
-                </button>
-                {pools.map((p) => (
-                  <button key={p.pool} type="button" aria-pressed={poolTab === p.pool}
-                          onClick={() => setPoolTab(p.pool)} data-testid={`pooltab-${p.pool}`}>
-                    {p.label} <span className="count mono">{filteredStudies.filter((r) => r.pool === p.pool).length}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {!emptyOwn && view === "list" && <div className={`queue-container ${poolTab !== "ALL" ? "single-pool" : ""}`}>
-              {pools.map((p) => (
-                <section key={p.pool} className="pool-group" data-testid={`pool-${p.pool}`} aria-label={`${p.label} reading pool`}
-                         hidden={poolTab !== "ALL" && poolTab !== p.pool}>
-                  <div className="pool-header">
-                    <h2 className="pool-title">{p.label} Reading Pool</h2>
-                    <span className="pool-badge">{p.sections.reduce((a, s) => a + s.rows.length, 0)} Studies</span>
-                  </div>
-                  {p.sections.map((s) => (
-                    <section key={s.lane} className={`lane-group lane-${s.lane}`} data-testid={`section-${p.pool}-${s.lane}`}>
-                      <h3 className="lane-group-heading">
-                        <span className="lanename">{s.label}</span>
-                        {s.clock && <span className="clock mono"> • {s.clock}</span>}
-                        <span className="mono count"> ({s.rows.length})</span>
-                      </h3>
-                      {s.lane === "ABSTAIN" && (
-                        <p className="lane-explain-why">Model confidence was not sufficient to assign a lane. A radiologist picks it.</p>
-                      )}
-                      {s.lane === "FAILED" && (
-                        <p className="lane-explain-why">Processing did not complete. The study is still in PACS; read it there.</p>
-                      )}
-                      {s.rows.map((row) => {
-                        const isSelected = row.study === selectedStudyId;
-                        const verdict = row.verdict ? (row.verdict.value === "agree" ? "Agreed" : "Disagreed") : "Unread";
-                        return (
-                          <div key={row.study}
-                               className={`study-row lane-${row.lane} ${isSelected ? "selected" : ""} ${row.overdue ? "overdue" : ""}`}
-                               onClick={() => setSelectedStudyId(row.study)}
-                               data-testid="study-row" data-study={row.study}>
-                            <div className="cell-lane">
-                              <span className={`lanetag lane-${row.lane}`}>{row.lane_label || row.lane}</span>
-                              {row.human_lane ? (
-                                <span className="cell-clock">Lane set by {row.human_lane.by_name || row.human_lane.by}</span>
-                              ) : row.repeat_imaging ? (
-                                <span className="cell-clock">Marked inadequate by {row.repeat_imaging.by_name || row.repeat_imaging.by}</span>
-                              ) : row.clock && <span className="cell-clock mono">{row.clock}</span>}
-                            </div>
-                            <div className="cell-patient mono bold">{row.patient_id || row.study}</div>
-                            <div className="cell-modality">
-                              <span className={`mod-badge mod-${row.modality}`}>{row.exam || row.modality}</span>
-                            </div>
-                            <div className="cell-finding">
-                              <span className="finding-text" title={row.driver_label || row.abstain_reason || "--"}>
-                                {row.lane === "FAILED" ? row.error : row.driver_label || row.abstain_reason || "--"}
-                              </span>
-                            </div>
-                            <div className="cell-acuity mono acuity"><Acuity row={row} /></div>
-                            <div className="cell-status">
-                              <span className={`verdict-pill ${isUnread(row) ? "unread" : "reviewed"}`}>{verdict}</span>
-                              <span className="cell-reader" data-testid="assigned">
-                                {who(row)}{row.overdue && <strong className="overdue-tag"> not opened</strong>}
-                              </span>
-                            </div>
-                            <div className="cell-time mono">{timeUTC(row.arrived)}</div>
-                          </div>
-                        );
-                      })}
-                    </section>
-                  ))}
-                </section>
-              ))}
-            </div>}
-          </>
-        )}
-      </main>
+            {queue}
+          </div>
+          <aside className="dash-side"><ReadersCard readers={readers} studies={data.studies} /></aside>
+        </div>
+      )}
+      {activeNav === "recent" && queue}
 
       {selectedStudyId && (
-        <>
-          <div className="layout-resizer" onMouseDown={startResize} title="Drag to resize panel" />
-
-          <aside className="workstation-details-panel" data-testid="workstation-details-panel">
-            <button type="button" className="icon-btn details-close" onClick={() => setSelectedStudyId(null)}
+        <Overlay side="right" onClose={() => setSelectedStudyId(null)}>
+          <aside className="sheet" data-testid="workstation-details-panel" role="dialog" aria-modal="true" aria-label="Study details">
+            <button type="button" className="circle sheet-close" onClick={() => setSelectedStudyId(null)}
                     aria-label="Close study panel" title="Close (Esc)" data-testid="close-panel">
-              <CloseIcon size={16} />
+              <CloseIcon size={18} />
             </button>
-            <LatestCasePanel studyId={selectedStudyId} token={token} me={data.me}
-                             onVerdictChange={handleVerdictUpdate} onChanged={fetchWorklist}
-                             onLeft={() => setSelectedStudyId(null)} />
+            <ErrorBoundary key={selectedStudyId} fallback={({ reset }) => <Failed what="This study" onRetry={reset} />}>
+              <LatestCasePanel studyId={selectedStudyId} token={token} me={data.me}
+                               onVerdictChange={handleVerdictUpdate} onChanged={fetchWorklist}
+                               onLeft={() => setSelectedStudyId(null)} />
+            </ErrorBoundary>
           </aside>
-        </>
+        </Overlay>
       )}
     </div>
   );
