@@ -52,7 +52,7 @@
 /* List view */
 .queue-container { display: flex; flex-direction: column; gap: 20px; container-type: inline-size; }
 .queue-colhead, .study-row {
-  display: grid; grid-template-columns: 150px 130px 110px minmax(120px, 1fr) 60px 120px 56px; gap: 12px; align-items: center;
+  display: grid; grid-template-columns: 130px 120px 100px minmax(80px, 1fr) 52px 100px 48px; gap: 12px; align-items: center;
 }
 .queue-colhead { padding: 0 12px; font-size: 12px; color: var(--ink-3); }
 .pool-group { display: flex; flex-direction: column; gap: 4px; }

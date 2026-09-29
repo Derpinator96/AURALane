@@ -101,7 +101,7 @@ tbody tr:hover td { background: var(--hover); }
   display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   height: 100vh; padding: 8px 8px 8px 0; background: var(--canvas);
 }
-.app.sidebar-collapsed { grid-template-columns: 0 minmax(0, 1fr); padding-left: 8px; }
+.app.sidebar-collapsed { grid-template-columns: minmax(0, 1fr); padding-left: 8px; }
 .app.sidebar-collapsed .shell-sidebar { display: none; }
 
 .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
@@ -200,6 +200,5 @@ tbody tr:hover td { background: var(--hover); }
 .estimate { padding: 12px; background: var(--column); border: 1px solid var(--line); border-radius: var(--r-card); display: grid; gap: 4px; }
 
 @media (max-width: 900px) {
-  .app { grid-template-columns: 0 minmax(0, 1fr); padding-left: 8px; }
-  .shell-sidebar { display: none; }
+  :root { --sidebar-w: 200px; }
 }
