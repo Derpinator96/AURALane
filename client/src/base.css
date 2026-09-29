@@ -143,7 +143,7 @@ tbody tr:hover td { background: var(--hover); }
   overflow: hidden; box-shadow: var(--shadow);
 }
 .topbar {
-  display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 16px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; min-height: 52px; padding: 6px 16px;
   border-bottom: 1px solid var(--line); flex: none;
 }
 .topbar-rule { width: 1px; height: 18px; background: var(--line-strong); }
@@ -151,7 +151,7 @@ tbody tr:hover td { background: var(--hover); }
 .topbar-spacer { flex: 1; }
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
 .banner {
-  padding: 3px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-control);
+  max-width: 100%; padding: 3px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-control);
   font-size: 12px; color: var(--ink-2); white-space: nowrap;
 }
 .sheet-body { flex: 1; min-height: 0; overflow: auto; }

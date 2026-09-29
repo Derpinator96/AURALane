@@ -18,7 +18,7 @@
 .lane-badge { display: grid; gap: 2px; justify-items: end; }
 .lane-badge .lane-text { gap: 8px; }
 .lane-clock { color: var(--ink-3); font-size: 12px; }
-.case-panel-viewer-section { display: grid; gap: 12px; }
+.case-panel-viewer-section { display: grid; gap: 12px; container-type: inline-size; }
 .viewer-container { display: grid; gap: 12px; min-width: 0; }
 .viewer-header-info { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .viewer-title { font-size: 15px; font-weight: 500; }
@@ -92,3 +92,19 @@ input[type="range"] { accent-color: var(--ink); }
   .study-page-layout { grid-template-columns: 1fr; height: auto; }
   .study-analysis-sidebar { border-left: 0; border-top: 1px solid var(--line); }
 }
+
+/* Verdict buttons: neutral; the chosen one takes the ink border and a tint. */
+.btn-verdict { flex: 1; min-width: 0; }
+.btn-verdict.selected, .btn-verdict.btn-agree.selected, .btn-verdict.btn-disagree.selected {
+  background: var(--tag-bg); color: var(--ink); border-color: var(--ink);
+}
+.btn-verdict:disabled { opacity: 0.5; }
+.btn-analyse-case { min-height: 26px; padding: 0 10px; font-size: 12px; }
+.viewer-tools { gap: 6px; }
+.viewer-tools button {
+  min-height: 28px; padding: 0 10px; background: var(--sheet); color: var(--ink);
+  border: 1px solid var(--line-strong); border-radius: var(--r-control); font-size: 12px; cursor: pointer;
+}
+.viewer-tools button:hover { background: var(--hover); }
+.viewer-tools button[aria-pressed="true"] { background: var(--tag-bg); border-color: var(--ink); color: var(--ink); }
+.viewer-label { margin-left: auto; color: var(--ink-3); font-weight: 400; }

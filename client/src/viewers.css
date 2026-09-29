@@ -477,44 +477,6 @@
   gap: 10px;
 }
 
-.btn-verdict {
-  flex: 1;
-  padding: 9px;
-  font-size: 12.5px;
-  font-weight: 500;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: 1px solid var(--line);
-  background: var(--card);
-}
-
-.btn-agree {
-  color: #047857;
-  border-color: #a7f3d0;
-}
-.btn-agree:hover {
-  background: #ecfdf5;
-}
-.btn-agree.selected {
-  background: #047857;
-  color: #ffffff;
-  border-color: #047857;
-}
-
-.btn-disagree {
-  color: #b91c1c;
-  border-color: #fca5a5;
-}
-.btn-disagree:hover {
-  background: #fef2f2;
-}
-.btn-disagree.selected {
-  background: #b91c1c;
-  color: #ffffff;
-  border-color: #b91c1c;
-}
-
 /* Draft Note */
 .case-panel-draft {
   margin-top: 6px;
@@ -1697,3 +1659,8 @@
 
 
 
+
+/* Panels narrower than the media queries assume: stack the Grad-CAM views. */
+@container (max-width: 430px) {
+  .ct-triview-grid, .ct-dualview-grid { grid-template-columns: 1fr; }
+}

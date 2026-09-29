@@ -1,7 +1,7 @@
 /* Admin: tables with hairline rows and mono numbers, stat figures as large
    numbers with a grey label above, thin bars, white service cards with a status dot. */
 
-.adminpage { display: flex; flex-direction: column; gap: 16px; padding: 20px 24px 32px; max-width: 1200px; }
+.adminpage { display: flex; flex-direction: column; gap: 16px; padding: 20px 24px 32px; max-width: 1080px; }
 .adminpage h2 { font-size: 15px; font-weight: 500; margin: 20px 0 8px; }
 .adminpage h3 { font-size: 14px; font-weight: 500; margin: 16px 0 6px; }
 .adminpage p { margin: 0; }
@@ -84,3 +84,8 @@ tr.lane-FAILED .bar { background: var(--lane-failed); }
   .pipe-flow { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .pipe-totals { grid-template-columns: 1fr; }
 }
+
+.adminpage > .note:first-child { color: var(--ink-3); }
+.adminpage table.admin { width: 100%; }
+.adminpage select { max-width: 100%; }
+.adminpage { overflow-x: auto; }
