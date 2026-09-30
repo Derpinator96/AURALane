@@ -137,6 +137,31 @@ def test_only_the_reader_of_a_study_can_ask_and_not_for_the_wrong_people(app):
     assert [o["to"] for o in r.json()["opinions"]] == [R3]
 
 
+@pytest.mark.parametrize("lane", ["CRITICAL", "URGENT", "ABSTAIN", "EXPEDITED", "ROUTINE", "FAILED", "REPEAT"])
+def test_a_study_in_any_lane_can_be_sent_like_mail_and_stays_where_it_is(app, lane):
+    table = app.p["table"]
+    row = next(r for r in table.scan("worklist") if r["modality"] == "CR")
+    row["lane"] = lane                                        # whatever lane it is in
+    table.put_item("worklist", row)
+    s = row["study"]
+    r = ask(app, s, [R2, R3], "Please read this one when you can")
+    assert r.status_code == 200, r.text
+    # It is still on the sender's worklist, in the same lane, with the same reader.
+    mine = {x["study"]: x for x in app.get("/api/worklist", headers=app.h("radiologist-1")).json()["studies"]}
+    assert s in mine and mine[s]["lane"] == lane and mine[s]["assigned_to"] == R1
+    assert table.get_item("worklist", {"study": s})["assigned_to"] == R1
+    # And it is in the others' Second opinions, with the message.
+    for who in ("radiologist-2", "radiologist-3"):
+        got = app.get("/api/second-opinions", headers=app.h(who)).json()["received"]
+        assert [(x["study"]["study"], x["opinion"]["note"]) for x in got] == [(s, "Please read this one when you can")]
+        assert got[0]["study"]["assigned_to"] == R1
+
+
+def test_the_old_hand_over_is_gone(app):
+    s = app.chest
+    assert app.post(f"/api/studies/{s}/second-read", json={"reader": R2}, headers=app.h("radiologist-1")).status_code in (404, 405)
+
+
 def test_a_reader_who_does_not_read_the_pool_is_not_asked(app, monkeypatch):
     s = app.chest
     import core.assign as assign
