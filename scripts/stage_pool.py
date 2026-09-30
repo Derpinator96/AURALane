@@ -27,7 +27,9 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import re
 import sys
+import warnings
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -106,7 +108,10 @@ def main() -> int:
             if key in done and not args.force:
                 print(f"  {kind}: {src.name} already staged as {done[key]}")
                 continue
-            uid, files, masked = clean(src, identity, args.ocr_workers)
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")      # core/__init__.py silences these; here they are counted
+                uid, files, masked = clean(src, identity, args.ocr_workers)
+            invalid = {m[1] for w in caught if (m := re.search(r"Invalid value for VR UI: '([^']*)'", str(w.message)))}
             if bucket:
                 prefix = f"pool/{kind}/{uid}/"
                 with ThreadPoolExecutor(16) as pool:
@@ -121,7 +126,9 @@ def main() -> int:
             STAGED.parent.mkdir(parents=True, exist_ok=True)
             STAGED.write_text(json.dumps(staged, indent=1))
             print(f"  {kind}: {src.name} -> {uid} ({len(files) - 1} instances, "
-                  f"{masked} text regions masked)")
+                  f"{masked} text regions masked"
+                  + (f", {len(invalid)} source UIDs were not valid DICOM UIDs and were remapped" if invalid else "")
+                  + ")")
     return 0
 
 
