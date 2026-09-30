@@ -32,6 +32,40 @@ export class ApiError extends Error {
   }
 }
 
+// What the API's error reply says, as a sentence. A plain error carries a string in `detail`. A request
+// the API refused as malformed (a 422) carries a list of objects, one per field, and putting that list
+// in an Error prints "[object Object]". Each becomes "Username needs at least 3 characters." A field's
+// submitted value is never quoted: it may be a password.
+const FIELD_NAMES = { username: "Username", email: "Email", password: "Password", role: "Role" };
+const PATTERN_HINTS = {
+  username: "can use letters, numbers, dots, underscores and hyphens only, with no spaces",
+  email: "is not a valid address",
+};
+
+function fieldProblem(e) {
+  const name = [...(e.loc || [])].reverse().find((x) => typeof x === "string") || "";
+  const label = FIELD_NAMES[name] || (name ? name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, " ") : "A field");
+  switch (e.type) {
+    case "missing": return `${label} is required.`;
+    case "string_too_short": return `${label} needs at least ${e.ctx?.min_length ?? "more"} characters.`;
+    case "string_too_long": return `${label} can be at most ${e.ctx?.max_length ?? "fewer"} characters.`;
+    case "string_pattern_mismatch": return `${label} ${PATTERN_HINTS[name] || "is not in the expected format"}.`;
+    case "literal_error": return `${label} is not one of the allowed choices.`;
+    default: return typeof e.msg === "string" ? `${label}: ${e.msg}` : `${label} is not valid.`;
+  }
+}
+
+export function errorMessage(status, statusText, data) {
+  const d = data && data.detail;
+  if (typeof d === "string" && d) return d;
+  if (Array.isArray(d) && d.length) {
+    return d.map((e) => (typeof e === "string" ? e : fieldProblem(e || {}))).join(" ");
+  }
+  if (d && typeof d === "object" && typeof d.message === "string") return d.message;
+  // HTTP/2 sends no status text, so there may be nothing to show but the number.
+  return statusText || `The request failed (${status}).`;
+}
+
 async function request(path, { token, method = "GET", body } = {}) {
   const res = await fetch(BASE + path, {
     method,
@@ -42,7 +76,7 @@ async function request(path, { token, method = "GET", body } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, data.detail || res.statusText);
+  if (!res.ok) throw new ApiError(res.status, errorMessage(res.status, res.statusText, data));
   return data;
 }
 
