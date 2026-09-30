@@ -15,9 +15,9 @@ function Band({ lo, hi, value }) {
   );
 }
 
-// The abstention tray: for a study in NEEDS HUMAN TRIAGE, why the system did not
-// place it, first, and the three things a reader can do about it. Each action is
-// audited by the API and takes effect at once.
+// The Abstention Tray, for a study the system did not place: why it did not, then
+// the three things a reader can do about it. Each action is audited by the API and
+// takes effect at once.
 //
 //   onChanged(study)   the study's new row (view) after any action
 //   onLeft()           the study left this reader's worklist (a second read)
@@ -69,8 +69,8 @@ export default function AbstentionTray({ detail, token, me = null, onChanged, on
   const need = (label) => reason.trim().length < 3 && `${label} needs a short reason.`;
 
   return (
-    <section className="card tray" data-testid="abstention-tray" aria-label="Needs human triage">
-      <h3 className="sec-title">Needs human triage</h3>
+    <section className="card tray" data-testid="abstention-tray" aria-label="Abstention Tray">
+      <h3 className="sec-title">Abstention Tray</h3>
       <div className="abstain-why" data-testid="abstain-why">
         {driverFinding ? (
           <>

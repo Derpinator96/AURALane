@@ -9,10 +9,11 @@ import ReportsView from "./components/ReportsView.jsx";
 import SettingsView from "./components/SettingsView.jsx";
 import SimulatePanel from "./components/SimulatePanel.jsx";
 import DistributePanel from "./components/DistributePanel.jsx";
+import SheetShell from "./components/SheetShell.jsx";
 import QueueCard from "./components/QueueCard.jsx";
-import { ArrivalsCard, GaugeCard, ReadersCard, StatRow } from "./components/DashboardCards.jsx";
+import { GaugeCard, ReadersCard, StatRow, WaitingCard } from "./components/DashboardCards.jsx";
 import ErrorBoundary, { Failed } from "./components/ErrorBoundary.jsx";
-import { CloseIcon, PlayIcon, UsersIcon } from "./components/Icons.jsx";
+import { PlayIcon, UsersIcon } from "./components/Icons.jsx";
 import { Overlay } from "./components/ui.jsx";
 import { loadSettings } from "./settings.js";
 
@@ -203,13 +204,13 @@ export default function Worklist({ load, token }) {
       {onWorklist && (
         <div className="dash">
           <div className="dash-main">
-            <StatRow studies={scopeStudies} laneLabels={laneLabels} onlyTriage={onlyTriage}
+            <StatRow studies={scopeStudies} onlyTriage={onlyTriage}
                      onToggleTriage={() => {
                        setOnlyTriage((v) => !v);
                        document.querySelector('[data-testid="queue-card"]')?.scrollIntoView?.({ block: "start" });
                      }} />
             <div className="chart-row">
-              <ArrivalsCard studies={scopeStudies} pools={data.pools} />
+              <WaitingCard studies={scopeStudies} laneLabels={laneLabels} scopeLabel={scope === "mine" ? "My worklist" : "All studies"} />
               <GaugeCard studies={scopeStudies} scopeLabel={scope === "mine" ? "My worklist" : "All studies"} />
             </div>
             {queue}
@@ -221,17 +222,13 @@ export default function Worklist({ load, token }) {
 
       {selectedStudyId && (
         <Overlay side="right" onClose={() => setSelectedStudyId(null)}>
-          <aside className="sheet" data-testid="workstation-details-panel" role="dialog" aria-modal="true" aria-label="Study details">
-            <button type="button" className="circle sheet-close" onClick={() => setSelectedStudyId(null)}
-                    aria-label="Close study panel" title="Close (Esc)" data-testid="close-panel">
-              <CloseIcon size={18} />
-            </button>
+          <SheetShell onClose={() => setSelectedStudyId(null)}>
             <ErrorBoundary key={selectedStudyId} fallback={({ reset }) => <Failed what="This study" onRetry={reset} />}>
               <LatestCasePanel studyId={selectedStudyId} token={token} me={data.me}
                                onVerdictChange={handleVerdictUpdate} onChanged={fetchWorklist}
                                onLeft={() => setSelectedStudyId(null)} />
             </ErrorBoundary>
-          </aside>
+          </SheetShell>
         </Overlay>
       )}
     </div>

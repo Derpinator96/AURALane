@@ -131,3 +131,9 @@ export const AlertIcon = (p) => (
   <Icon {...p}><path d="M12 4.5l8.5 15h-17z" /><path d="M12 10v4.5M12 17.2v.01" /></Icon>
 );
 export const FilterIcon = SlidersIcon;
+export const ExpandIcon = (p) => (
+  <Icon {...p}><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" /></Icon>
+);
+export const CollapseIcon = (p) => (
+  <Icon {...p}><path d="M20 10h-6V4M4 14h6v6M14 10l7-7M3 21l7-7" /></Icon>
+);

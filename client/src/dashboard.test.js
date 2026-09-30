@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { arrivalsByHour, displayName, readerLoad, summarize, waitText } from "./dashboard.js";
+import { displayName, readerLoad, summarize, waitText, waitingByLane } from "./dashboard.js";
 
 const row = (o) => ({ study: "s", lane: "ROUTINE", pool: "Chest", verdict: null, arrived: "2026-09-25T08:10:00+00:00", ...o });
 
@@ -50,23 +50,29 @@ describe("summarize", () => {
   });
 });
 
-describe("arrivalsByHour", () => {
-  it("uses the latest day with arrivals and splits each hour by pool", () => {
-    const a = arrivalsByHour([
-      row({ arrived: "2026-09-24T22:00:00+00:00" }),
-      row({ arrived: "2026-09-25T08:10:00+00:00", pool: "Chest" }),
-      row({ arrived: "2026-09-25T08:50:00+00:00", pool: "Neuro" }),
-      row({ arrived: "2026-09-25T09:05:00+00:00", pool: "Chest" }),
-    ], ["Chest", "Neuro"]);
-    expect(a.day).toBe("2026-09-25");
-    expect(a.total).toBe(3);
-    expect(a.hours[8].counts).toEqual({ Chest: 1, Neuro: 1 });
-    expect(a.hours[9].total).toBe(1);
-    expect(a.max).toBe(2);
+describe("waitingByLane", () => {
+  const now = Date.parse("2026-09-25T10:00:00+00:00");
+  const w = waitingByLane([
+    row({ lane: "CRITICAL", arrived: "2026-09-25T08:00:00+00:00" }),
+    row({ lane: "CRITICAL", arrived: "2026-09-25T09:30:00+00:00" }),
+    row({ lane: "CRITICAL", arrived: "2026-09-25T06:00:00+00:00", verdict: { value: "agree" } }),
+    row({ lane: "ABSTAIN", arrived: "2026-09-25T09:50:00+00:00" }),
+    row({ lane: "URGENT", verdict: { value: "disagree" } }),
+  ], now);
+  const by = Object.fromEntries(w.map((r) => [r.lane, r]));
+  it("lists every tracked lane, in order, even when nothing waits", () => {
+    expect(w.map((r) => r.lane)).toEqual(["CRITICAL", "URGENT", "ABSTAIN", "EXPEDITED", "ROUTINE"]);
+    expect(by.ROUTINE).toEqual({ lane: "ROUTINE", count: 0, oldestMs: null });
   });
-  it("is null when nothing has arrived", () => {
-    expect(arrivalsByHour([], ["Chest"])).toBeNull();
-    expect(arrivalsByHour([row({ arrived: null })], ["Chest"])).toBeNull();
+  it("counts only studies nobody has read, and times the oldest of them", () => {
+    expect(by.CRITICAL.count).toBe(2);
+    expect(by.CRITICAL.oldestMs).toBe(2 * 3_600_000);          // 08:00, not the already-read 06:00
+    expect(by.URGENT.count).toBe(0);
+    expect(by.ABSTAIN.oldestMs).toBe(10 * 60_000);
+  });
+  it("has no oldest wait when a waiting study carries no arrival time", () => {
+    expect(waitingByLane([row({ lane: "ROUTINE", arrived: null })], now).find((r) => r.lane === "ROUTINE"))
+      .toEqual({ lane: "ROUTINE", count: 1, oldestMs: null });
   });
 });
 
@@ -79,7 +85,8 @@ describe("readers", () => {
   });
   it("greets by the reader's name, else the email's local part", () => {
     expect(displayName("a@x.io", [{ id: "a@x.io", name: "Reader 1" }])).toBe("Reader 1");
-    expect(displayName("radiologist@dev.auralane.local", [])).toBe("radiologist");
+    expect(displayName("radiologist@dev.auralane.local", [])).toBe("Radiologist");
+    expect(displayName("anurag.verma@x.io", [])).toBe("Anurag Verma");
     expect(displayName(null)).toBe("");
   });
 });

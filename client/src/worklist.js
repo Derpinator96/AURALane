@@ -24,6 +24,19 @@ export function isUnread(row) {
   return !row.verdict;
 }
 
+// The name a lane goes by on screen. The API sends its labels in capitals; here they
+// read as sentence case, and the lane where the system does not commit is the
+// Abstention Tray.
+export function laneName(lane, label) {
+  if (lane === "ABSTAIN") return "Abstention Tray";
+  const text = String(label || lane || "");
+  return text && text === text.toUpperCase() ? text.charAt(0) + text.slice(1).toLowerCase() : text;
+}
+
+// A lane's reading clock, when it has one. The pinned lanes (abstained, failed, repeat
+// imaging) carry a description in place of a time limit; their name already says it.
+export const laneClock = (l) => (l.pinned ? null : l.clock || null);
+
 function passes(row, { lane, read }) {
   if (lane !== "ALL" && row.lane !== lane) return false;
   if (read === "unread" && !isUnread(row)) return false;

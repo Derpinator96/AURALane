@@ -8,7 +8,7 @@ import NoteEditorModal from "./components/NoteEditorModal.jsx";
 import { DraftPanel } from "./components/DraftPanel.jsx";
 import { LazyView } from "./components/ErrorBoundary.jsx";
 import { api, loadSession } from "./api.js";
-import { timeUTC } from "./worklist.js";
+import { laneName, timeUTC } from "./worklist.js";
 import { CheckIcon, ChevronIcon, ClockIcon } from "./components/Icons.jsx";
 import { Spinner } from "./components/ui.jsx";
 
@@ -154,7 +154,7 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
     <aside className="study-analysis-sidebar" data-testid="study-panel">
       <div className={`analysis-lane-card lane-${s.lane}`}>
         <div className="lane-header-row">
-          <span className="lane-badge-text">{s.lane_label || s.lane}</span>
+          <span className="lane-badge-text">{laneName(s.lane, s.lane_label)}</span>
           {s.clock && <span className="chip chip-quiet lane-sla-target"><ClockIcon size={13} /> {s.clock}</span>}
         </div>
         <div className="lane-meta-row">
@@ -181,7 +181,7 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
           <dd className="mono-id">{s.lane === "ABSTAIN" || s.lane === "FAILED" ? "--" : fmt(s.acuity, 1)}</dd>
           <dt>Confidence</dt>
           <dd>
-            {brain ? "None: the brain model reports volumes, not a probability"
+            {brain ? "Not reported: the brain model reports volumes, not a probability"
                    : <span className="mono-id">{fmt(s.confidence)}</span>}
           </dd>
           <dt>Model</dt><dd className="mono-id">{s.model_id || "--"}</dd>
@@ -410,7 +410,7 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
             <div className="hud-study-tag">
               <span className="hud-patient mono-id">{detail.study.patient_id || detail.study.study}</span>
               <span className={`mod-badge mod-${detail.study.modality}`}>{detail.study.exam || detail.study.modality}</span>
-              <span className={`lanetag lane-${detail.study.lane}`}>{detail.study.lane_label || detail.study.lane}</span>
+              <span className={`lanetag lane-${detail.study.lane}`}>{laneName(detail.study.lane, detail.study.lane_label)}</span>
             </div>
           </div>
           <div className="hud-right-section">

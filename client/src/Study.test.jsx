@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import fixture from "./test/study.api.json";
 import Study, { RegionalContext } from "./Study.jsx";
+import { laneName } from "./worklist.js";
 
 // Cornerstone needs WebGL and workers, which jsdom lacks; the viewer is
 // exercised end to end by Playwright. Here a stub records what it is given.
@@ -77,7 +78,7 @@ describe("Study", () => {
 
   it("shows lane, driver and every finding exactly as the API sent them", async () => {
     await show();
-    expect(screen.getAllByText(detail.study.lane_label).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(laneName(detail.study.lane, detail.study.lane_label)).length).toBeGreaterThan(0);
     const rows = within(screen.getByRole("table")).getAllByRole("row").slice(1);
     expect(rows.map((r) => r.cells[0].textContent.replace("DRIVER", ""))).toEqual(detail.findings.map((f) => f.label));
     expect(rows.map((r) => r.cells[2].textContent)).toEqual(

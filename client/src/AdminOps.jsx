@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { timeUTC } from "./worklist.js";
+import { laneName, timeUTC } from "./worklist.js";
 
 // Admin: the pipeline as it runs, and who reads what. Both read only what the
 // API computed from the audit trail and the worklist rows; study ids and lanes
@@ -31,7 +31,7 @@ function Timeline({ study, load, onClose }) {
   return (
     <section className="panel pipe-timeline" data-testid="pipeline-timeline" aria-label="Study timeline">
       <div className="pipe-timeline-head">
-        <h3>Study <span className="mono-id">{short(study)}</span>{t && <> {t.modality}, <span className={`lanetag lane-${t.lane}`}>{t.lane}</span></>}</h3>
+        <h3>Study <span className="mono-id">{short(study)}</span>{t && <> {t.modality}, <span className={`lanetag lane-${t.lane}`}>{laneName(t.lane)}</span></>}</h3>
         <button type="button" className="pill pill-sm" onClick={onClose}>Close</button>
       </div>
       {error && <p className="error">{error}</p>}
@@ -111,7 +111,7 @@ export function Pipeline({ load, loadStudy }) {
                   ))}
                 </span>
                 <span className="pipe-live-state">
-                  {l.failed ? "failed" : l.done ? <span className={`lanetag lane-${l.lane}`}>{l.lane}</span> : l.status}
+                  {l.failed ? "failed" : l.done ? <span className={`lanetag lane-${l.lane}`}>{laneName(l.lane)}</span> : l.status}
                   {l.end_to_end_ms != null && <span className="mono"> {secs(l.end_to_end_ms)}</span>}
                 </span>
               </button>
@@ -154,7 +154,7 @@ export function Pipeline({ load, loadStudy }) {
                 {data.recent.map((r) => (
                   <tr key={r.study} className="clickable" onClick={() => setOpen(r.study)}>
                     <td className="mono-id">{short(r.study)}</td><td>{r.modality}</td>
-                    <td>{r.lane && <span className={`lanetag lane-${r.lane}`}>{r.lane}</span>}</td>
+                    <td>{r.lane && <span className={`lanetag lane-${r.lane}`}>{laneName(r.lane)}</span>}</td>
                     <td className="mono num">{secs(r.end_to_end_ms)}</td>
                     <td>{r.failed ? "failed" : ""}</td>
                   </tr>
@@ -192,7 +192,7 @@ export function Assignments({ load, reassign }) {
       {data.clock && <p className="meta">{data.clock}</p>}
       <table className="admin" data-testid="assignments-readers">
         <thead>
-          <tr><th>Reader</th><th>Pools</th>{data.lanes.map((l) => <th key={l}>{data.lane_labels[l]}</th>)}
+          <tr><th>Reader</th><th>Pools</th>{data.lanes.map((l) => <th key={l}>{laneName(l, data.lane_labels[l])}</th>)}
             <th>Total</th><th>Unread</th><th>Not opened in time</th></tr>
         </thead>
         <tbody>
@@ -216,7 +216,7 @@ export function Assignments({ load, reassign }) {
           {data.studies.map((s) => (
             <tr key={s.study} className={s.overdue ? "overdue" : ""} data-testid="assignment-row">
               <td className="mono-id" title={s.study}>{short(s.study)}</td>
-              <td><span className={`lanetag lane-${s.lane}`}>{s.lane_label}</span></td>
+              <td><span className={`lanetag lane-${s.lane}`}>{laneName(s.lane, s.lane_label)}</span></td>
               <td>{s.pool}</td>
               <td className="mono">{timeUTC(s.arrived)}</td>
               <td>{s.read ? "read" : s.opened_at ? `opened ${timeUTC(s.opened_at)}` : s.overdue ? "not opened, past the clock" : "no"}</td>

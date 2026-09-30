@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { timeUTC } from "./worklist.js";
+import { laneName, timeUTC } from "./worklist.js";
 import { Assignments, Pipeline } from "./AdminOps.jsx";
 
 // Admin screens. They show how the system is configured and what it did; they
@@ -35,7 +35,6 @@ export function Audit({ load }) {
       {(d) => (
         <section className="panel">
           <div className="card-head">
-            <h2 className="card-title">Audit log</h2>
             <span className="chip chip-quiet">Showing {d.events.length} of {d.total}, newest first</span>
           </div>
           <table className="admin" data-testid="audit">
@@ -68,7 +67,6 @@ export function LaneMix({ load }) {
       {(d) => (
         <section className="panel">
           <div className="card-head">
-            <h2 className="card-title">Lane mix</h2>
             {d.placed_by_human != null && (
               <span className="chip" data-testid="placed-by-human">
                 Placed by a human after the system abstained: <strong className="mono">{d.placed_by_human}</strong>
@@ -82,7 +80,7 @@ export function LaneMix({ load }) {
             <tbody>
               {d.lanes.map((l) => (
                 <tr key={l.lane} className={`lane-${l.lane}`}>
-                  <td className="lanetag">{l.label}</td>
+                  <td className="lanetag">{laneName(l.lane, l.label)}</td>
                   <td className="mono num">{l.count}</td>
                   <td className="mono num">{l.percent == null ? "--" : `${l.percent}%`}</td>
                   <td className="barcol" aria-hidden="true"><span className="bar" style={{ width: `${l.percent || 0}%` }} /></td>
@@ -115,7 +113,7 @@ export function Thresholds({ load }) {
               <tbody>
                 {d.lanes.map((l) => (
                   <tr key={l.lane} className={`lane-${l.lane}`}>
-                    <td className="lanetag">{l.lane}</td><td className="mono num">{l.acuity_floor}</td><td>{l.clock}</td>
+                    <td className="lanetag">{laneName(l.lane)}</td><td className="mono num">{l.acuity_floor}</td><td>{l.clock}</td>
                   </tr>
                 ))}
               </tbody>
@@ -251,7 +249,6 @@ export function Intake({ load, start }) {
   return (
     <section className="panel" data-testid="intake">
       <div className="card-head">
-        <h2 className="card-title">Simulated intake</h2>
         <button type="button" className="pill pill-primary" onClick={onStart} disabled={!state.available || state.running || busy}
                 data-testid="intake-start">
           {state.running ? "Intake running" : `Ingest ${INTAKE_COUNT} studies`}
@@ -278,7 +275,7 @@ export function Intake({ load, start }) {
                   <td>{it.modality}</td>
                   <td className="mono-id detail">{it.source}</td>
                   <td>{it.status}{it.error ? `: ${it.error}` : ""}</td>
-                  <td className="lanetag">{it.lane || "--"}</td>
+                  <td className="lanetag">{it.lane ? laneName(it.lane) : "--"}</td>
                   <td className="mono num">{it.seconds ?? "--"}</td>
                 </tr>
               ))}
@@ -315,7 +312,6 @@ export function AccessRequests({ load, decide }) {
     <Loaded state={state} what="access requests">
       {(d) => (
         <section className="panel">
-          <h2 className="card-title">Waitlist</h2>
           <table className="admin" data-testid="access-requests">
             <thead><tr><th>Requested (UTC)</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th /></tr></thead>
             <tbody>

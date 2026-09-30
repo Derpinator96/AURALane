@@ -1,4 +1,4 @@
-/* The worklist dashboard: stat cards, arrivals and queue charts, the readers, then
+/* The worklist dashboard: stat cards, waiting by lane and read progress, the readers, then
    the queue card with its list or board. Rows are separated by spacing; the next
    study to read is a raised white row. */
 
@@ -17,27 +17,26 @@
 .stat-mid { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; min-height: 40px; }
 .stat-value { font-size: var(--fs-stat); font-weight: 500; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
 .stat-meta { color: var(--ink-2); font-size: var(--fs-meta); }
-.minibars { display: flex; align-items: flex-end; gap: 4px; height: 38px; }
-.minibar { display: flex; align-items: flex-end; width: 7px; height: 100%; border-radius: 4px; background: var(--tint); }
-.minibar-fill { display: block; width: 100%; border-radius: 4px; background: var(--dot, var(--idle)); }
 
 /* Charts */
-.chart-row { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: var(--gap); }
-.arrivals { width: 100%; height: auto; display: block; }
-.arrivals .axis { fill: var(--ink-3); font-size: 11px; font-family: var(--sans); }
-.series-a { fill: var(--blue); }
-.series-b { fill: var(--navy); }
-.series-c { fill: var(--lane-repeat); }
+.chart-row { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--gap); }
+/* Waiting by lane: a dot, the lane and its oldest wait, a bar, the count. */
+.wait-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.wait-row { display: grid; grid-template-columns: 10px minmax(0, 168px) minmax(0, 1fr) 34px; align-items: center; gap: 14px; padding: 8px 4px; }
+.wait-row .dot { width: 10px; height: 10px; }
+.wait-name { display: grid; line-height: 1.3; min-width: 0; }
+.wait-name strong { font-size: var(--fs-body); }
+.wait-track { height: 10px; border-radius: var(--r-pill); background: var(--tint); overflow: hidden; }
+.wait-fill { display: block; height: 100%; border-radius: var(--r-pill); background: var(--dot, var(--idle)); }
+.wait-count { text-align: right; font-size: var(--fs-card); font-weight: 500; font-variant-numeric: tabular-nums; }
 .series-dot-0 { --dot: var(--blue); }
-.series-dot-1 { --dot: var(--navy); }
-.series-dot-2 { --dot: var(--lane-repeat); }
 .series-dot-idle { --dot: var(--tick-idle); }
 .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .gauge { position: relative; width: min(100%, 300px); margin: 4px auto 0; }
 .gauge svg { display: block; width: 100%; height: auto; }
 .gauge .tick { stroke: var(--tick-idle); stroke-width: 6; }
 .gauge .tick.on { stroke: var(--blue); }
-.gauge-centre { position: absolute; inset: auto 0 6px 0; display: grid; justify-items: center; gap: 0; }
+.gauge-centre { position: absolute; inset: auto 0 6px 0; display: grid; justify-items: center; gap: 4px; }
 .gauge-number { font-size: var(--fs-stat); font-weight: 500; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
 
 /* Readers */
@@ -50,7 +49,7 @@
 /* The queue card */
 .queue { container: queue / inline-size; display: flex; flex-direction: column; gap: 16px; padding: 22px 22px 26px; }
 .qhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.queue-title { font-size: 20px; letter-spacing: -0.02em; }
+.queue-title { font-size: var(--fs-section); letter-spacing: -0.02em; }
 .qhead-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .view-toggle { display: inline-flex; gap: 8px; }
 .qtools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -62,64 +61,71 @@
 .searchpill input.search-input { flex: 1; min-width: 0; min-height: 38px; padding: 0; background: none !important; box-shadow: none !important; border-radius: 0; }
 .search-clear { display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; background: var(--tint); border: 0; border-radius: 50%; color: var(--ink-2); cursor: pointer; }
 
-.queue-container, .boards { display: flex; flex-direction: column; gap: 26px; }
+.queue-container, .boards { display: flex; flex-direction: column; gap: 28px; }
 .pool-group, .pool-board { display: flex; flex-direction: column; gap: 10px; }
 .pool-group[hidden] { display: none; }
 .pool-header { display: flex; align-items: center; gap: 10px; }
 .pool-title { font-size: var(--fs-card); font-weight: 500; }
 .single-pool .pool-header { display: none; }
-.lane-group { display: flex; flex-direction: column; gap: 2px; }
-.lane-group-heading { display: flex; align-items: center; gap: 8px; padding: 12px 14px 6px; font-size: var(--fs-meta); font-weight: 500; }
-.lane-group-heading .clock, .lane-group-heading .count { color: var(--ink-2); font-weight: 400; }
-.lane-note { padding: 0 14px 6px 30px; color: var(--ink-2); font-size: var(--fs-meta); }
-
-.study-row {
-  display: grid; grid-template-columns: 184px minmax(120px, 1fr) 118px 104px minmax(150px, 184px) 46px 46px 34px; gap: 10px;
-  align-items: center; padding: 9px 12px 9px 14px; border-radius: 20px; cursor: pointer; font-size: var(--fs-body);
-  transition: background 0.15s var(--ease);
+.lane-group { display: flex; flex-direction: column; gap: 8px; }
+.lane-group-heading { display: flex; align-items: center; gap: 10px; padding: 14px 6px 4px; font-size: var(--fs-body); font-weight: 500; }
+.lane-group-heading .dot { width: 10px; height: 10px; }
+.lane-group-heading .count, .board-col-head .count {
+  display: inline-grid; place-items: center; min-width: 24px; height: 22px; padding: 0 8px; border-radius: var(--r-pill);
+  background: var(--tint); color: var(--ink-2); font-size: var(--fs-micro); font-weight: 500;
 }
-.study-row:hover { background: var(--tint); }
-.study-row.selected { background: var(--blue-tint); }
-.study-row.next-up { background: var(--pill); box-shadow: var(--pill-shadow); }
-.study-row.next-up:hover { background: var(--pill-hover); }
-.cell-lane { display: grid; gap: 3px; min-width: 0; }
-.cell-lane .lanetag { justify-self: start; }
-.cell-patient { overflow-wrap: anywhere; line-height: 1.25; }
-.cell-note { font-size: 12px; color: var(--ink-2); padding-left: 4px; overflow-wrap: anywhere; }
-.cell-finding { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.finding-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-.nextup { flex: none; font-size: 12px; font-weight: 500; color: var(--blue-ink); }
-.cell-patient { color: var(--ink); font-size: var(--fs-meta); }
+.lane-group-heading .clock { color: var(--ink-2); font-size: var(--fs-meta); font-weight: 400; }
+.lane-note { padding: 0 6px 2px 26px; color: var(--ink-2); font-size: var(--fs-meta); }
+
+/* A study is a card of its own: a light fill, a soft shadow that deepens on hover, a blue ring when open. */
+.study-row {
+  position: relative;   /* keeps the row's screen-reader text inside the scrolling list */
+  display: grid; grid-template-columns: minmax(170px, 1.4fr) minmax(140px, 0.8fr) 104px minmax(150px, 190px) 48px 44px 34px; column-gap: 12px;
+  align-items: center; min-height: 62px; padding: 12px 14px 12px 20px; border-radius: var(--r-card); cursor: pointer;
+  background: var(--row); box-shadow: var(--row-shadow); font-size: var(--fs-body);
+  transition: background 0.15s var(--ease), box-shadow 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.study-row:hover { background: var(--row-hover); box-shadow: var(--row-shadow-hover); transform: translateY(-1px); }
+.study-row.selected { background: var(--row-hover); box-shadow: 0 0 0 2px var(--blue), var(--row-shadow); }
+.study-row.next-up { background: var(--row-hover); box-shadow: 0 0 0 2px var(--blue-tint), var(--row-shadow-hover); }
+.cell-finding { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+.cell-finding .dot { width: 10px; height: 10px; margin-top: 0.42em; }
+.finding-stack { display: grid; gap: 2px; min-width: 0; }
+.finding-line { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.finding-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.row-lane { flex: none; color: var(--ink-2); font-size: var(--fs-meta); }
+.nextup { flex: none; font-size: var(--fs-micro); font-weight: 500; color: var(--blue-ink); }
+.cell-note { color: var(--ink-2); font-size: var(--fs-micro); overflow-wrap: anywhere; }
+.cell-patient { color: var(--ink); overflow-wrap: anywhere; line-height: 1.25; }
 .cell-status { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .cell-reader { color: var(--ink-2); font-size: var(--fs-meta); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .status-unread { --dot: var(--blue); }
 .status-agreed { --dot: var(--ok); }
 .status-disagreed { --dot: var(--alert-ink); }
 .cell-time { color: var(--ink-2); font-size: var(--fs-meta); }
-.cell-acuity { color: var(--ink); font-size: var(--fs-meta); text-align: right; }
+.cell-acuity { color: var(--ink); text-align: right; }
 .cell-open { justify-self: end; }
 .study-row.overdue .cell-reader { color: var(--alert-ink); }
 .overdue-tag { font-weight: 400; }
 
 /* Two lines when the card is narrower than the one-line row needs. */
-@container queue (max-width: 900px) {
+@container queue (max-width: 800px) {
   .study-row {
-    grid-template-columns: 138px minmax(0, 1fr) minmax(0, 1fr) 46px 44px;
-    grid-template-areas: "lane finding finding acuity open" "patient modality status status time";
-    row-gap: 8px;
+    grid-template-columns: minmax(0, 1.2fr) auto minmax(0, 1.6fr) auto;
+    grid-template-areas: "finding finding acuity open" "patient modality status time";
+    row-gap: 10px; padding: 14px 14px 14px 18px;
   }
-  .cell-lane { grid-area: lane; } .cell-finding { grid-area: finding; } .cell-acuity { grid-area: acuity; }
-  .cell-open { grid-area: open; } .cell-patient { grid-area: patient; } .cell-modality { grid-area: modality; }
+  .cell-finding { grid-area: finding; } .cell-acuity { grid-area: acuity; } .cell-open { grid-area: open; }
+  .cell-patient { grid-area: patient; } .cell-modality { grid-area: modality; }
   .cell-status { grid-area: status; } .cell-time { grid-area: time; text-align: right; }
 }
-/* A phone: each study is its own soft card, still inside its reading pool. */
+/* A phone: three lines, still a card inside its reading pool. */
 @container queue (max-width: 560px) {
   .study-row {
     grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-areas: "lane lane acuity" "finding finding finding" "patient modality time" "status status open";
-    background: var(--tint); margin-bottom: 8px; padding: 14px;
+    grid-template-areas: "finding acuity open" "patient modality time" "status status status";
+    padding: 14px;
   }
-  .study-row.next-up { background: var(--pill); }
 }
 
 .empty-line { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 40px 16px; color: var(--ink-2); text-align: center; }
@@ -128,8 +134,7 @@
 .board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(250px, 1fr); gap: 14px; align-items: start; overflow-x: auto; padding-bottom: 6px; }
 .board-col { display: flex; flex-direction: column; gap: 10px; padding: 14px; background: var(--glass-soft); border-radius: var(--r-panel); min-height: 110px; box-shadow: var(--glass-hi); }
 .board-col-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: var(--fs-body); font-weight: 500; }
-.board-col-head .count { color: var(--ink-2); font-weight: 400; }
-.board-col-head .clock { flex-basis: 100%; color: var(--ink-2); font-size: 12px; font-weight: 400; padding-left: 16px; }
+.board-col-head .clock { flex-basis: 100%; color: var(--ink-2); font-size: var(--fs-micro); font-weight: 400; padding-left: 16px; }
 .board-card {
   display: grid; gap: 10px; padding: 14px 16px; background: var(--pill); border-radius: var(--r-card); box-shadow: var(--pill-shadow);
   cursor: pointer; transition: background 0.15s var(--ease);
@@ -141,15 +146,26 @@
 .board-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--ink-2); font-size: var(--fs-meta); }
 .card-alert { padding: 6px 12px; background: var(--alert-bg); color: var(--alert-ink); border-radius: var(--r-small); font-size: var(--fs-meta); }
 
-/* The study sheet: a glass panel over the blurred app. */
+/* The study sheet: a glass panel over the softly blurred app, as wide as the reader drags it. */
+.sheet-shell { position: relative; display: flex; width: var(--sheet-w); max-width: 100%; height: 100%; min-height: 0; }
 .sheet {
-  position: relative; display: flex; flex-direction: column; width: var(--sheet-w); max-width: 100%; height: 100%; overflow: auto;
+  position: relative; flex: 1 1 auto; min-width: 0; height: 100%; overflow: auto; container: sheet / inline-size;
   /* No backdrop filter of its own: the app behind is already blurred by the overlay, and a second
      28 px pass over it costs first-frame time for a difference nobody can see. */
   background: var(--sheet-fill); border-radius: var(--r-frame); box-shadow: var(--glass-hi), var(--pop-shadow);
   animation: slide-in 0.22s var(--ease) both;
 }
-.sheet-close { position: absolute; top: 18px; right: 18px; z-index: 3; }
+/* Expand and close float at the top right and stay there while the sheet scrolls. */
+.sheet-tools { position: sticky; top: 0; z-index: 3; height: 0; display: flex; justify-content: flex-end; gap: 8px; padding: 18px 18px 0 0; }
+.sheet-resize { position: absolute; left: -12px; top: 0; bottom: 0; z-index: 4; width: 24px; display: grid; place-items: center; cursor: ew-resize; touch-action: none; }
+.sheet-resize::before {
+  content: ""; width: 5px; height: 52px; border-radius: 5px; background: var(--pill); box-shadow: var(--pill-shadow);
+  opacity: 0.85; transition: height 0.15s var(--ease), background 0.15s var(--ease);
+}
+.sheet-resize:hover::before, .sheet-resize:focus-visible::before, .sheet-shell.dragging .sheet-resize::before { height: 76px; background: var(--blue); }
+.sheet-resize:focus-visible { outline: 0; }
+.sheet-shell.dragging { user-select: none; }
+.sheet-shell.dragging .sheet { pointer-events: none; }
 
 @media (max-width: 1180px) {
   .dash { grid-template-columns: minmax(0, 1fr); }
@@ -161,14 +177,16 @@
 }
 @media (max-width: 720px) {
   .page { padding: 4px 14px 24px; }
-  :root { --fs-title: 32px; --gap: 14px; }
+  :root { --gap: 14px; }
   .queue { padding: 16px 14px 18px; }
-  .sheet { width: 100vw; border-radius: 0; }
+  .sheet-shell { width: 100vw; }
+  .sheet { border-radius: 0; }
+  .sheet-resize, [data-testid="expand-panel"] { display: none; }
   .overlay-right { padding: 0; }
 }
 
 /* History: patients on the left, the chosen patient's studies on the right. */
-.history { gap: 16px; }
+.history { gap: 22px; }
 .history-search { flex: 0 1 300px; }
 .history-grid { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 22px; align-items: start; }
 .patient-selector-col { display: grid; gap: 4px; align-content: start; }
@@ -179,23 +197,27 @@
 }
 .patient-row:hover { background: var(--tint); }
 .patient-row.active { background: var(--pill); box-shadow: var(--pill-shadow); font-weight: 500; }
-.patient-timeline-col { display: grid; gap: 2px; align-content: start; min-width: 0; }
-.history-row {
-  display: grid; grid-template-columns: 132px 170px 104px 128px minmax(100px, 1fr) 48px 34px; gap: 10px; align-items: center;
-  padding: 9px 12px 9px 14px; border-radius: 20px; cursor: pointer; transition: background 0.15s var(--ease);
+.patient-timeline-col { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.history-row, .report-row {
+  border-radius: var(--r-card); cursor: pointer; background: var(--row); box-shadow: var(--row-shadow);
+  transition: background 0.15s var(--ease), box-shadow 0.15s var(--ease), transform 0.15s var(--ease);
 }
-.history-row:hover { background: var(--tint); }
-.history-row.selected { background: var(--blue-tint); }
+.history-row:hover, .report-row:hover { background: var(--row-hover); box-shadow: var(--row-shadow-hover); transform: translateY(-1px); }
+.history-row.selected, .report-row.selected { background: var(--row-hover); box-shadow: 0 0 0 2px var(--blue), var(--row-shadow); }
+.history-row {
+  display: grid; grid-template-columns: 136px 150px 104px 132px minmax(100px, 1fr) 48px 34px; gap: 12px; align-items: center;
+  min-height: 60px; padding: 10px 14px 10px 18px;
+}
+.history-row > .lanetag, .history-row > .chip, .report-row .lanetag { justify-self: start; }
 
 /* Reports */
 .reports-view .qhead { margin-bottom: 4px; }
-.report-list { display: grid; gap: 2px; }
+.report-list { display: grid; gap: 8px; }
 .report-head, .report-row {
-  display: grid; grid-template-columns: 130px 130px 110px minmax(120px, 1fr) 180px 120px 76px; gap: 10px; align-items: center; padding: 8px 12px 8px 14px;
+  display: grid; grid-template-columns: 136px 132px 110px minmax(120px, 1fr) 150px 120px 76px; gap: 12px; align-items: center; padding: 10px 14px 10px 18px;
 }
-.report-head { color: var(--ink-3); font-size: var(--fs-meta); }
-.report-row { border-radius: 20px; cursor: pointer; transition: background 0.15s var(--ease); }
-.report-row:hover, .report-row.selected { background: var(--tint); }
+.report-head { color: var(--ink-3); font-size: var(--fs-meta); padding-top: 4px; padding-bottom: 0; }
+.report-row { min-height: 60px; }
 .report-row .row-actions { justify-content: flex-end; }
 .report-text { display: grid; gap: 2px; font-size: var(--fs-body); line-height: 1.65; color: var(--ink); }
 .report-heading { margin-top: 14px; font-size: var(--fs-meta); font-weight: 500; letter-spacing: 0.06em; color: var(--blue-ink); }

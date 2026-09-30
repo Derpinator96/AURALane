@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
 import { PlusIcon } from "./Icons.jsx";
 import { Overlay } from "./ui.jsx";
+import { laneName } from "../worklist.js";
 
 const POLL_MS = 2000;
 const STATUS = { queued: "Queued", receiving: "Receiving", running: "In the pipeline", done: "On the worklist", failed: "Failed" };
@@ -139,7 +140,10 @@ export default function SimulatePanel({ token, readers, me = null, onClose, onPr
         {error && <p className="error" role="alert">{error}</p>}
         {!info && !error && <p className="note">Checking the pool.</p>}
         {info && !info.available && (
-          <p className="note" data-testid="simulate-unavailable">Not available here: {info.reason}</p>
+          <p className="note" data-testid="simulate-unavailable">
+            <strong>Simulated ingest is unavailable in this environment.</strong>{" "}
+            {info.reason.charAt(0).toUpperCase() + info.reason.slice(1)}{/[.!?]$/.test(info.reason) ? "" : "."}
+          </p>
         )}
 
         {info?.available && !batch && (
@@ -188,7 +192,7 @@ export default function SimulatePanel({ token, readers, me = null, onClose, onPr
                     <td>{i.type}</td>
                     <td className="mono-id" title={i.study}>{i.study.slice(-12)}</td>
                     <td>{STATUS[i.status] || i.status}{i.error ? `: ${i.error}` : ""}</td>
-                    <td>{i.lane ? <span className={`lanetag lane-${i.lane}`}>{i.lane}</span> : "--"}</td>
+                    <td>{i.lane ? <span className={`lanetag lane-${i.lane}`}>{laneName(i.lane)}</span> : "--"}</td>
                     <td>{readers.find((r) => r.id === i.assigned_to)?.name || (i.assigned_to ? i.assigned_to : "--")}</td>
                   </tr>
                 ))}

@@ -1,13 +1,14 @@
-import { arrivalsByHour, readerLoad, summarize, waitText, WAITING_LANES } from "../dashboard.js";
-import { ArrivalsChart, Gauge, MiniBars } from "./charts.jsx";
+import { readerLoad, summarize, waitText, waitingByLane } from "../dashboard.js";
+import { laneName } from "../worklist.js";
+import { Gauge } from "./charts.jsx";
 import { AlertIcon, CheckIcon, WorklistIcon } from "./Icons.jsx";
 import { Monogram } from "./ui.jsx";
 
-function Stat({ icon, label, value, meta, chart, onClick, pressed, testid }) {
+function Stat({ icon, label, value, meta, onClick, pressed, testid }) {
   const body = (
     <>
       <div className="stat-top"><span className="stat-ico">{icon}</span><span className="stat-label">{label}</span></div>
-      <div className="stat-mid"><span className="stat-value">{value}</span>{chart}</div>
+      <div className="stat-mid"><span className="stat-value">{value}</span></div>
       <div className="stat-meta">{meta}</div>
     </>
   );
@@ -18,48 +19,49 @@ function Stat({ icon, label, value, meta, chart, onClick, pressed, testid }) {
   );
 }
 
-// Critical, needs triage, agreement with the lane. The same counts the Reports
+// Critical, the Abstention Tray, agreement with the lane. The same counts the Reports
 // "Worklist summary" used to show, now on the dashboard.
-export function StatRow({ studies, laneLabels, onlyTriage, onToggleTriage }) {
+export function StatRow({ studies, onlyTriage, onToggleTriage }) {
   const s = summarize(studies);
   return (
     <div className="stat-row" data-testid="stat-row">
       <Stat testid="stat-critical" icon={<AlertIcon size={16} />} label="Critical" value={s.critical}
-            meta={s.waitingCritical ? `oldest ${waitText(s.oldestMs)}` : "none waiting"}
-            chart={<MiniBars label="Studies waiting per lane"
-                             items={WAITING_LANES.map((k) => ({ key: k, label: laneLabels[k] || k, value: s.waiting[k] }))} />} />
-      <Stat testid="stat-triage" icon={<WorklistIcon size={16} />} label="Needs triage" value={s.triage}
-            meta={onlyTriage ? "showing these only" : `${s.waiting.ABSTAIN} unread`}
+            meta={s.waitingCritical ? `oldest unread ${waitText(s.oldestMs)}` : "none waiting"} />
+      <Stat testid="stat-triage" icon={<WorklistIcon size={16} />} label="Abstention Tray" value={s.triage}
+            meta={onlyTriage ? "Showing these only" : `${s.waiting.ABSTAIN} unread`}
             onClick={onToggleTriage} pressed={onlyTriage} />
       <Stat testid="stat-agreement" icon={<CheckIcon size={16} />} label="Agreement with the lane"
             value={s.agreementRate == null ? "--" : `${s.agreementRate.toFixed(1)}%`}
-            meta={`${s.verdicts} ${s.verdicts === 1 ? "verdict" : "verdicts"}`} />
+            meta={s.verdicts ? `${s.verdicts} ${s.verdicts === 1 ? "verdict" : "verdicts"}` : "No verdicts yet"} />
     </div>
   );
 }
 
-const fmtDay = (day) =>
-  new Date(`${day}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-
-export function ArrivalsCard({ studies, pools }) {
-  const names = pools.map((p) => p.pool);
-  const a = arrivalsByHour(studies, names);
+// Unread studies per lane and the longest wait in each: the number the queue exists to bring down.
+export function WaitingCard({ studies, laneLabels, scopeLabel }) {
+  const rows = waitingByLane(studies);
+  const max = Math.max(1, ...rows.map((r) => r.count));
   return (
-    <section className="card arrivals-card" aria-label="Arrivals per hour" data-testid="arrivals-card">
+    <section className="card waiting-card" aria-label="Waiting by lane" data-testid="waiting-card">
       <div className="card-head">
-        <h2 className="card-title">Arrivals per hour</h2>
-        {a && <span className="meta">{fmtDay(a.day)}, UTC</span>}
+        <h2 className="card-title">Waiting by lane</h2>
+        <span className="meta">{scopeLabel}</span>
       </div>
-      {a ? (
-        <>
-          <ArrivalsChart hours={a.hours} pools={names} max={a.max} />
-          <div className="legend">
-            {pools.map((p, i) => (
-              <span key={p.pool} className="chip chip-quiet"><span className={`dot series-dot-${i}`} />{p.label}</span>
-            ))}
-          </div>
-        </>
-      ) : <p className="note">No arrivals yet.</p>}
+      <ul className="wait-list">
+        {rows.map((r) => (
+          <li key={r.lane} className={`wait-row lane-${r.lane}`} data-testid={`wait-${r.lane}`}>
+            <span className="dot" aria-hidden="true" />
+            <span className="wait-name">
+              <strong>{laneName(r.lane, laneLabels[r.lane])}</strong>
+              <span className="meta">{!r.count ? "None waiting" : r.oldestMs == null ? "Waiting" : `Oldest ${waitText(r.oldestMs)}`}</span>
+            </span>
+            <span className="wait-track" aria-hidden="true">
+              <span className="wait-fill" style={{ width: `${r.count ? Math.max(3, (r.count / max) * 100) : 0}%` }} />
+            </span>
+            <span className="wait-count">{r.count}</span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -67,9 +69,9 @@ export function ArrivalsCard({ studies, pools }) {
 export function GaugeCard({ studies, scopeLabel }) {
   const s = summarize(studies);
   return (
-    <section className="card gauge-card" aria-label="Queue" data-testid="gauge-card">
+    <section className="card gauge-card" aria-label="Read progress" data-testid="gauge-card">
       <div className="card-head">
-        <h2 className="card-title">Queue</h2>
+        <h2 className="card-title">Read progress</h2>
         <span className="meta">{scopeLabel}</span>
       </div>
       <Gauge read={s.read} unread={s.unread} />

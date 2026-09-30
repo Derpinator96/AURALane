@@ -38,9 +38,6 @@ export default function Login({ onLogin }) {
         <button type="submit" className="pill pill-primary wide" disabled={busy || !username || !password}>Sign in</button>
         {error && <p className="error" role="alert">{error}</p>}
       </form>
-      <p className="note caption">
-        Radiologists see the worklist. Administrators see configuration and audit, and cannot open studies.
-      </p>
       <Link to="/request-access" className="pill pill-quiet wide">Create an account</Link>
     </main>
   );

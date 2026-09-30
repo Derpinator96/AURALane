@@ -186,7 +186,7 @@ export default function Viewer({
           {onToggleAddNoteMode && (
             <button type="button" aria-pressed={isAddNoteMode} onClick={onToggleAddNoteMode}
                     title="Click the image to drop a note">
-              <PinIcon size={14} />{isAddNoteMode ? "Pin Active" : "Add Note"}
+              <PinIcon size={14} />{isAddNoteMode ? "Cancel" : "Add note"}
             </button>
           )}
           {MODES.map(([key, name]) => (

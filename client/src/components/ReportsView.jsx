@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
 import { CopyIcon, EyeIcon, FilterIcon, PrintIcon, SearchIcon } from "./Icons.jsx";
 import { Overlay, PopoverButton, Segmented } from "./ui.jsx";
+import { laneName } from "../worklist.js";
 
 const STATUS = { draft: "Draft", reviewed: "Reviewed" };
 const HEADING = /^[A-Z][A-Z0-9 &/,-]{2,}$/;
@@ -135,7 +136,7 @@ export default function ReportsView({ token }) {
                 <span className="mono-id" role="cell">{r.patient_id || r.study}</span>
                 <span role="cell">{r.exam || r.modality}</span>
                 <span className="finding-text" role="cell">{r.driving_finding || "--"}</span>
-                <span role="cell"><span className={`lanetag lane-${r.lane}`}>{r.lane}</span></span>
+                <span role="cell"><span className={`lanetag lane-${r.lane}`}>{laneName(r.lane)}</span></span>
                 <span role="cell"><span className={`chip chip-quiet status-${r.status === "reviewed" ? "ok" : "draft"}`}><span className="dot" />{STATUS[r.status] || r.status}</span></span>
                 <span className="row-actions" role="cell">
                   <button type="button" className="circle circle-sm" aria-label="View report" title="View"

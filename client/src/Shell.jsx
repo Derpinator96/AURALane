@@ -81,7 +81,7 @@ function TopBar({ session, onSignOut, setNav }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const compact = useMediaQuery("(min-width: 721px) and (max-width: 1360px)");
+  const compact = useMediaQuery("(min-width: 901px) and (max-width: 1360px)");
   const groups = session.user.groups || [];
   const isRadiologist = groups.includes("radiologist");
 
@@ -95,6 +95,7 @@ function TopBar({ session, onSignOut, setNav }) {
   return (
     <header className={`topbar ${menuOpen ? "menu-open" : ""}`}>
       <Link to={isRadiologist ? "/" : "/admin"} className="brand"><BrandLogo size={24} /><span>AURALane</span></Link>
+      <span className="topbar-break" aria-hidden="true" />
       <nav className="topnav" aria-label="Main" onClick={(e) => { if (e.target.closest("button, a")) setMenuOpen(false); }}>
         {isRadiologist && pathname === "/" && <div ref={setNav} className="nav-slot" />}
         {isRadiologist && pathname !== "/" && (
