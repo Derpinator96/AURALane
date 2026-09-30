@@ -129,10 +129,6 @@ class LaneIn(BaseModel):
     reason: str = Field(min_length=3, max_length=500)
 
 
-class SecondReadIn(BaseModel):
-    reader: str
-
-
 class OpinionsIn(BaseModel):
     readers: list[str] = Field(min_length=1, max_length=8)
     note: str = Field("", max_length=500)
@@ -960,10 +956,10 @@ def create_app(p: dict, registry: Registry | None = None,
     # -- second opinions ---------------------------------------------------------------
     @app.post("/api/studies/{study}/opinions")
     def request_opinions(study: str, body: OpinionsIn, who: Principal = Depends(radiologist)):
-        """Ask one or more other radiologists for a second opinion on a study on this reader's worklist.
-        The study stays here. Each of them finds it under Second opinions, reads it, and saves a report
-        of their own, which everyone on the study can read. (Handing an abstained study over for
-        triage is /second-read.)"""
+        """Send a study on this reader's worklist, in any lane, to one or more other radiologists for a
+        second opinion, with a message. It works like mail: the study stays on this reader's worklist and
+        its lane and assignment do not change. Each of them finds it under Second opinions with the
+        message, reads it, and saves a report of their own, which everyone on the study can read."""
         row = own_row(study, who)
         chosen = pick_readers(list(dict.fromkeys(body.readers)))
         asked = {o.get("to") for o in opinions_of(row)}
@@ -1021,8 +1017,7 @@ def create_app(p: dict, registry: Registry | None = None,
     def _abstained(study: str, who: Principal) -> dict:
         row = own_row(study, who)
         if row["lane"] != "ABSTAIN":
-            raise HTTPException(409, "only a study in NEEDS HUMAN TRIAGE can be placed, sent "
-                                     "for a second read or set aside")
+            raise HTTPException(409, "only a study in NEEDS HUMAN TRIAGE can be placed or set aside")
         return row
 
     @app.post("/api/studies/{study}/lane")
@@ -1039,22 +1034,6 @@ def create_app(p: dict, registry: Registry | None = None,
             actor=who.email, action="lane_set", study=study, at=at, outcome="ok", duration_ms=0.0,
             detail={"from": "ABSTAIN", "lane": body.lane, "reason": body.reason.strip(),
                     "abstain_reason": (row.get("triage") or {}).get("reason")}))
-        return {"disclaimer": DISCLAIMER, "study": view(row)}
-
-    @app.post("/api/studies/{study}/second-read")
-    def request_second_read(study: str, body: SecondReadIn, who: Principal = Depends(radiologist)):
-        """Send an abstained study to another radiologist whose reading pools include
-        it. It leaves this reader's worklist and lands on the other's."""
-        row = _abstained(study, who)
-        (reader,) = pick_readers([body.reader])
-        if reader["id"] == who.email:
-            raise HTTPException(409, "choose another radiologist for a second read")
-        if pool_of(row) not in reader["pools"]:
-            raise HTTPException(409, f"{reader['name']} does not read the {pool_of(row)} pool")
-        at = _now()
-        row["second_read"] = {"requested_by": who.email, "requested_by_name": reader_name(who.email),
-                              "to": reader["id"], "to_name": reader["name"], "at": at}
-        row = assignment.assign_row(p["table"], row, reader, who.email, at, action="second_read")
         return {"disclaimer": DISCLAIMER, "study": view(row)}
 
     @app.post("/api/studies/{study}/inadequate")

@@ -20,11 +20,12 @@ confidence readout.
   (scheduled). Each finding is scored against its own reference distribution and weighted by clinical
   urgency, so urgency is not confidence.
 - **Abstention.** When the model is not confident enough to place a study, it refuses and the study goes to
-  the **Abstention Tray**, where a radiologist assigns a lane, hands it over for a second read, or marks it
+  the **Abstention Tray**, where a radiologist assigns a lane, gets a second opinion, or marks it
   technically inadequate.
 - **Reading pools.** Chest and Neuro are ranked separately and never merged.
-- **Second opinions.** A reader can ask other radiologists to read the same study. They find it under
-  *Second opinions*, write reports of their own, and everyone on the study reads them from a dropdown.
+- **Second opinions.** A reader can send a study, in any lane, with a message, to other radiologists. It
+  works like mail: the study stays on the sender's worklist. They find it under *Second opinions*, write
+  reports of their own, and everyone on the study reads them from a dropdown.
 - **The study view.** Images (Cornerstone3D for 2D, NiiVue for 3D), a per-finding Grad-CAM shown only here,
   a drafted report assembled from structured output, and the reader's own edits saved to Reports.
 - **Admin screens.** Audit log, pipeline timings, lane mix, thresholds and the model registry. Admins cannot

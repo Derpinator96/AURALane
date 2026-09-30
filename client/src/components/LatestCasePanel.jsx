@@ -46,7 +46,7 @@ function SeriesView({ token, detail, overlay }) {
   );
 }
 
-export default function LatestCasePanel({ studyId, token, me = null, onVerdictChange, onChanged, onLeft }) {
+export default function LatestCasePanel({ studyId, token, me = null, onVerdictChange, onChanged }) {
   const navigate = useNavigate();
   const [detail, setDetail] = useState(null);
   const [selectedFinding, setSelectedFinding] = useState(null);
@@ -154,7 +154,7 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
 
       <HumanLaneNote study={s} />
       <SecondOpinionBar detail={detail} token={token} me={me} onChanged={changed} />
-      {owner && <AbstentionTray detail={detail} token={token} me={me} onChanged={changed} onLeft={onLeft} />}
+      {owner && <AbstentionTray detail={detail} token={token} onChanged={changed} />}
 
       {s.lane !== "FAILED" && owner && (
         <div className="verdict-block" data-testid="verdict-section">

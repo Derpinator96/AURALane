@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import AbstentionTray, { HumanLaneNote } from "./components/AbstentionTray.jsx";
 import CtGradcamView, { hasCtGradcam } from "./components/CtGradcamView.jsx";
 import { FindingSelector, gradcamLayer, selectedCaption } from "./components/GradcamFindings.jsx";
@@ -150,7 +150,7 @@ export function RegionalContext({ regional, driver, driverLabel }) {
 }
 
 export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDraft,
-                             token = null, me = null, onStudyChanged = () => {}, onLeft = () => {},
+                             token = null, me = null, onStudyChanged = () => {},
                              annotations = [], activeAnnotationId = null, onSelectAnnotation = null,
                              onEditAnnotation = null, onDeleteAnnotation = null,
                              isAddNoteMode = false, onToggleAddNoteMode = null }) {
@@ -192,7 +192,7 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
           </section>
 
           <HumanLaneNote study={s} />
-          {owner && <AbstentionTray detail={detail} token={token} me={me} onChanged={onStudyChanged} onLeft={onLeft} />}
+          {owner && <AbstentionTray detail={detail} token={token} onChanged={onStudyChanged} />}
 
           <section className="bento-tile study-findings-card" aria-label="Findings">
             <h4 className="card-section-title">Findings</h4>
@@ -285,7 +285,6 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
   const [view3D, setView3D] = useState(true);
   const [ctView, setCtView] = useState("gradcam");   // head CT: "gradcam" | "3d"
   const [selectedFinding, setSelectedFinding] = useState(null);   // chest Grad-CAM finding; null is the driver
-  const navigate = useNavigate();
 
   // Clinician Pinpoint Annotations State
   const [annotations, setAnnotations] = useState([]);
@@ -319,7 +318,7 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
     loadSeries(id, seriesUid).then((d) => setInstances(d.instances)).catch(setError);
   }, [id, seriesUid, loadSeries]);
 
-  // A reader placed the study, set it aside or sent it for a second read: reload it.
+  // A reader placed the study, set it aside or sent it for a second opinion: reload it.
   async function onStudyChanged(row) {
     setDetail((d) => ({ ...d, study: row }));
     try {
@@ -501,7 +500,7 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
 
       <StudyPanel detail={detail} onVerdict={onVerdict} busy={busy} rationaleOn={rationale}
                   saveDraft={saveDraft && saveAndRefresh} token={activeToken} me={loadSession()?.user?.email}
-                  onStudyChanged={onStudyChanged} onLeft={() => navigate("/")} annotations={annotations}
+                  onStudyChanged={onStudyChanged} annotations={annotations}
                   activeAnnotationId={selectedAnnotation?.id || selectedAnnotation?.annotation_id}
                   onSelectAnnotation={handleSelectAnnotation} onEditAnnotation={handleEditAnnotation}
                   onDeleteAnnotation={handleDeleteAnnotation} isAddNoteMode={isAddNoteMode}

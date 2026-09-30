@@ -351,11 +351,11 @@ def test_saving_and_reviewing_a_draft_makes_a_report_the_reader_can_find(app):
     assert app.get(f"/api/studies/{study}", headers=h).json()["report"]["text"] == "final text"
 
 
-def test_an_abstained_study_can_be_placed_sent_for_a_second_read_or_set_aside(app):
+def test_an_abstained_study_can_be_placed_or_set_aside(app):
     h = app.h("radiologist-1")
     abstained = [r["study"] for r in _first(app, "ABSTAIN")]
-    assert len(abstained) >= 3
-    placed, second, repeat = abstained[:3]
+    assert len(abstained) >= 2
+    placed, repeat = abstained[:2]
 
     # Assign a lane: a reason is required; the study moves and keeps why it abstained.
     assert app.post(f"/api/studies/{placed}/lane", json={"lane": "URGENT", "reason": ""}, headers=h).status_code == 422
@@ -369,12 +369,8 @@ def test_an_abstained_study_can_be_placed_sent_for_a_second_read_or_set_aside(ap
                     headers=h).status_code == 409                      # no longer abstained
     assert app.get("/api/admin/lane-mix", headers=app.h("admin")).json()["placed_by_human"] == 1
 
-    # Second read: another reader, not oneself; it changes hands and is audited.
-    assert app.post(f"/api/studies/{second}/second-read", json={"reader": R1}, headers=h).status_code == 409
-    r = app.post(f"/api/studies/{second}/second-read", json={"reader": R2}, headers=h)
-    assert r.status_code == 200 and r.json()["study"]["assigned_to"] == R2
-    assert r.json()["study"]["second_read"]["requested_by"] == R1
-    assert any(e["action"] == "second_read" for e in app.p["table"].query("audit", study=second))
+    # There is no hand-over: a second opinion is the mail-like request of /opinions, in any lane.
+    assert app.post(f"/api/studies/{repeat}/second-read", json={"reader": R2}, headers=h).status_code in (404, 405)
 
     # Technically inadequate: a clear Repeat imaging state, with the reason.
     r = app.post(f"/api/studies/{repeat}/inadequate", json={"reason": "motion, cut off"}, headers=h)

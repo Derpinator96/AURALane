@@ -7,6 +7,7 @@ import Worklist from "./Worklist.jsx";
 import worklist from "./test/worklist.api.json";
 import OpinionsView from "./components/OpinionsView.jsx";
 import SecondOpinionBar from "./components/SecondOpinionBar.jsx";
+import AbstentionTray from "./components/AbstentionTray.jsx";
 import { DraftPanel } from "./components/DraftPanel.jsx";
 import { Overlay } from "./components/ui.jsx";
 
@@ -85,7 +86,7 @@ describe("second opinions on a study", () => {
     render(<SecondOpinionBar detail={detail} token="t" me={ME} onChanged={() => {}} />);
     expect(screen.getByTestId("opinion-count")).toHaveTextContent("Sent to 3 radiologists");
     expect(screen.getAllByTestId("opinion-person").map((p) => p.textContent)).toEqual(["Reader 1Reported", "Reader 2Opened", "Reader 3Waiting"]);
-    expect(screen.getByTestId("ask-opinion")).toHaveTextContent("Ask another radiologist");
+    expect(screen.getByTestId("ask-opinion")).toHaveTextContent("Send to another radiologist");
   });
 
   it("tells the one who was asked who asked and why, and gives them no button to ask on", () => {
@@ -131,6 +132,40 @@ describe("second opinions on a study", () => {
     await userEvent.click(await screen.findByLabelText(/Reader 1/));
     await userEvent.click(screen.getByTestId("opinion-send"));
     expect(await screen.findByRole("alert")).toHaveTextContent("Reader 1 has already been asked");
+  });
+});
+
+describe("getting a second opinion from any study", () => {
+  const readers = { readers: [{ id: R1, name: "Reader 1", pools: ["Chest"] }], pools: ["Chest"] };
+
+  it("is offered on a study in every lane, and says it stays on your worklist", async () => {
+    vi.spyOn(api, "readers").mockResolvedValue(readers);
+    for (const lane of ["CRITICAL", "URGENT", "ABSTAIN", "EXPEDITED", "ROUTINE", "FAILED", "REPEAT"]) {
+      const view = render(<SecondOpinionBar detail={{ study: study({ lane }), opinions: [], my_opinion: null, can_request_opinion: true }}
+                                            token="t" me={ME} onChanged={() => {}} />);
+      expect(screen.getByTestId("ask-opinion")).toHaveTextContent("Get a second opinion");
+      view.unmount();
+    }
+    render(<SecondOpinionBar detail={{ study: study(), opinions: [], my_opinion: null, can_request_opinion: true }} token="t" me={ME} onChanged={() => {}} />);
+    await userEvent.click(screen.getByTestId("ask-opinion"));
+    expect(await screen.findByRole("dialog", { name: "Get a second opinion" })).toHaveTextContent("It stays on your worklist.");
+    expect(screen.getByLabelText("Message (optional)")).toBeInTheDocument();
+  });
+
+  it("is what the abstention tray's option opens, and it does not hand the study over", async () => {
+    vi.spyOn(api, "readers").mockResolvedValue(readers);
+    const send = vi.spyOn(api, "requestOpinions").mockResolvedValue({});
+    const detail = { study: study({ lane: "ABSTAIN", driver: "edema" }), findings: [], opinions: [], my_opinion: null, can_request_opinion: true };
+    render(<><SecondOpinionBar detail={detail} token="t" me={ME} onChanged={() => {}} /><AbstentionTray detail={detail} token="t" onChanged={() => {}} /></>);
+    await userEvent.click(screen.getByTestId("tray-second"));
+    expect(screen.getByTestId("tray-second")).toHaveTextContent("Get a second opinion");
+    await userEvent.click(await screen.findByLabelText(/Reader 1/));
+    await userEvent.type(screen.getByTestId("opinion-note"), "Please place this one");
+    await userEvent.click(screen.getByTestId("opinion-send"));
+    expect(send).toHaveBeenCalledWith("t", "S1", [R1], "Please place this one");
+    // The old hand-over form is gone.
+    expect(screen.queryByTestId("tray-reader")).toBeNull();
+    expect(screen.queryByTestId("tray-second-confirm")).toBeNull();
   });
 });
 
