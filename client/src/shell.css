@@ -40,7 +40,7 @@
 
 /* A tablet: the tabs and the notice move to a second row under the brand and the round buttons,
    so nothing in the bar is asked to share a line it does not fit on. */
-@media (max-width: 1180px) {
+@media (max-width: 1340px) {
   .topbar { flex-wrap: wrap; row-gap: 14px; }
   .brand { margin-right: auto; }
   .topbar-right { display: contents; }

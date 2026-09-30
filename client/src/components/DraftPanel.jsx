@@ -27,6 +27,7 @@ export function DraftPanel({ detail, saveDraft }) {
   const [review, setReview] = useState(detail.report || detail.draft_review || null);
   const [state, setState] = useState(null);
   const [confirmRegen, setConfirmRegen] = useState(false);
+  const [viewing, setViewing] = useState("mine");        // whose report is on screen: "mine", or an author's id
   const box = useRef(null);
   const toast = useToast();
 
@@ -37,7 +38,14 @@ export function DraftPanel({ detail, saveDraft }) {
     setReview(detail.report || detail.draft_review || null);
     setState(null);
     setConfirmRegen(false);
+    setViewing("mine");
   }, [detail.study.study]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reports by the other radiologists on this study, and the ones asked who have not written one yet.
+  const others = (detail.reports || []).filter((r) => !r.mine);
+  const waiting = (detail.opinions || []).filter((o) => o.to !== detail.my_opinion?.to && !others.some((r) => r.author === o.to));
+  const shown = viewing === "mine" ? null : others.find((r) => r.author === viewing) || null;
+  const boxText = shown ? shown.text : text;
 
   // The box grows with its text, so the sheet scrolls, not the box.
   useLayoutEffect(() => {
@@ -45,13 +53,13 @@ export function DraftPanel({ detail, saveDraft }) {
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
-  }, [text]);
+  }, [boxText]);
 
   if (!detail.draft) return null;
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(boxText);
       setState("Copied");
     } catch {
       setState("The browser did not allow copying; select the text instead");
@@ -93,9 +101,46 @@ export function DraftPanel({ detail, saveDraft }) {
         : review ? `Draft saved by ${who} at ${review.at}` : "Not reviewed");
   const chipDot = state ? "idle" : reviewedNow ? "ok" : review ? "draft" : "idle";
 
+  const theirs = shown && (shown.author_name || shown.author);
+  const picker = (others.length > 0 || waiting.length > 0) && (
+    <label className="report-picker">
+      <span className="sr-only">Report by</span>
+      <select value={shown ? shown.author : "mine"} onChange={(e) => setViewing(e.target.value)}
+              aria-label="Report by" data-testid="report-picker">
+        <option value="mine">Your report</option>
+        {others.map((r) => (
+          <option key={r.author} value={r.author}>{r.author_name || r.author}, {r.status === "reviewed" ? "reviewed" : "draft"}</option>
+        ))}
+        {waiting.map((o) => <option key={o.to} value={`waiting-${o.to}`} disabled>{o.to_name || o.to}, no report yet</option>)}
+      </select>
+    </label>
+  );
+
+  // Someone else's report: their words, read only, with who wrote it and when.
+  if (shown) {
+    return (
+      <section className="draft-panel" data-testid="draft-panel" aria-label="Draft report">
+        <div className="draft-head"><h3 className="sec-title">{theirs}'s report</h3>{picker}</div>
+        <div className="editor editor-readonly">
+          <div className="editor-marks" aria-hidden="true"><Marks text={shown.text} />{"\n"}</div>
+          <textarea ref={box} className="editor-input" value={shown.text} rows={6} readOnly spellCheck="false"
+                    aria-label={`Report by ${theirs}`} data-testid="report-readonly" />
+        </div>
+        <div className="draft-actions">
+          <button type="button" className="pill pill-quiet" onClick={copy}><CopyIcon size={15} />Copy</button>
+        </div>
+        <p className={`chip chip-quiet draft-chip status-${shown.status === "reviewed" ? "ok" : "draft"}`} data-testid="report-status" role="status">
+          <span className="dot" aria-hidden="true" />
+          {shown.status === "reviewed" ? "Reviewed" : "Draft saved"} by {theirs} at {shown.at}
+        </p>
+        {toast.node}
+      </section>
+    );
+  }
+
   return (
     <section className="draft-panel" data-testid="draft-panel" aria-label="Draft report">
-      <h3 className="sec-title">Draft report</h3>
+      <div className="draft-head"><h3 className="sec-title">Draft report</h3>{picker}</div>
       <div className="editor">
         <div className="editor-marks" aria-hidden="true"><Marks text={text} />{"\n"}</div>
         <textarea ref={box} className="editor-input" value={text} rows={6} data-testid="draft-text"

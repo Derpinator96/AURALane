@@ -5,6 +5,7 @@ import { rationaleText } from "../Study.jsx";
 import CtGradcamView, { hasCtGradcam } from "./CtGradcamView.jsx";
 import AbstentionTray, { HumanLaneNote } from "./AbstentionTray.jsx";
 import { DraftPanel } from "./DraftPanel.jsx";
+import SecondOpinionBar from "./SecondOpinionBar.jsx";
 import { LazyView } from "./ErrorBoundary.jsx";
 import { FindingSelector, gradcamLayer, selectedCaption } from "./GradcamFindings.jsx";
 import { ArrowUpRightIcon } from "./Icons.jsx";
@@ -109,6 +110,9 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
   const overlay = showGradcam && heat ? { url: layer.url, box: ev.gradcam_box, opacity } : null;
   const finding = s.lane === "FAILED" ? s.error : s.driver_label || s.abstain_reason || "No finding";
   const scored = s.lane !== "ABSTAIN" && s.lane !== "FAILED" && s.acuity != null;
+  // A radiologist asked for a second opinion reads and reports; the lane, the verdict and the tray are
+  // the study's own reader's.
+  const owner = detail.can_request_opinion !== false;
 
   // A study a reader placed or set aside is refetched: its draft and lane text change.
   const changed = async (row) => {
@@ -120,6 +124,13 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
     } catch {
       // The row above is already what the reader sees.
     }
+  };
+
+  // Saving a report on a study with second opinions moves that radiologist along in everyone's list.
+  const saveReport = async (id, text, reviewed) => {
+    const saved = await api.saveDraft(token, id, text, reviewed);
+    if (detail.opinions?.length || detail.my_opinion) api.study(token, id).then(setDetail).catch(() => {});
+    return saved;
   };
 
   const analyse = (
@@ -142,9 +153,10 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
       </header>
 
       <HumanLaneNote study={s} />
-      <AbstentionTray detail={detail} token={token} me={me} onChanged={changed} onLeft={onLeft} />
+      <SecondOpinionBar detail={detail} token={token} me={me} onChanged={changed} />
+      {owner && <AbstentionTray detail={detail} token={token} me={me} onChanged={changed} onLeft={onLeft} />}
 
-      {s.lane !== "FAILED" && (
+      {s.lane !== "FAILED" && owner && (
         <div className="verdict-block" data-testid="verdict-section">
           <div className="verdict-actions">
             <button type="button" disabled={busy} onClick={() => handleVerdict("agree")} aria-pressed={v?.value === "agree"}
@@ -265,7 +277,7 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
         )}
       </section>
 
-      <DraftPanel detail={detail} saveDraft={(id, text, reviewed) => api.saveDraft(token, id, text, reviewed)} />
+      <DraftPanel detail={detail} saveDraft={saveReport} />
     </div>
   );
 }
