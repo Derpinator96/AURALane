@@ -211,6 +211,9 @@ export const api = {
   submitUpload: (token, upload) => call(`/api/uploads/${encodeURIComponent(upload)}/submit`, { token, method: "POST" }),
   uploadStatus: (token, upload) => call(`/api/uploads/${encodeURIComponent(upload)}`, { token }),
   discardUpload: (token, upload) => call(`/api/uploads/${encodeURIComponent(upload)}`, { token, method: "DELETE" }),
+  // Fictional names for the pseudonyms of patients whose source record carried a placeholder name (the demo
+  // display layer). Answers {patients: {pseudonym: {name, dob, sex, source}}}; a patient without a name is left out.
+  resolveNames: (token, ids) => call("/api/resolve", { token, method: "POST", body: { ids } }),
   myHistory: (token) => call("/api/me/history", { token }),
   assignments: (token) => call("/api/admin/assignments", { token }),
   reassign: (token, study, reader) =>

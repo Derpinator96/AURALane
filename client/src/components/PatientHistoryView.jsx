@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { laneName, timeUTC } from "../worklist.js";
 import { ArrowUpRightIcon, SearchIcon } from "./Icons.jsx";
+import { PatientLabel } from "../names.jsx";
 
 const studiesText = (n) => `${n} ${n === 1 ? "study" : "studies"}`;
 
@@ -57,7 +58,7 @@ export default function PatientHistoryView({ studies = [], onSelectStudy, select
           {filteredPatients.map((p) => (
             <button key={p.id} type="button" className={`patient-row ${selectedPatient === p.id ? "active" : ""}`}
                     onClick={() => setSelectedPatient(p.id)}>
-              <span className="mono-id">{p.id}</span>
+              <PatientLabel id={p.id} />
               <span className="chip chip-quiet">{studiesText(p.studies.length)}</span>
             </button>
           ))}
@@ -71,7 +72,7 @@ export default function PatientHistoryView({ studies = [], onSelectStudy, select
               <span className="cell-time mono">{s.arrived ? `${s.arrived.slice(0, 10)} ${timeUTC(s.arrived)}` : "--"}</span>
               <span className={`lanetag lane-${s.lane}`}>{laneName(s.lane, s.lane_label)}</span>
               <span className="chip chip-quiet">{s.exam || s.modality}</span>
-              <span className="mono-id cell-patient">{s.patient_id || s.study}</span>
+              <span className="cell-patient"><PatientLabel id={s.patient_id} fallback={s.study} /></span>
               <span className="finding-text">{s.driver_label || s.driver || "--"}</span>
               <span className="mono-id cell-acuity">{s.acuity != null ? Number(s.acuity).toFixed(1) : "--"}</span>
               <button type="button" className="circle circle-sm" aria-label={`Open ${s.patient_id || s.study}`} title="Open"

@@ -96,7 +96,16 @@
 .row-lane { flex: none; color: var(--ink-2); font-size: var(--fs-meta); }
 .nextup { flex: none; font-size: var(--fs-micro); font-weight: 500; color: var(--blue-ink); }
 .cell-note { color: var(--ink-2); font-size: var(--fs-micro); overflow-wrap: anywhere; }
-.cell-patient { color: var(--ink); overflow-wrap: anywhere; line-height: 1.25; }
+.cell-patient { color: var(--ink); overflow-wrap: anywhere; line-height: 1.25; min-width: 0; }
+/* A patient: the name, and the pseudonym under it. A patient with no name is the pseudonym alone, styled as a
+   named row's pseudonym is, so a row reads the same either way. */
+.patient-label { display: grid; gap: 2px; min-width: 0; }
+.patient-label.inline { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; }
+.patient-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.patient-id { color: var(--ink-2); font-size: var(--fs-meta); }
+.patient-label.inline .patient-name { white-space: normal; }
+.patient-demo { color: var(--ink-2); font-size: var(--fs-meta); }
+.demo-names-note { margin-left: 12px; font-weight: 400; }
 .cell-status { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .cell-reader { color: var(--ink-2); font-size: var(--fs-meta); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .status-unread { --dot: var(--blue); }

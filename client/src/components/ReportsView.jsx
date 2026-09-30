@@ -3,6 +3,7 @@ import { api } from "../api.js";
 import { CopyIcon, EyeIcon, FilterIcon, PrintIcon, SearchIcon } from "./Icons.jsx";
 import { Overlay, PopoverButton, Segmented } from "./ui.jsx";
 import { laneName } from "../worklist.js";
+import { PatientLabel } from "../names.jsx";
 
 const STATUS = { draft: "Draft", reviewed: "Reviewed" };
 const HEADING = /^[A-Z][A-Z0-9 &/,-]{2,}$/;
@@ -133,7 +134,7 @@ export default function ReportsView({ token }) {
               <div key={key} className={`report-row ${open === key ? "selected" : ""}`} role="row" tabIndex={0} data-testid="report-row"
                    onClick={() => openReport(key)} onKeyDown={(e) => { if (e.key === "Enter") openReport(key); }}>
                 <span className="mono" role="cell">{r.at?.slice(0, 16).replace("T", " ")}</span>
-                <span className="mono-id" role="cell">{r.patient_id || r.study}</span>
+                <span role="cell"><PatientLabel id={r.patient_id} fallback={r.study} /></span>
                 <span role="cell">{r.exam || r.modality}</span>
                 <span className="finding-text" role="cell">{r.driving_finding || "--"}</span>
                 <span role="cell"><span className={`lanetag lane-${r.lane}`}>{laneName(r.lane)}</span></span>
@@ -156,7 +157,7 @@ export default function ReportsView({ token }) {
           <article className="modal-card wide-modal" role="dialog" aria-modal="true" data-testid="report-reader" aria-label="Report">
             <div className="modal-header">
               <div>
-                <h2 className="modal-title">{current.exam || current.modality}, <span className="mono-id">{current.patient_id || current.study}</span></h2>
+                <h2 className="modal-title">{current.exam || current.modality}, <PatientLabel id={current.patient_id} fallback={current.study} inline /></h2>
                 <div className="crumbs">Reports <span aria-hidden="true">›</span>
                   <strong>{STATUS[current.status]}</strong> by {current.author_name || current.author}, version {Number(current.version)}</div>
               </div>
