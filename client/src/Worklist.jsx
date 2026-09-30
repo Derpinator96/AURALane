@@ -10,6 +10,7 @@ import SettingsView from "./components/SettingsView.jsx";
 import SimulatePanel from "./components/SimulatePanel.jsx";
 import DistributePanel from "./components/DistributePanel.jsx";
 import SheetShell from "./components/SheetShell.jsx";
+import OpinionsView from "./components/OpinionsView.jsx";
 import QueueCard from "./components/QueueCard.jsx";
 import { GaugeCard, ReadersCard, StatRow, WaitingCard } from "./components/DashboardCards.jsx";
 import ErrorBoundary, { Failed } from "./components/ErrorBoundary.jsx";
@@ -130,7 +131,8 @@ export default function Worklist({ load, token }) {
   const counts = useMemo(() => ({
     total: filteredStudies.length,
     recent: filteredStudies.filter((s) => !isUnread(s)).length,
-  }), [filteredStudies]);
+    opinions: data?.opinions_waiting ?? 0,               // requests nobody has opened yet
+  }), [filteredStudies, data]);
 
   if (error) {
     return (
@@ -219,6 +221,9 @@ export default function Worklist({ load, token }) {
         </div>
       )}
       {activeNav === "recent" && queue}
+      {activeNav === "opinions" && (
+        <OpinionsView token={token} onOpen={setSelectedStudyId} selectedStudyId={selectedStudyId} refreshSeconds={refresh} />
+      )}
 
       {selectedStudyId && (
         <Overlay side="right" onClose={() => setSelectedStudyId(null)}>

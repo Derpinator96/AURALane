@@ -99,12 +99,12 @@
 @container sheet (min-width: 940px) {
   .latest-case-panel {
     display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(340px, 1fr); column-gap: 32px; row-gap: 0;
-    grid-template-rows: auto auto auto auto auto minmax(0, 1fr); align-content: start; padding: 32px 36px 36px;
+    grid-template-rows: auto auto auto auto auto auto minmax(0, 1fr); align-content: start; padding: 32px 36px 36px;
   }
   .latest-case-panel > * { margin-bottom: 22px; }
   .sheet-head { grid-column: 1 / -1; }
-  .sheet-viewer { grid-column: 1; grid-row: 2 / 7; position: sticky; top: 16px; align-self: start; }
-  .human-lane-note, .tray, .verdict-block, .sheet-findings, .draft-panel { grid-column: 2; }
+  .sheet-viewer { grid-column: 1; grid-row: 2 / 8; position: sticky; top: 16px; align-self: start; }
+  .human-lane-note, .opinion-bar, .tray, .verdict-block, .sheet-findings, .draft-panel { grid-column: 2; }
 }
 
 /* Full analysis page: a bento. The images take two thirds and the decision (lane, finding, acuity, the
@@ -230,3 +230,20 @@
   .analysis-decision { padding: 18px; }
   .latest-case-panel { padding: 22px 16px 26px; }
 }
+
+/* Second opinions on a study: who was asked and how far each has got, who asked you, and the button. */
+.opinion-bar { display: grid; gap: 10px; justify-items: start; padding: 14px 16px; background: var(--tint); border-radius: var(--r-card); }
+.analysis-decision .opinion-bar { padding: 0; background: none; }
+.opinion-from { margin: 0; color: var(--ink-2); font-size: var(--fs-meta); }
+.opinion-from strong { color: var(--ink); }
+.opinion-note { display: block; margin-top: 4px; color: var(--ink); font-size: var(--fs-body); }
+.opinion-summary { display: grid; gap: 8px; }
+.opinion-count { color: var(--ink-2); font-size: var(--fs-meta); }
+.opinion-people { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.opinion-state { color: var(--ink-2); }
+.opinion-people .chip { background: var(--pill); box-shadow: var(--pill-shadow); color: var(--ink); }
+
+/* The report dropdown, and another radiologist's report, read only. */
+.draft-head { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+.report-picker select { min-height: 34px; padding: 0 34px 0 14px; border-radius: var(--r-pill); font-size: var(--fs-meta); }
+.editor-readonly .editor-input { cursor: default; }

@@ -138,6 +138,31 @@ Radiologists can read studies and cannot see admin screens. Admins can see the
 audit log, the lane mix and the model registry, and cannot open a study. The
 API refuses both with 403; hiding a button is not access control.
 
+## Second opinions (`/api/studies/{study}/opinions`, `/api/second-opinions`)
+
+A reader can ask one or more other radiologists to read the same study. The study stays on the asker's
+worklist; nothing is reassigned. Each radiologist asked finds it under the **Second opinions** tab
+(Received), reads it, and saves a report of their own with the same draft editor. On the study, everyone
+involved sees who it was sent to (2 radiologists, 3, and so on) and how far each has got: waiting, opened,
+draft saved, reported. Under the draft there is a **Report by** dropdown: your own report, which you edit,
+and each other radiologist's, which you read.
+
+How it is kept:
+- The request is an entry in the study row's `opinions` list (`to`, `requested_by`, `at`, `note`,
+  `opened_at`). No new table. Whether someone has reported is read from the reports table, not stored twice.
+- Only the study's own reader can ask, and only readers of the study's pool who are not the asker and have
+  not already been asked. A radiologist asked can open the study and its images, and save reports, but the
+  lane, the verdict and the abstention tray stay with the study's reader.
+- Reports are numbered per study whoever wrote them. Everyone on the study (its reader, those who asked
+  and those asked) can read all of its reports; a radiologist outside the study cannot (403).
+- Each request, and the first time it is opened, is an audit event (`opinion_requested`, `opinion_open`).
+  A report saved by someone asked is marked `second_opinion` in its audit event.
+- The Worklist response carries `opinions_waiting`, the requests the signed-in reader has not opened, for
+  the number on the tab.
+
+This is not the abstention tray's "Request a second read", which hands an abstained study to another reader
+so that they place its lane; the study leaves the first reader's worklist.
+
 ## The web app (`client/`)
 
 One screen, dark and dense for a reading room, split by reading pool: Neuro

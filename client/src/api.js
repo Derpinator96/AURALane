@@ -143,8 +143,12 @@ function cachedStudy(token, id) {
 
 async function fetchStudy(token, id) {
   const data = await call(`/api/studies/${encodeURIComponent(id)}`, { token });
-  studies.set(id, { token, at: Date.now(), data });
-  while (studies.size > STUDY_KEEP) studies.delete(studies.keys().next().value);
+  // A study with second opinions changes under you (another radiologist saves a report), so it is
+  // fetched again each time rather than remembered.
+  if (!data.opinions?.length && !data.my_opinion) {
+    studies.set(id, { token, at: Date.now(), data });
+    while (studies.size > STUDY_KEEP) studies.delete(studies.keys().next().value);
+  }
   return data;
 }
 
@@ -188,6 +192,10 @@ export const api = {
   reports: (token, status) => call(`/api/reports${status ? `?status=${encodeURIComponent(status)}` : ""}`, { token }),
   report: (token, study, version) =>
     call(`/api/reports/${encodeURIComponent(study)}/${encodeURIComponent(version)}`, { token }),
+  // Second opinions: ask other radiologists to read a study alongside you. It stays on your worklist.
+  secondOpinions: (token) => call("/api/second-opinions", { token }),
+  requestOpinions: (token, study, readers, note = "") =>
+    call(`/api/studies/${encodeURIComponent(study)}/opinions`, { token, method: "POST", body: { readers, note } }),
   readers: (token) => call("/api/readers", { token }),
   distribute: (token, readers) => call("/api/distribute", { token, method: "POST", body: { readers } }),
   simulateInfo: (token) => call("/api/simulate", { token }),

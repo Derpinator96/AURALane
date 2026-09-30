@@ -71,15 +71,22 @@ export function PopoverButton({ label, icon, children, align = "right", pillProp
 // A blurred scrim over the whole app, with its content on top. Escape or a press on
 // the scrim closes it. Rendered into <body>: the frame has its own backdrop filter,
 // and a filtered ancestor would trap a fixed overlay.
+const openOverlays = [];               // the last one is on top; Escape closes only that one
+
 export function Overlay({ onClose, children, side = "center", label }) {
   useEffect(() => {
+    const me = {};
+    openOverlays.push(me);
     const onKey = (e) => {
-      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (e.key !== "Escape" || e.defaultPrevented || openOverlays[openOverlays.length - 1] !== me) return;
       if (isTyping(e.target)) { e.target.blur?.(); return; }
       onClose();
     };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      openOverlays.splice(openOverlays.indexOf(me), 1);
+    };
   }, [onClose]);
   // The blur and scrim are their own layer behind the content. Content that repaints often
   // (a WebGL viewer) then never forces the full-screen blur to be redone.

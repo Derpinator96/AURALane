@@ -1,256 +1,112 @@
-# AURALane: round 2 demo
+# AURALane
 
-A two-column worklist that shows the one thing the deck argues: **flagging fails,
-reordering works.** Studies stream in, the left column keeps them in arrival order,
-the right column re-sorts by calibrated acuity, and a critical study climbs to the
-top instead of waiting behind whatever happened to arrive first.
+**Non-diagnostic; decision support only.** AURALane puts a radiology reading queue in order. It does not
+read a study and it never says what is in one. A radiologist reads every study.
 
-Not a diagnostic tool. It orders a reading queue.
+A cloud-native, AI-ready imaging platform for early disease triage, built by Team Peanut Butter (NIT Raipur)
+for the Precision Care Challenge 2026. It sits beside a hospital's PACS as a sidecar: PACS, archive and RIS
+stay where they are; AURALane receives a copy and returns an ordering.
 
----
+## The idea
 
-## Run it
+Flagging a study does not shorten the wait for a critical one; re-sorting the worklist does. A prospective
+RSNA study over 6,696 head CTs found that an AI flag left critical wait time unchanged, and that actively
+reprioritising the worklist cut it by 24%. So this is a queue that re-sorts, not a classifier with a
+confidence readout.
+
+## What it does
+
+- **Lanes with clocks.** Critical (under 15 min), Urgent (under 1 hr), Expedited (under 4 hr), Routine
+  (scheduled). Each finding is scored against its own reference distribution and weighted by clinical
+  urgency, so urgency is not confidence.
+- **Abstention.** When the model is not confident enough to place a study, it refuses and the study goes to
+  the **Abstention Tray**, where a radiologist assigns a lane, hands it over for a second read, or marks it
+  technically inadequate.
+- **Reading pools.** Chest and Neuro are ranked separately and never merged.
+- **Second opinions.** A reader can ask other radiologists to read the same study. They find it under
+  *Second opinions*, write reports of their own, and everyone on the study reads them from a dropdown.
+- **The study view.** Images (Cornerstone3D for 2D, NiiVue for 3D), a per-finding Grad-CAM shown only here,
+  a drafted report assembled from structured output, and the reader's own edits saved to Reports.
+- **Admin screens.** Audit log, pipeline timings, lane mix, thresholds and the model registry. Admins cannot
+  open a study.
+- **De-identification before anything is indexed**, including OCR masking of burned-in text.
+
+How it fits together, and what is known to be limited: [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md).
+
+## Runtimes
+
+One codebase, three runtimes, chosen with `AURALANE_RUNTIME`. Everything is built against ports, so the same
+pipeline runs in each.
+
+| runtime | datastore | table | auth | use |
+|---|---|---|---|---|
+| `fixture` | in-memory fixture rows | in memory | development JWT | no Docker, no AWS; the hosted preview |
+| `local` | Orthanc (DICOMweb) | DynamoDB Local | development JWT | the full pipeline on one machine |
+| `aws` | AWS HealthImaging | DynamoDB | Cognito | the deployed system |
+
+## Quick start (the fixture runtime)
+
+Python 3.11 or newer and Node 20 or newer. From the repo root, in PowerShell:
 
 ```
-pip install -r requirements.txt
-python server.py           # http://localhost:8000
-```
-
-On Windows, install CPU-only torch first or pip pulls a ~2.5 GB CUDA build:
-
-```
+python -m venv .venv; .venv\Scripts\activate
 pip install torch --index-url https://download.pytorch.org/whl/cpu
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt
+
+$env:AURALANE_RUNTIME = "fixture"
+python -m core.run serve                    # the API on 127.0.0.1:8100
+
+cd client; npm install; npm run dev         # http://localhost:5173
 ```
 
-First use of the model downloads its weights (~28 MB) to `~/.torchxrayvision/`.
-On Windows that download can die with a `UnicodeEncodeError`: the progress bar
-writes a block character the cp1252 console cannot encode. If that happens, delete
-the truncated file in `~/.torchxrayvision/models_data/` and re-run with
-`PYTHONUTF8=1`. Once the weights are cached the problem cannot recur, because the
-progress bar only runs during a download.
+On Linux or macOS use `source .venv/bin/activate` and `AURALANE_RUNTIME=fixture python -m core.run serve`.
 
-`scores.json` ships with 1,000 real model outputs, so the demo runs immediately:
-no images and no scoring pass needed.
+Sign in as `radiologist` or `admin`. Both use one development password: `AURALANE_DEV_PASSWORD` if set in the
+terminal that starts the API, otherwise `data/dev/devauth.password`, created with a random value on first
+run. `radiologist-1` to `radiologist-4` are further readers, which is how to try second opinions with two
+sessions. No password is in the repository. The fixture runtime keeps its state in memory.
 
----
+The local runtime (Docker, ingest, Tesseract) is in [docs/SETUP.md](docs/SETUP.md) and
+[docs/RUN.md](docs/RUN.md).
 
-## Images
-
-**`images/` is not in this repo.** It is 5,606 NIH ChestX-ray14 PNGs, about 2.2 GB
-of public data we did not create. Get the **sample subset** from Kaggle as
-`nih-chest-xrays/sample`: 5,606 images, ~2 GB. The full set is 112,120 images and
-~42 GB; you do not need it. Unzip and copy the PNGs into `images/`.
-
-Everything except the study thumbnails works without them: the queue, the lanes,
-the acuity scores and the wait calculation all read from `scores.json`. Only the
-image inside the study modal will be blank until the PNGs are present.
-
-Public or openly licensed images only. No real patient records; that claim is on
-the slide, so keep it true.
-
----
-
-## What is real and what is simulated
-
-Say this out loud during the demo; it is the difference between a demo and a mockup.
-
-**Real:** every acuity score, lane and abstention. TorchXRayVision
-`densenet121-res224-all`, 18 sigmoid heads, run over the images in `images/` by
-`prepare.py` and cached in `scores.json`. Uploaded studies are scored live, in
-process, by the same model.
-
-**Simulated:** two things only.
-- *arrival cadence*, one study every 4 minutes of simulated time.
-- *read cadence*, one radiologist clearing one study every 6 minutes.
-
-Which studies appear, and in what order, is **not** chosen by us. Each run draws a
-uniform random sample from the 1,000-study pool and shuffles it, so where the
-critical study lands is chance. The only intervention: if a draw happens to contain
-no critical or no abstention, one is swapped in over a routine study, because a run
-showing neither demonstrates nothing.
-
----
-
-## Using it
-
-- **studies**: how many to draw. Default 40. Do not go below 20; see the note on
-  variance under *Compute waits*.
-- **Start intake** → **Stop intake** while running, **Resume** if you halt it early.
-  When a run finishes, the button returns to **Start intake** and the next press
-  draws a fresh random sample.
-- **Warm up model**: press it before you present. The first inference after load
-  takes ~10 s from cached weights, and that is a bad silence on a call.
-- **Upload study**: hand the model an image it has never seen. It is scored in
-  process (~150 ms warm) and inserted into both queues. It always arrives *last*,
-  which is the honest FIFO position for something that just landed, so wherever it
-  appears on the right is the reordering, live.
-- Click any study for the finding table, the per-finding baseline comparison and the
-  reason for its lane. **Agree with lane** marks it read and clears it from both
-  worklists. **Disagree** records the verdict without clearing.
-
-Both worklists scroll inside their own box, so the page does not grow as the queue
-does. FIFO's newest arrivals fall below its scroll fold while AURALane keeps the
-urgent ones at the top, which is the argument, made structurally.
-
----
-
-## Compute waits
-
-The button appears once intake is paused or finished. It replays both policies over
-everything that arrived and prints the totals:
+## Tests
 
 ```
-40 studies · 4 critical · read cadence 6 min
-
-                           FIFO AURALANE
-total wait (min)           1836     1836
-mean wait (min)              45       45
-mean wait, critical          38        3
+pytest                        # Python: API, pipeline, adapters, de-identification, infra
+cd client; npm test           # unit tests (Vitest)
+cd client; npm run e2e        # browser tests (Playwright, needs Chrome)
 ```
 
-**Total wait is identical under both policies, always.** That is not a bug and not a
-rounding artefact: it is the work-conserving queue invariant. With one reader and a
-fixed cadence, reordering cannot change aggregate waiting time; it can only decide
-*who* waits. Measured across 200 random runs the difference was exactly zero every
-time, while the critical figure differed in 195 of them and AURALane was never worse.
+Some Python tests need Tesseract on PATH and the local data corpus; [docs/SETUP.md](docs/SETUP.md) lists what
+to install.
 
-This is the honest statement of what triage does: **it does not create radiologist
-capacity, it allocates it.** The critical patient's wait collapses, paid for by
-routine studies waiting marginally longer. Have that ready: "so you are just moving
-the problem around?" is the sharpest question a judge can ask, and the answer is yes,
-deliberately, toward the patient who cannot wait.
+## Where things are
 
-**On variance.** With random arrival the headline percentage swings with the draw.
-Measured over 250 runs per size:
+| path | what |
+|---|---|
+| `core/` | the API, the pipeline, the ports and their local, fixture and AWS providers |
+| `adapters/`, `models/` | each model's adapter, and the registry that describes them and the readers |
+| `triage.py` | lanes, urgency weighting and abstention |
+| `sim/` | de-identification, the identity map, and synthetic DICOM generation |
+| `data/` | corpus builders and their notes; the data itself is not in git |
+| `client/` | the React app (Vite), with its unit and end-to-end tests |
+| `infra/` | the AWS stack (Python CDK); nothing here is deployed by running the tests |
+| `fixtures/` | the fixture runtime's rows, built by `scripts/make_fixtures.py` |
+| `scripts/` | doctor, smoke and end-to-end checks, latency measurement, backfills |
+| `tests/` | the Python tests |
+| `docs/` | setup, run, deploy, costs, latency, performance, observability |
+| `web/`, `server.py`, `prepare.py` | the round-2 demo, still runnable: [docs/ROUND-2-DEMO.md](docs/ROUND-2-DEMO.md) |
+| `shaurya-webapp/` | a separate Flask model explorer; nothing else depends on it |
+| `CT_Mehak/` | the head CT model, as a git submodule (`git submodule update --init`) |
 
-| intake | median | 5th pct | runs showing ≤25% |
-|---|---|---|---|
-| 10 | −83% | 0% | 9% |
-| 20 | −92% | −64% | 2% |
-| 40 | −95% | −86% | 2% |
-| 60 | −97% | −93% | 0% |
+## Data
 
-At small intakes a run can land on **0% improvement** in front of the jury. Hence the
-default of 40.
+No real patient data. Images are public, synthetic or openly licensed, and synthetic identifiers are
+unmistakably synthetic (`SIM^PATIENT^0042`). The NIH ChestX-ray14 sample PNGs (`images/`, 5,606 files,
+about 2 GB) are not in the repository; [docs/SETUP.md](docs/SETUP.md) says where to get them. BraTS and CQ500
+studies are downloaded by hand under their own licences.
 
-Note also that these are queue-simulation numbers under a single reader with no
-competing work. They are not comparable to the −24% in the RSNA study the deck cites,
-which is a real-world clinical result. They are your numbers, not the paper's.
+## Working on it
 
----
-
-## How a study gets a lane
-
-Four steps, in `triage.py`:
-
-1. **Temperature scaling** (T = 1.6, logit space) turns a raw sigmoid output into
-   the confidence a clinician is shown.
-2. **Per-finding operating point.** This is the part the deck understates. The 18
-   heads sit at wildly different points: `Nodule` never drops below ~0.36 across a
-   corpus, `Edema` averages ~0.21. Judged against a flat 0.5, one head dominates
-   every study. So each finding is scored against its own reference distribution
-   (`reference.json`), and "typical for this finding" scores zero.
-3. **Clinical urgency weighting.** A confidence is not an urgency. Pneumothorax at
-   0.6 outranks cardiomegaly at 0.9.
-4. **Abstention.** If the driving finding is elevated but not clearly, no lane is
-   assigned. The study still appears in both worklists labelled `ABSTAIN` with no
-   acuity, and a human decides. This is the fail-open path and it is the thing no
-   competitor shows.
-
-The page footer says whether the operating points were fitted on this corpus or
-borrowed from the shipped reference, so if a judge asks, the answer is on screen.
-
----
-
-## Image handling: why `imaging.py` exists
-
-Every caller (`prepare.py` and the live-upload path in `server.py`) goes through
-`imaging.predict`. They used to carry their own copy of the same six preprocessing
-lines, and both copies shared two faults:
-
-- **Alpha channels were averaged into the pixels.** `img.mean(2)` folded a constant
-  255 alpha into the greyscale, brightening the image. It did not crash; it returned
-  a *different* score. Six of the 1,000 pool images are RGBA.
-- **Bit depth was hard-coded to 8.** `normalize(img, 255)` raises when the input
-  exceeds 255, so a 16-bit PNG (what most DICOM viewers export) produced HTTP 500
-  and the words "Internal Server Error".
-
-Both are fixed: alpha is dropped before averaging, and `maxval` comes from the dtype.
-Unreadable uploads now return HTTP 400 with the reason instead of a 500.
-
-This matters more for live upload than for the corpus. The corpus is uniform 8-bit
-greyscale; the file a jury hands you is not. Note that `scores.json` was generated
-before this fix, so the six RGBA studies in the pool carry slightly stale acuity
-values; measured drift on one of them was 0.0 to 0.8, same lane. Re-run
-`prepare.py --limit 1000 --no-refit` if you want them exact.
-
-`server.py` imports `imaging` *inside* the scoring endpoint rather than at module
-scope, because `imaging` pulls in torch and the cached worklist has to keep working
-on a machine with no torch installed.
-
----
-
-## Re-scoring
-
-`prepare.py` scores images into `scores.json`. It samples `--limit` images (default
-300) using `--seed` (default 7), so a given seed and image set always produce the
-same sample.
-
-```
-python prepare.py --limit 1000 --no-refit
-```
-
-**`--no-refit` matters.** By default `prepare.py` refits `reference.json` whenever it
-has 50+ studies, which moves every acuity value and invalidates the `LANES`
-thresholds tuned against the old scale. `--no-refit` scores against the existing
-reference instead. The shipped `scores.json` was built exactly this way.
-
-The shipped `reference.json` is fitted on a 100-study sample. Against it, the
-1,000-study pool comes out:
-
-| lane | count | share |
-|---|---|---|
-| ROUTINE | 505 | 50.5% |
-| EXPEDITED | 233 | 23.3% |
-| URGENT | 96 | 9.6% |
-| CRITICAL | 89 | 8.9% |
-| ABSTAIN | 77 | 7.7% |
-
-About what a real chest X-ray population looks like, and close enough to the
-100-study mix the thresholds were tuned on that they still hold.
-
-If you re-score a different corpus, check the lane counts it prints and adjust
-`LANES` in `triage.py` so the critical lane holds roughly the top 5–8%. That is a
-capacity decision (how many studies one reader can absorb), not a modelling one.
-
-`Z_FLOOR` is the one to understand if you re-tune. A finding contributes nothing
-until it is at least half a standard deviation above its own baseline. Without that
-floor, taking a max over 18 heads means almost every study has *something* mildly
-elevated and the whole corpus scores critical, which is exactly what happened on the
-first run: 44 of 100.
-
----
-
-## Before you present
-
-- `python server.py`, then click **Warm up model**.
-- Run it once end to end at your intended intake size and check the mix looks sane.
-- Record a screen capture as a fallback. If Teams screen-share fails you still have
-  something to show.
-
----
-
-## Layout
-
-```
-prepare.py        score images/ -> scores.json          (offline, --no-refit)
-imaging.py        one image loader: dtype, alpha, resize   (shared)
-triage.py         calibration, urgency, abstention      (shared)
-queue_builder.py  serve the scored pool; the page samples from it
-server.py         FastAPI: /api/queue, /api/score, /api/warm, /api/health
-web/index.html    the page: no build step, no CDN, works offline
-web/fonts/        Poppins, vendored so the page renders with no network
-reference.json    per-finding operating points
-scores.json       1,000 scored studies, the pool every run draws from
-```
+Work happens on a branch and lands through a pull request against `main`. Run the Python and client tests
+before opening one, and keep the non-diagnostic notice on every screen.

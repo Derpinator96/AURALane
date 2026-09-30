@@ -4,6 +4,7 @@ import AbstentionTray, { HumanLaneNote } from "./components/AbstentionTray.jsx";
 import CtGradcamView, { hasCtGradcam } from "./components/CtGradcamView.jsx";
 import { FindingSelector, gradcamLayer, selectedCaption } from "./components/GradcamFindings.jsx";
 import AnnotationsPanel from "./components/AnnotationsPanel.jsx";
+import SecondOpinionBar from "./components/SecondOpinionBar.jsx";
 import NoteEditorModal from "./components/NoteEditorModal.jsx";
 import { DraftPanel } from "./components/DraftPanel.jsx";
 import { LazyView } from "./components/ErrorBoundary.jsx";
@@ -156,6 +157,8 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
   const s = detail.study;
   const brain = s.modality === "MR";
   const scored = s.lane !== "ABSTAIN" && s.lane !== "FAILED";
+  // A radiologist asked for a second opinion reads and reports; the verdict and the tray are the reader's.
+  const owner = detail.can_request_opinion !== false;
 
   // A bento of tiles. The decision (lane, finding, acuity and the verdict) leads the tall column beside
   // the images so it is on screen when the study opens; the draft and the study's details sit below.
@@ -180,15 +183,16 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
             </div>
             {s.assigned_name && <p className="lane-assigned">Assigned to {s.assigned_name}</p>}
             {s.lane === "FAILED" && <p className="error-banner">Processing failed: {s.error}</p>}
+            <SecondOpinionBar detail={detail} token={token} me={me} onChanged={onStudyChanged} />
             {s.lane === "FAILED" ? (
               <p className="note">No lane assigned. The study is still in PACS; read it there.</p>
-            ) : (
+            ) : owner && (
               <Verdict study={s} onVerdict={onVerdict} busy={busy} />
             )}
           </section>
 
           <HumanLaneNote study={s} />
-          <AbstentionTray detail={detail} token={token} me={me} onChanged={onStudyChanged} onLeft={onLeft} />
+          {owner && <AbstentionTray detail={detail} token={token} me={me} onChanged={onStudyChanged} onLeft={onLeft} />}
 
           <section className="bento-tile study-findings-card" aria-label="Findings">
             <h4 className="card-section-title">Findings</h4>
@@ -323,6 +327,13 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
     } catch {
       // The row above is already what the reader sees.
     }
+  }
+
+  // Saving a report on a study with second opinions moves that radiologist along in everyone's list.
+  async function saveAndRefresh(...args) {
+    const saved = await saveDraft(...args);
+    if (detail?.opinions?.length || detail?.my_opinion) load(id).then(setDetail).catch(() => {});
+    return saved;
   }
 
   async function onVerdict(value) {
@@ -489,7 +500,7 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
       </div>
 
       <StudyPanel detail={detail} onVerdict={onVerdict} busy={busy} rationaleOn={rationale}
-                  saveDraft={saveDraft} token={activeToken} me={loadSession()?.user?.email}
+                  saveDraft={saveDraft && saveAndRefresh} token={activeToken} me={loadSession()?.user?.email}
                   onStudyChanged={onStudyChanged} onLeft={() => navigate("/")} annotations={annotations}
                   activeAnnotationId={selectedAnnotation?.id || selectedAnnotation?.annotation_id}
                   onSelectAnnotation={handleSelectAnnotation} onEditAnnotation={handleEditAnnotation}

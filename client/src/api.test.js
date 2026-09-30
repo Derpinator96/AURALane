@@ -80,3 +80,31 @@ describe("error messages", () => {
     expect(errorMessage(500, "Internal Server Error", {})).toBe("Internal Server Error");
   });
 });
+
+// Another radiologist saving a report changes a study that has second opinions, so it is never served
+// from the browser's short memory of recent studies.
+describe("study memory", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const answer = (extra) => vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ study: { study: "S1" }, ...extra }) }));
+
+  it("remembers a plain study for a minute", async () => {
+    api.clearCache();
+    vi.stubGlobal("fetch", answer({ opinions: [], my_opinion: null }));
+    await api.study("t", "S1");
+    await api.study("t", "S1");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks again for a study with second opinions", async () => {
+    api.clearCache();
+    vi.stubGlobal("fetch", answer({ opinions: [{ to: "r2", status: "waiting" }], my_opinion: null }));
+    await api.study("t", "S1");
+    await api.study("t", "S1");
+    expect(fetch).toHaveBeenCalledTimes(2);
+    api.clearCache();
+    vi.stubGlobal("fetch", answer({ opinions: [], my_opinion: { requested_by: "r1" } }));
+    await api.study("t", "S2");
+    await api.study("t", "S2");
+    expect(fetch).toHaveBeenCalledTimes(2);          // the one who was asked: same
+  });
+});

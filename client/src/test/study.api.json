@@ -28,7 +28,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   "findings": [
    {
@@ -105,6 +106,10 @@
   "draft": "NON-DIAGNOSTIC; DECISION SUPPORT ONLY. DRAFT FOR RADIOLOGIST REVIEW.\nStudy: fixture-cr-ST-028   Model: cxr-densenet-v1\n\nEXAMINATION\nChest radiograph.\n\nTECHNIQUE\nChest radiograph (de-identified copy). Each finding is scored against its own operating point, not a flat threshold.\n\nCOMPARISON\nNone available.\n\nFINDINGS\nPossible nodule (signal 0.35).\nNo convincing evidence of mass, fibrosis.\n\nIMPRESSION\n1. Possible nodule (signal 0.35, weighted 0.15).\n2. No convincing evidence of mass (signal 0.09, weighted 0.05).\n3. No convincing evidence of fibrosis (signal 0.09, weighted 0.01).\n\nTRIAGE NOTE\nQueue lane: Needs human triage. The system did not assign a lane.\nReason: the driving finding, nodule, has a signal of 0.35, inside the 0.35 to 0.60 band where the model does not commit.\n\nNON-DIAGNOSTIC; DECISION SUPPORT ONLY. Assembled from the system's structured output. The reading radiologist confirms, edits or replaces every statement.",
   "draft_review": null,
   "report": null,
+  "reports": [],
+  "opinions": [],
+  "my_opinion": null,
+  "can_request_opinion": true,
   "datastore_note": "No DICOM datastore is connected to this preview. Chest studies show one public sample image, not the study's own, and brain studies have no images here. The live pipeline, from de-identification through the datastore to scoring, runs locally."
  },
  "series": {

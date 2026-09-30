@@ -10,12 +10,13 @@ export const SPECIALTIES = [
   { id: "CT", label: "Head CT" },
 ];
 
-export const TITLES = { worklist: "Worklist", recent: "Read cases", history: "History", reports: "Reports", settings: "Settings" };
+export const TITLES = { worklist: "Worklist", recent: "Read cases", opinions: "Second opinions", history: "History", reports: "Reports", settings: "Settings" };
 
 export default function Sidebar({ activeNav, onNavChange, counts = {} }) {
   const items = [
     { id: "worklist", badge: counts.total },
     { id: "recent", badge: counts.recent },
+    { id: "opinions", badge: counts.opinions || undefined },
     { id: "history" },
     { id: "reports" },
     { id: "settings" },

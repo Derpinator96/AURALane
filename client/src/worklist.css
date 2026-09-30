@@ -259,3 +259,12 @@
   .reader-grid { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
 }
+
+/* Second opinions: how far each request has got, and the note that came with it. */
+.opinion-waiting { --dot: var(--blue); }
+.opinion-opened { --dot: var(--idle); }
+.opinion-draft { --dot: var(--lane-expedited); }
+.opinion-reported { --dot: var(--ok); }
+.opinion-quote, .opinion-sub { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.opinion-quote::before { content: "\201C"; }
+.opinion-quote::after { content: "\201D"; }

@@ -82,7 +82,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-mr-MRI-1790070297",
@@ -111,7 +112,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-mr-MRI-1790081977",
@@ -140,7 +142,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-050",
@@ -169,7 +172,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-042",
@@ -198,7 +202,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-081",
@@ -227,7 +232,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-001",
@@ -256,7 +262,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-016",
@@ -285,7 +292,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-052",
@@ -314,7 +322,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-mr-00000057",
@@ -343,7 +352,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-002",
@@ -372,7 +382,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-005",
@@ -401,7 +412,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-028",
@@ -430,7 +442,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-004",
@@ -459,7 +472,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-008",
@@ -488,7 +502,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-006",
@@ -517,7 +532,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-010",
@@ -546,7 +562,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-007",
@@ -575,7 +592,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   },
   {
    "study": "fixture-cr-ST-003",
@@ -604,7 +622,8 @@
    "assigned_to": null,
    "assigned_name": null,
    "opened_at": null,
-   "overdue": false
+   "overdue": false,
+   "opinions": []
   }
  ],
  "me": "radiologist@dev.auralane.local",
@@ -655,5 +674,6 @@
    ]
   }
  ],
- "scope": "all"
+ "scope": "all",
+ "opinions_waiting": 0
 }
