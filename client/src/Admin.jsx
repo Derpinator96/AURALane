@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { timeUTC } from "./worklist.js";
+import { laneName, timeUTC } from "./worklist.js";
 import { Assignments, Pipeline } from "./AdminOps.jsx";
 
 // Admin screens. They show how the system is configured and what it did; they
@@ -82,7 +82,7 @@ export function LaneMix({ load }) {
             <tbody>
               {d.lanes.map((l) => (
                 <tr key={l.lane} className={`lane-${l.lane}`}>
-                  <td className="lanetag">{l.label}</td>
+                  <td className="lanetag">{laneName(l.lane, l.label)}</td>
                   <td className="mono num">{l.count}</td>
                   <td className="mono num">{l.percent == null ? "--" : `${l.percent}%`}</td>
                   <td className="barcol" aria-hidden="true"><span className="bar" style={{ width: `${l.percent || 0}%` }} /></td>
@@ -115,7 +115,7 @@ export function Thresholds({ load }) {
               <tbody>
                 {d.lanes.map((l) => (
                   <tr key={l.lane} className={`lane-${l.lane}`}>
-                    <td className="lanetag">{l.lane}</td><td className="mono num">{l.acuity_floor}</td><td>{l.clock}</td>
+                    <td className="lanetag">{laneName(l.lane)}</td><td className="mono num">{l.acuity_floor}</td><td>{l.clock}</td>
                   </tr>
                 ))}
               </tbody>
@@ -278,7 +278,7 @@ export function Intake({ load, start }) {
                   <td>{it.modality}</td>
                   <td className="mono-id detail">{it.source}</td>
                   <td>{it.status}{it.error ? `: ${it.error}` : ""}</td>
-                  <td className="lanetag">{it.lane || "--"}</td>
+                  <td className="lanetag">{it.lane ? laneName(it.lane) : "--"}</td>
                   <td className="mono num">{it.seconds ?? "--"}</td>
                 </tr>
               ))}

@@ -31,7 +31,7 @@ test("a radiologist's verdict appears in the admin audit log; admins cannot open
   await page.screenshot({ path: "test-results/admin-audit.png", fullPage: true });
 
   await page.getByRole("link", { name: "Lane mix" }).click();
-  await expect(page.getByTestId("lane-mix")).toContainText("NEEDS HUMAN TRIAGE");
+  await expect(page.getByTestId("lane-mix")).toContainText("Abstention Tray");
   await page.screenshot({ path: "test-results/admin-lanes.png", fullPage: true });
   await page.getByRole("link", { name: "Thresholds" }).click();
   await expect(page.getByTestId("abstain-band")).toContainText("between 0.35 and 0.6");

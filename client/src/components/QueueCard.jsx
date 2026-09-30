@@ -1,4 +1,4 @@
-import { READ_FILTERS, SORTS, timeUTC } from "../worklist.js";
+import { READ_FILTERS, SORTS, laneClock, laneName, timeUTC } from "../worklist.js";
 import { ArrowUpRightIcon, BoardIcon, CloseIcon, FilterIcon, ListIcon, SearchIcon, WorklistIcon } from "./Icons.jsx";
 import { SPECIALTIES } from "./Sidebar.jsx";
 import { PopoverButton, Segmented } from "./ui.jsx";
@@ -19,19 +19,25 @@ function Provenance({ row }) {
   return null;
 }
 
-function Row({ row, selected, next, who, onSelect }) {
+// One study, one card. Inside a lane section the section heading names the lane, so the row carries only
+// its colour; in a section that mixes lanes (sorted by arrival) the row names its own.
+function Row({ row, selected, next, who, onSelect, showLane }) {
   const verdict = row.verdict ? (row.verdict.value === "agree" ? "Agreed" : "Disagreed") : "Unread";
   const state = !row.verdict ? "unread" : row.verdict.value === "agree" ? "agreed" : "disagreed";
+  const lane = laneName(row.lane, row.lane_label);
   return (
     <div className={`study-row lane-${row.lane} ${selected ? "selected" : ""} ${next ? "next-up" : ""} ${row.overdue ? "overdue" : ""}`}
          onClick={() => onSelect(row.study)} data-testid="study-row" data-study={row.study}>
-      <div className="cell-lane">
-        <span className={`lanetag lane-${row.lane}`}>{row.lane_label || row.lane}</span>
-        <Provenance row={row} />
-      </div>
       <div className="cell-finding">
-        {next && <span className="nextup">Next up</span>}
-        <span className="finding-text" title={findingOf(row)}>{findingOf(row)}</span>
+        <span className="dot" aria-hidden="true" />
+        <span className="finding-stack">
+          <span className="finding-line">
+            <span className="finding-text" title={findingOf(row)}>{findingOf(row)}</span>
+            {showLane ? <span className="row-lane">{lane}</span> : <span className="sr-only">{lane}</span>}
+            {next && <span className="nextup">Next up</span>}
+          </span>
+          <Provenance row={row} />
+        </span>
       </div>
       <div className="cell-patient mono-id">{row.patient_id || row.study}</div>
       <div className="cell-modality"><span className="chip chip-quiet">{row.exam || row.modality}</span></div>
@@ -125,7 +131,7 @@ export default function QueueCard({
                          pillProps={{ "data-testid": "filter-button" }}>
             <div className="pop-field"><span>Lane</span>
               <select value={filters.lane} onChange={(e) => filters.setLane(e.target.value)} aria-label="Lane filter">
-                {LANE_FILTERS.map((l) => <option key={l} value={l}>{l === "ALL" ? "All lanes" : l}</option>)}
+                {LANE_FILTERS.map((l) => <option key={l} value={l}>{l === "ALL" ? "All lanes" : laneName(l)}</option>)}
               </select>
             </div>
             <div className="pop-field"><span>Status</span>
@@ -149,7 +155,7 @@ export default function QueueCard({
           </PopoverButton>
           {onlyTriage && (
             <button type="button" className="pill pill-sm" onClick={clearTriage} data-testid="triage-only">
-              Needs triage only <CloseIcon size={13} />
+              Abstention Tray only <CloseIcon size={13} />
             </button>
           )}
         </div>
@@ -181,14 +187,16 @@ export default function QueueCard({
                   const cards = p.sections.flatMap((s) => s.rows).filter((r) => r.lane === l.lane);
                   if (onlyTriage && l.lane !== "ABSTAIN") return null;
                   if (l.pinned && l.lane !== "ABSTAIN" && cards.length === 0) return null;
+                  const clock = laneClock(l);
+                  const name = laneName(l.lane, l.label);
                   return (
                     <section key={l.lane} className={`board-col lane-${l.lane}`} data-testid={`board-col-${p.pool}-${l.lane}`}
-                             aria-label={`${p.label} ${l.label}`}>
+                             aria-label={`${p.label} ${name}`}>
                       <h4 className="board-col-head">
                         <span className="dot" aria-hidden="true" />
-                        <span className="lanename">{l.label}</span>
+                        <span className="lanename">{name}</span>
                         <span className="count mono">{cards.length}</span>
-                        {l.clock && <span className="clock">{l.clock}</span>}
+                        {clock && <span className="clock">{clock}</span>}
                       </h4>
                       {cards.map((row) => (
                         <BoardCard key={row.study} row={row} selected={row.study === selectedStudyId} who={who}
@@ -212,23 +220,26 @@ export default function QueueCard({
                 <h3 className="pool-title">{p.label} pool</h3>
                 <span className="chip chip-quiet">{p.sections.reduce((a, s) => a + s.rows.length, 0)} studies</span>
               </div>
-              {p.sections.filter((s) => !(recent && s.rows.length === 0)).map((s) => (
-                <section key={s.lane} className={`lane-group lane-${s.lane}`} data-testid={`section-${p.pool}-${s.lane}`}>
-                  <h3 className="lane-group-heading">
-                    <span className="dot" aria-hidden="true" />
-                    <span className="lanename">{s.label}</span>
-                    {s.clock && <span className="clock"> · {s.clock}</span>}
-                    <span className="count mono"> ({s.rows.length})</span>
-                  </h3>
-                  {s.lane === "FAILED" && s.rows.length > 0 && (
-                    <p className="lane-note">Processing did not complete. The study is still in PACS; read it there.</p>
-                  )}
-                  {s.rows.map((row) => (
-                    <Row key={row.study} row={row} selected={row.study === selectedStudyId}
-                         next={row.study === nextUpId} who={who} onSelect={onSelect} />
-                  ))}
-                </section>
-              ))}
+              {p.sections.filter((s) => !(recent && s.rows.length === 0)).map((s) => {
+                const clock = laneClock(s);
+                return (
+                  <section key={s.lane} className={`lane-group lane-${s.lane}`} data-testid={`section-${p.pool}-${s.lane}`}>
+                    <h3 className="lane-group-heading">
+                      <span className="dot" aria-hidden="true" />
+                      <span className="lanename">{laneName(s.lane, s.label)}</span>
+                      <span className="count mono" title={`${s.rows.length} ${s.rows.length === 1 ? "study" : "studies"}`}>{s.rows.length}</span>
+                      {clock && <span className="clock">{clock}</span>}
+                    </h3>
+                    {s.lane === "FAILED" && s.rows.length > 0 && (
+                      <p className="lane-note">Processing did not complete. The study is still in PACS; read it there.</p>
+                    )}
+                    {s.rows.map((row) => (
+                      <Row key={row.study} row={row} selected={row.study === selectedStudyId}
+                           next={row.study === nextUpId} who={who} onSelect={onSelect} showLane={s.lane === "BY_ARRIVAL"} />
+                    ))}
+                  </section>
+                );
+              })}
             </section>
           ))}
         </div>

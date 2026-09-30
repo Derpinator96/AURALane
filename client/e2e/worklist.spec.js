@@ -17,7 +17,7 @@ test("radiologist sees the worklist in lane order with the abstention group", as
   expect(lanes).toEqual(["Chest-CRITICAL", "Chest-URGENT", "Chest-ABSTAIN", "Chest-EXPEDITED",
                          "Chest-ROUTINE", "Neuro-CRITICAL", "Neuro-URGENT", "Neuro-ABSTAIN"]);
   await expect(page.getByTestId("section-Neuro-ABSTAIN").getByRole("heading"))
-    .toContainText("NEEDS HUMAN TRIAGE");
+    .toContainText("Abstention Tray");
   await expect(page.getByRole("note", { name: "Non-diagnostic notice" })).toBeVisible();
   await page.screenshot({ path: "test-results/worklist.png", fullPage: true });
 

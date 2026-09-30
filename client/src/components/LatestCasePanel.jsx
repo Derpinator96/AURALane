@@ -9,6 +9,7 @@ import { LazyView } from "./ErrorBoundary.jsx";
 import { FindingSelector, gradcamLayer, selectedCaption } from "./GradcamFindings.jsx";
 import { ArrowUpRightIcon } from "./Icons.jsx";
 import { Spinner } from "./ui.jsx";
+import { laneName } from "../worklist.js";
 
 // Cornerstone (2D) and NiiVue (3D) load only when a study needs them. A chunk that fails
 // to load shows "failed to load, Retry" in its own place; the sheet stays.
@@ -131,7 +132,7 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
   return (
     <div className="latest-case-panel" data-testid="latest-case-panel">
       <header className="sheet-head">
-        <span className={`lanetag lane-${s.lane}`}>{s.lane_label || s.lane}</span>
+        <span className={`lanetag lane-${s.lane}`}>{laneName(s.lane, s.lane_label)}</span>
         <h2 className="sheet-title">{finding}</h2>
         <div className="sheet-ids">
           <span className="mono-id">{s.patient_id || s.study}</span>
@@ -147,7 +148,7 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
         <div className="verdict-block" data-testid="verdict-section">
           <div className="verdict-actions">
             <button type="button" disabled={busy} onClick={() => handleVerdict("agree")} aria-pressed={v?.value === "agree"}
-                    className="pill btn-verdict btn-agree">Agree · {s.lane_label || s.lane}</button>
+                    className="pill btn-verdict btn-agree">Agree · {laneName(s.lane, s.lane_label)}</button>
             <button type="button" disabled={busy} onClick={() => handleVerdict("disagree")} aria-pressed={v?.value === "disagree"}
                     title="Disagree with the lane and escalate" className="pill btn-verdict btn-disagree">Escalate</button>
           </div>

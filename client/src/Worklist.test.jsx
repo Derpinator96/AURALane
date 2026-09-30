@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import fixture from "./test/worklist.api.json";
 import Worklist from "./Worklist.jsx";
+import { laneName } from "./worklist.js";
 
 // The department queue: every study, as the API ordered it.
 async function show() {
@@ -49,17 +50,20 @@ describe("Worklist", () => {
   it("shows the abstention group, labelled, with its count", async () => {
     await show();
     const group = screen.getByTestId("section-Chest-ABSTAIN");
-    expect(within(group).getByRole("heading")).toHaveTextContent("NEEDS HUMAN TRIAGE");
+    expect(within(group).getByRole("heading")).toHaveTextContent("Abstention Tray");
     const n = fixture.studies.filter((r) => r.lane === "ABSTAIN").length;
     expect(within(group).getAllByTestId("study-row")).toHaveLength(n);
-    expect(within(group).getByRole("heading")).toHaveTextContent(`(${n})`);
+    expect(within(group).getByTitle(`${n} ${n === 1 ? "study" : "studies"}`)).toHaveTextContent(String(n));
+    // The tray has no reading clock to show; the old description of what a human does is gone.
+    expect(within(group).getByRole("heading")).not.toHaveTextContent("a human picks the lane");
   });
 
   it("writes every lane name out and shows acuity exactly as the API sent it", async () => {
     await show();
     for (const row of screen.getAllByTestId("study-row")) {
       const api = fixture.studies.find((r) => r.study === row.dataset.study);
-      expect(within(row).getByText(api.lane_label)).toBeInTheDocument();
+      // A row inside its lane section names the lane for screen readers; the heading shows it.
+      expect(within(row).getByText(laneName(api.lane, api.lane_label))).toBeInTheDocument();
       const shown = row.querySelector(".acuity").textContent;
       expect(shown).toBe(api.lane === "ABSTAIN" ? "--" : api.acuity.toFixed(1));
     }

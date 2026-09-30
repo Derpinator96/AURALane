@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { timeUTC } from "../worklist.js";
+import { laneName, timeUTC } from "../worklist.js";
 import { ArrowUpRightIcon, SearchIcon } from "./Icons.jsx";
 
 const studiesText = (n) => `${n} ${n === 1 ? "study" : "studies"}`;
@@ -69,7 +69,7 @@ export default function PatientHistoryView({ studies = [], onSelectStudy, select
             <div key={s.study} className={`history-row ${s.study === selectedStudyId ? "selected" : ""}`}
                  onClick={() => onSelectStudy(s.study)} data-testid="history-row">
               <span className="cell-time mono">{s.arrived ? `${s.arrived.slice(0, 10)} ${timeUTC(s.arrived)}` : "--"}</span>
-              <span className={`lanetag lane-${s.lane}`}>{s.lane_label || s.lane}</span>
+              <span className={`lanetag lane-${s.lane}`}>{laneName(s.lane, s.lane_label)}</span>
               <span className="chip chip-quiet">{s.exam || s.modality}</span>
               <span className="mono-id cell-patient">{s.patient_id || s.study}</span>
               <span className="finding-text">{s.driver_label || s.driver || "--"}</span>

@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import fixture from "./test/admin.api.json";
 import Admin, { Intake } from "./Admin.jsx";
+import { laneName } from "./worklist.js";
 import userEvent from "@testing-library/user-event";
 
 // Test data for the audit screen only: the fixture API has no audit events
@@ -44,7 +45,7 @@ describe("Admin", () => {
     const rows = within(await screen.findByTestId("lane-mix")).getAllByRole("row").slice(1);
     expect(rows).toHaveLength(fixture.lane_mix.lanes.length);
     fixture.lane_mix.lanes.forEach((l, i) => {
-      expect(rows[i]).toHaveTextContent(l.label);
+      expect(rows[i]).toHaveTextContent(laneName(l.lane, l.label));
       expect(rows[i]).toHaveTextContent(`${l.count}${l.percent}%`);
     });
     expect(screen.getByText(new RegExp(fixture.lane_mix.basis))).toBeInTheDocument();
@@ -53,7 +54,7 @@ describe("Admin", () => {
   it("shows lane floors and the abstention band read only", async () => {
     show("/admin/thresholds");
     const floors = await screen.findByTestId("lane-floors");
-    for (const l of fixture.models.lanes) expect(floors).toHaveTextContent(`${l.lane}${l.acuity_floor}${l.clock}`);
+    for (const l of fixture.models.lanes) expect(floors).toHaveTextContent(`${laneName(l.lane)}${l.acuity_floor}${l.clock}`);
     const [lo, hi] = fixture.models.abstain_band;
     expect(screen.getByTestId("abstain-band")).toHaveTextContent(`between ${lo} and ${hi}`);
     expect(screen.queryByRole("textbox")).toBeNull();
@@ -90,7 +91,7 @@ describe("Intake", () => {
     await userEvent.click(await screen.findByTestId("intake-start"));
     expect(start).toHaveBeenCalledWith(30);
     expect(await screen.findByTestId("intake-progress")).toHaveTextContent("1 scored, 1 failed, of 2");
-    expect(screen.getByText("URGENT")).toBeInTheDocument();
+    expect(screen.getByText("Urgent")).toBeInTheDocument();
     expect(screen.getByText(/FAILED: LookupError: y/)).toBeInTheDocument();
   });
 });

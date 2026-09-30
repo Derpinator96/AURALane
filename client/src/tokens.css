@@ -62,6 +62,10 @@
   --check-off: rgba(90, 100, 118, 0.26);
   --check-hover: rgba(47, 107, 242, 0.3);
   --card-shadow: 0 14px 30px -22px rgba(30, 52, 92, 0.3);
+  --row: rgba(255, 255, 255, 0.72);
+  --row-hover: rgba(255, 255, 255, 0.96);
+  --row-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(30, 52, 92, 0.06), 0 10px 22px -16px rgba(30, 52, 92, 0.36);
+  --row-shadow-hover: inset 0 1px 0 #fff, 0 2px 5px rgba(30, 52, 92, 0.08), 0 18px 30px -16px rgba(30, 52, 92, 0.46);
   --tick-idle: rgba(47, 107, 242, 0.2);
   --band-zone: rgba(61, 90, 158, 0.3);
   --on-accent: #ffffff;
@@ -97,11 +101,17 @@
   --r-small: 12px;
   --r-pill: 999px;
 
-  --fs-title: 44px;
-  --fs-stat: 34px;
-  --fs-card: 16px;
-  --fs-body: 14px;
-  --fs-meta: 13px;
+  /* Type scale: each size has one job. The page title eases down on narrower windows. */
+  --fs-title: clamp(30px, 2.4vw + 6px, 40px);   /* page title */
+  --fs-stat: 32px;                                /* the big number on a stat card, and sign-in and policy titles */
+  --fs-heading: 24px;                             /* the study sheet and modal titles */
+  --fs-section: 20px;                             /* a card that holds a list */
+  --fs-card: 16px;                                /* card and pool titles, the brand */
+  --fs-body: 14px;                                /* reading text, buttons, tabs, the finding on a row */
+  --fs-meta: 13px;                                /* chips, captions, secondary text on a row */
+  --fs-micro: 12px;                               /* footer, notes under a value, chart axes */
+  --fs-hud: 11px;                                 /* labels drawn over an image, the only text below 12 */
+  --fs-mono: 12.5px;                              /* identifiers and scores, sized to sit beside 13 px sans */
 
   --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -140,6 +150,10 @@
   --check-off: rgba(255, 255, 255, 0.2);
   --check-hover: rgba(110, 163, 245, 0.4);
   --card-shadow: 0 14px 30px -22px rgba(0, 0, 0, 0.6);
+  --row: rgba(255, 255, 255, 0.06);
+  --row-hover: rgba(255, 255, 255, 0.11);
+  --row-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 2px rgba(0, 0, 0, 0.25), 0 10px 22px -16px rgba(0, 0, 0, 0.7);
+  --row-shadow-hover: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 2px 5px rgba(0, 0, 0, 0.3), 0 18px 30px -16px rgba(0, 0, 0, 0.85);
   --tick-idle: rgba(110, 163, 245, 0.22);
   --band-zone: rgba(110, 156, 240, 0.34);
   --on-accent: #ffffff;
@@ -179,6 +193,8 @@
     --glass-blur: none;
     --scrim: rgba(230, 236, 243, 0.9);
     --field: #ffffff;
+    --row: #ffffff;
+    --row-hover: #ffffff;
   }
   :root[data-theme="dark"] {
     --glass: #1f242c;
@@ -187,5 +203,7 @@
     --sheet-fill: #1a1f26;
     --scrim: rgba(16, 19, 23, 0.9);
     --field: #2a313b;
+    --row: #262c36;
+    --row-hover: #2d343f;
   }
 }
