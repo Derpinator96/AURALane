@@ -107,10 +107,24 @@
   .human-lane-note, .tray, .verdict-block, .sheet-findings, .draft-panel { grid-column: 2; }
 }
 
-/* Full analysis page */
-.study-page-layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: var(--gap); padding: 8px 28px 32px; align-items: start; }
+/* Full analysis page: a bento. The images take two thirds and the decision (lane, finding, acuity, the
+   verdict) leads the tall column beside them, so it is on screen when the study opens. The draft and the
+   study's details fill a second row. Each tile is a glass card; none sits inside another. */
+.study-page-layout {
+  --hero-h: clamp(540px, calc(100dvh - 210px), 860px);       /* the first row is as tall as the window allows */
+  --viewport-h: clamp(340px, calc(var(--hero-h) - 210px), 760px);
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap); padding: 8px 28px 32px; align-items: start;
+}
+.study-page-layout > .loading-state, .study-page-layout > .error { grid-column: 1 / -1; }
+.bento-tile, .study-lower-side > * {
+  min-width: 0; padding: 20px; background: var(--glass); border-radius: var(--r-card);
+  box-shadow: var(--glass-hi), var(--card-shadow);
+}
+
+/* The images */
 .study-main-viewport {
-  display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 20px;
+  grid-column: 1 / span 8; grid-row: 1; min-height: var(--hero-h);
+  display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 20px;
   background: var(--glass); border-radius: var(--r-panel); box-shadow: var(--glass-hi), var(--glass-shadow);
 }
 .study-header-hud { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -124,34 +138,65 @@
 }
 .mode-btn:hover, .series-switch button:hover { color: var(--ink); }
 .mode-btn.active, .series-switch button[aria-pressed="true"] { background: var(--pill); color: var(--ink); box-shadow: var(--pill-shadow); font-weight: 500; }
+.study-controls { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; }
+.study-controls:empty { display: none; }
 .rationale { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .rationale .note { flex-basis: 100%; }
-.viewer-viewport-container { min-width: 0; }
-.viewer-empty-placeholder { display: grid; place-items: center; min-height: 240px; border-radius: var(--r-card); background: var(--tint); color: var(--ink-2); }
+.viewer-viewport-container { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.viewer-viewport-container > * { min-width: 0; }
+.study-main-viewport .viewport { height: var(--viewport-h); min-height: 0; }
+.viewer-empty-placeholder { display: grid; place-items: center; flex: 1; min-height: 240px; border-radius: var(--r-card); background: var(--tint); color: var(--ink-2); }
+.study-captions { display: grid; gap: 8px; }
+.study-captions:empty { display: none; }
 .datastore-note { padding: 10px 14px; background: var(--tint); border-radius: var(--r-small); color: var(--ink-2); }
 
-.study-analysis-sidebar { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.study-analysis-sidebar > * {
-  background: var(--glass); border-radius: var(--r-card); padding: 20px; min-width: 0;
-  box-shadow: var(--glass-hi), var(--card-shadow);
+/* The tall column beside the images. It is as tall as the images and scrolls inside itself if it
+   must, so the decision at its top never leaves the screen. */
+.study-analysis-sidebar { display: contents; }
+.study-hero-side { grid-column: 9 / -1; grid-row: 1; position: relative; align-self: stretch; min-width: 0; }
+.study-hero-scroll {
+  position: absolute; inset: 0; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; padding: 0 2px 28px;
+  /* the last 28 px is empty padding unless the column overflows, when it fades to say there is more */
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 28px), transparent); mask-image: linear-gradient(#000 calc(100% - 28px), transparent);
 }
-.study-analysis-sidebar > .tray { background: var(--glass-strong); }
-.analysis-lane-card { display: grid; gap: 10px; }
-.lane-header-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.lane-meta-row { display: flex; gap: 12px; flex-wrap: wrap; color: var(--ink-2); font-size: var(--fs-meta); }
-.lane-assigned { color: var(--ink-2); font-size: var(--fs-meta); }
+.study-hero-scroll > * { flex: none; }
+.study-hero-scroll > .study-findings-card { flex: 1 1 auto; min-height: 170px; }
+.study-hero-scroll > .tray { background: var(--glass-strong); }
+
+/* The decision */
+.analysis-decision {
+  display: grid; gap: 16px; padding: 22px; background: var(--glass-strong); border-radius: var(--r-panel);
+  box-shadow: var(--glass-hi), var(--glass-shadow);
+}
+.decision-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.decision-main { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.decision-finding, .decision-acuity { display: grid; gap: 3px; min-width: 0; }
+.decision-acuity { text-align: right; }
+.decision-kicker { color: var(--ink-2); font-size: var(--fs-micro); }
+.decision-title { font-size: var(--fs-heading); letter-spacing: -0.025em; line-height: 1.15; overflow-wrap: anywhere; }
+.decision-number { font-size: var(--fs-stat); font-weight: 500; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.lane-assigned { color: var(--ink-2); font-size: var(--fs-meta); margin-top: -6px; }
+.analysis-decision .study-verdict-section { padding: 14px; background: var(--tint); border-radius: var(--r-card); }
+
+/* The findings */
 .card-section-title { font-size: var(--fs-card); font-weight: 500; margin-bottom: 10px; }
-.findings-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.study-facts-card, .study-findings-card { display: grid; gap: 8px; }
-.facts-grid { display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; margin: 0; font-size: var(--fs-meta); }
-.facts-grid dt { color: var(--ink-2); }
-.facts-grid dd { margin: 0; }
+.study-findings-card { display: grid; grid-template-rows: auto minmax(0, 1fr); align-content: start; }
+.study-findings-card > .note { align-self: start; }
+.findings-scroll { min-height: 0; overflow-y: auto; }
 .findings-table-modern .meter-cell { width: 84px; }
 .signal-track { height: 6px; background: var(--tint); border-radius: var(--r-pill); overflow: hidden; }
 .signal-bar { height: 100%; border-radius: var(--r-pill); background: var(--ink-3); }
 .signal-bar.bar-driver { background: var(--blue); }
 .driver-finding-row td { background: var(--tint); }
 .finding-name-cell { display: flex; align-items: center; gap: 8px; }
+
+/* The second row */
+.study-draft { grid-column: 1 / span 8; grid-row: 2; }
+.study-lower-side { grid-column: 9 / -1; grid-row: 2; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.study-facts-card { display: grid; gap: 8px; }
+.facts-grid { display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; margin: 0; font-size: var(--fs-meta); }
+.facts-grid dt { color: var(--ink-2); }
+.facts-grid dd { margin: 0; }
 .study-source-footer { color: var(--ink-2); font-size: var(--fs-meta); }
 .regional-basis { color: var(--ink-2); font-size: var(--fs-micro); }
 .error-banner { padding: 12px 16px; background: var(--alert-bg); color: var(--alert-ink); border-radius: var(--r-card); }
@@ -161,16 +206,27 @@
 .verdict-heading { font-size: var(--fs-card); font-weight: 500; }
 .verdict-sub { color: var(--ink-2); font-size: var(--fs-meta); }
 .verdict-action-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
-.verdict-action-buttons .btn-verdict { flex: 1 1 0; }
+.verdict-action-buttons .btn-verdict { flex: 1 1 0; min-height: 46px; }
 .verdict-audit-badge { font-size: var(--fs-meta); }
 .audit-ok { color: var(--ok); }
 .audit-pending { color: var(--ink-2); }
 
-@media (max-width: 1100px) {
-  .study-page-layout { grid-template-columns: minmax(0, 1fr); }
+/* One column below 1180 px, and the decision leads it: the verdict is never under the images. */
+@media (max-width: 1180px) {
+  .study-page-layout { grid-template-columns: minmax(0, 1fr); --viewport-h: clamp(300px, 58vh, 560px); }
+  .study-hero-side, .study-hero-scroll { display: contents; }
+  .study-page-layout > *, .study-hero-scroll > *, .study-analysis-sidebar > * { grid-column: 1; grid-row: auto; }
+  .study-main-viewport { min-height: 0; }
+  .analysis-decision { order: 1; }
+  .human-lane-note, .study-hero-scroll > .tray { order: 2; }
+  .study-main-viewport { order: 3; }
+  .study-findings-card { order: 4; }
+  .study-draft { order: 5; }
+  .study-lower-side { order: 6; }
 }
 @media (max-width: 720px) {
   .study-page-layout { padding: 4px 14px 24px; }
   .study-main-viewport { padding: 14px; }
+  .analysis-decision { padding: 18px; }
   .latest-case-panel { padding: 22px 16px 26px; }
 }

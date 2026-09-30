@@ -47,10 +47,19 @@ export function rationaleText(detail) {
   return "No rationale image for this study.";
 }
 
-export function Rationale({ detail, on, onToggle, opacity, onOpacity, selected = null }) {
+// The rationale toggle and opacity slider (part "controls") and its caption (part "caption").
+// The page puts the controls above the image and the caption under it.
+export function Rationale({ detail, on, onToggle, opacity, onOpacity, selected = null, part = "all" }) {
   const ev = detail.evidence || {};
   const urls = detail.evidence_urls || {};
   const drawable = gradcamLayer(ev, urls, selected).drawable;
+  const caption = (
+    <p className="note" data-testid="rationale-caption">
+      {selectedCaption(ev, selected) || rationaleText(detail)}
+      {ev.gradcam_note ? ` ${ev.gradcam_note}` : ""}
+    </p>
+  );
+  if (part === "caption") return caption;
   return (
     <div className="rationale" data-testid="rationale">
       <button type="button" aria-pressed={on} disabled={!drawable && !urls.overlay_png}
@@ -66,10 +75,7 @@ export function Rationale({ detail, on, onToggle, opacity, onOpacity, selected =
                  aria-label="Grad-CAM opacity" data-testid="rationale-opacity" />
         </label>
       )}
-      <p className="note" data-testid="rationale-caption">
-        {selectedCaption(ev, selected) || rationaleText(detail)}
-        {ev.gradcam_note ? ` ${ev.gradcam_note}` : ""}
-      </p>
+      {part === "all" && caption}
     </div>
   );
 }
@@ -149,108 +155,115 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
                              isAddNoteMode = false, onToggleAddNoteMode = null }) {
   const s = detail.study;
   const brain = s.modality === "MR";
+  const scored = s.lane !== "ABSTAIN" && s.lane !== "FAILED";
 
+  // A bento of tiles. The decision (lane, finding, acuity and the verdict) leads the tall column beside
+  // the images so it is on screen when the study opens; the draft and the study's details sit below.
   return (
     <aside className="study-analysis-sidebar" data-testid="study-panel">
-      <div className={`analysis-lane-card lane-${s.lane}`}>
-        <div className="lane-header-row">
-          <span className="lane-badge-text">{laneName(s.lane, s.lane_label)}</span>
-          {s.clock && <span className="chip chip-quiet lane-sla-target"><ClockIcon size={13} /> {s.clock}</span>}
+      <div className="study-hero-side">
+        <div className="study-hero-scroll">
+          <section className={`bento-tile analysis-decision lane-${s.lane}`} aria-label="Decision">
+            <div className="decision-top">
+              <span className={`lanetag lane-${s.lane}`}>{laneName(s.lane, s.lane_label)}</span>
+              {s.clock && <span className="chip chip-quiet lane-sla-target"><ClockIcon size={13} /> {s.clock}</span>}
+            </div>
+            <div className="decision-main">
+              <div className="decision-finding">
+                <span className="decision-kicker">Driving finding</span>
+                <h2 className="decision-title">{s.driver_label || "--"}</h2>
+              </div>
+              <div className="decision-acuity">
+                <span className="decision-kicker">Acuity</span>
+                <strong className="decision-number">{scored ? fmt(s.acuity, 1) : "--"}</strong>
+              </div>
+            </div>
+            {s.assigned_name && <p className="lane-assigned">Assigned to {s.assigned_name}</p>}
+            {s.lane === "FAILED" && <p className="error-banner">Processing failed: {s.error}</p>}
+            {s.lane === "FAILED" ? (
+              <p className="note">No lane assigned. The study is still in PACS; read it there.</p>
+            ) : (
+              <Verdict study={s} onVerdict={onVerdict} busy={busy} />
+            )}
+          </section>
+
+          <HumanLaneNote study={s} />
+          <AbstentionTray detail={detail} token={token} me={me} onChanged={onStudyChanged} onLeft={onLeft} />
+
+          <section className="bento-tile study-findings-card" aria-label="Findings">
+            <h4 className="card-section-title">Findings</h4>
+            {detail.findings.length === 0 ? (
+              <p className="note" data-testid="no-findings">
+                {s.lane === "FAILED" ? "None: processing did not reach the model output." : "None reported."}
+              </p>
+            ) : (
+              <div className="findings-scroll">
+                <table className="findings-table-modern">
+                  <thead>
+                    <tr><th>Finding</th><th aria-label="Signal bar" /><th className="num">Signal</th><th className="num">Urgency</th></tr>
+                  </thead>
+                  <tbody>
+                    {detail.findings.map((f) => {
+                      const isDriver = f.name === s.driver;
+                      const sig = f.signal != null ? Number(f.signal) : 0;
+                      return (
+                        <tr key={f.name} className={isDriver ? "driver-finding-row" : ""}>
+                          <td className="finding-name-cell">
+                            <span>{f.label}</span>
+                            {isDriver && <span className="driver-pill">DRIVER</span>}
+                          </td>
+                          <td className="meter-cell">
+                            <div className="signal-track">
+                              <div className={`signal-bar ${isDriver ? "bar-driver" : "bar-normal"}`}
+                                   style={{ width: `${Math.min(100, Math.max(0, sig * 100))}%` }} />
+                            </div>
+                          </td>
+                          <td className="mono-id num bold">{fmt(f.signal)}</td>
+                          <td className="mono-id num text-soft">{fmt(f.urgency, 2)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
         </div>
-        <div className="lane-meta-row">
-          <span className="meta-acuity">
-            Acuity: <strong className="mono-id">{s.lane === "ABSTAIN" || s.lane === "FAILED" ? "--" : fmt(s.acuity, 1)}</strong>
-          </span>
-          <span className="meta-driver">Driving finding: <strong>{s.driver_label || "--"}</strong></span>
-        </div>
-        {s.assigned_name && <p className="lane-assigned">Assigned to {s.assigned_name}</p>}
       </div>
 
-      <HumanLaneNote study={s} />
-      <AbstentionTray detail={detail} token={token} me={me} onChanged={onStudyChanged} onLeft={onLeft} />
+      <div className="bento-tile study-draft"><DraftPanel detail={detail} saveDraft={saveDraft} /></div>
 
-      <DraftPanel detail={detail} saveDraft={saveDraft} />
-
-      <div className="study-facts-card">
-        <h4 className="card-section-title">Study</h4>
-        <dl className="facts-grid">
-          <dt>Patient (pseudonym)</dt><dd><Patient study={s} /></dd>
-          <dt>Exam</dt><dd>{s.exam}</dd>
-          <dt>Driving finding</dt><dd>{s.driver_label || "--"}</dd>
-          <dt>Acuity</dt>
-          <dd className="mono-id">{s.lane === "ABSTAIN" || s.lane === "FAILED" ? "--" : fmt(s.acuity, 1)}</dd>
-          <dt>Confidence</dt>
-          <dd>
-            {brain ? "Not reported: the brain model reports volumes, not a probability"
-                   : <span className="mono-id">{fmt(s.confidence)}</span>}
-          </dd>
-          <dt>Model</dt><dd className="mono-id">{s.model_id || "--"}</dd>
-          <dt>Arrived</dt><dd className="mono">{s.arrived ? `${timeUTC(s.arrived)} UTC` : "--"}</dd>
-        </dl>
-      </div>
-      <RegionalContext regional={detail.evidence?.regional} driver={s.driver}
-                       driverLabel={s.driver_label} />
-
-      {/* Persistent Clinician Pinpoint Annotations Card */}
-      <AnnotationsPanel
-        annotations={annotations}
-        activeAnnotationId={activeAnnotationId}
-        onSelectAnnotation={onSelectAnnotation}
-        onEditAnnotation={onEditAnnotation}
-        onDeleteAnnotation={onDeleteAnnotation}
-        isAddNoteMode={isAddNoteMode}
-        onToggleAddNoteMode={onToggleAddNoteMode}
-      />
-
-      {rationaleOn && detail.evidence_urls?.overlay_png && <SegmentationRationale detail={detail} />}
-      {s.lane === "FAILED" && <p className="error-banner">Processing failed: {s.error}</p>}
-
-      <div className="study-findings-card">
-        <div className="findings-header">
-          <h4 className="card-section-title">Findings</h4>
+      <div className="study-lower-side">
+        <div className="bento-tile study-facts-card">
+          <h4 className="card-section-title">Study</h4>
+          <dl className="facts-grid">
+            <dt>Patient (pseudonym)</dt><dd><Patient study={s} /></dd>
+            <dt>Exam</dt><dd>{s.exam}</dd>
+            <dt>Confidence</dt>
+            <dd>
+              {brain ? "Not reported: the brain model reports volumes, not a probability"
+                     : <span className="mono-id">{fmt(s.confidence)}</span>}
+            </dd>
+            <dt>Model</dt><dd className="mono-id">{s.model_id || "--"}</dd>
+            <dt>Arrived</dt><dd className="mono">{s.arrived ? `${timeUTC(s.arrived)} UTC` : "--"}</dd>
+          </dl>
+          <RegionalContext regional={detail.evidence?.regional} driver={s.driver}
+                           driverLabel={s.driver_label} />
         </div>
-        {detail.findings.length === 0 ? (
-          <p className="note" data-testid="no-findings">
-            {s.lane === "FAILED" ? "None: processing did not reach the model output." : "None reported."}
-          </p>
-        ) : (
-          <table className="findings-table-modern">
-            <thead>
-              <tr><th>Finding</th><th aria-label="Signal bar" /><th className="num">Signal</th><th className="num">Urgency</th></tr>
-            </thead>
-            <tbody>
-              {detail.findings.map((f) => {
-                const isDriver = f.name === s.driver;
-                const sig = f.signal != null ? Number(f.signal) : 0;
-                return (
-                  <tr key={f.name} className={isDriver ? "driver-finding-row" : ""}>
-                    <td className="finding-name-cell">
-                      <span>{f.label}</span>
-                      {isDriver && <span className="driver-pill">DRIVER</span>}
-                    </td>
-                    <td className="meter-cell">
-                      <div className="signal-track">
-                        <div className={`signal-bar ${isDriver ? "bar-driver" : "bar-normal"}`}
-                             style={{ width: `${Math.min(100, Math.max(0, sig * 100))}%` }} />
-                      </div>
-                    </td>
-                    <td className="mono-id num bold">{fmt(f.signal)}</td>
-                    <td className="mono-id num text-soft">{fmt(f.urgency, 2)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+
+        <AnnotationsPanel
+          annotations={annotations}
+          activeAnnotationId={activeAnnotationId}
+          onSelectAnnotation={onSelectAnnotation}
+          onEditAnnotation={onEditAnnotation}
+          onDeleteAnnotation={onDeleteAnnotation}
+          isAddNoteMode={isAddNoteMode}
+          onToggleAddNoteMode={onToggleAddNoteMode}
+        />
+
+        {rationaleOn && detail.evidence_urls?.overlay_png && <SegmentationRationale detail={detail} />}
+        {s.source && <div className="study-source-footer"><span>Source: <span className="mono-id">{s.source}</span></span></div>}
       </div>
-
-      {s.lane === "FAILED" ? (
-        <p className="note">No lane assigned. The study is still in PACS; read it there.</p>
-      ) : (
-        <Verdict study={s} onVerdict={onVerdict} busy={busy} />
-      )}
-
-      {s.source && <div className="study-source-footer"><span>Source: <span className="mono-id">{s.source}</span></span></div>}
     </aside>
   );
 }
@@ -410,7 +423,6 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
             <div className="hud-study-tag">
               <span className="hud-patient mono-id">{detail.study.patient_id || detail.study.study}</span>
               <span className={`mod-badge mod-${detail.study.modality}`}>{detail.study.exam || detail.study.modality}</span>
-              <span className={`lanetag lane-${detail.study.lane}`}>{laneName(detail.study.lane, detail.study.lane_label)}</span>
             </div>
           </div>
           <div className="hud-right-section">
@@ -443,13 +455,11 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
           </div>
         </div>
 
-        <Rationale detail={detail} on={rationale} onToggle={() => setRationale((v) => !v)}
-                   opacity={opacity} onOpacity={setOpacity} selected={selectedFinding} />
-        <FindingSelector ev={ev} selected={selectedFinding} onSelect={setSelectedFinding} />
-
-        {detail.datastore_note && !show3D && (
-          <p className="note datastore-note" role="note" data-testid="datastore-note">{detail.datastore_note}</p>
-        )}
+        <div className="study-controls">
+          <Rationale detail={detail} on={rationale} onToggle={() => setRationale((v) => !v)}
+                     opacity={opacity} onOpacity={setOpacity} selected={selectedFinding} part="controls" />
+          <FindingSelector ev={ev} selected={selectedFinding} onSelect={setSelectedFinding} />
+        </div>
 
         <div className="viewer-viewport-container">
           {isCT && hasCtGradcam(urls) && !show3D ? (
@@ -467,6 +477,13 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
           ) : (
             <LazyView load={loadViewer} what="Viewer" fallback={loadingLine}
                       instances={instances} overlay={overlay} label={current.description} {...noteProps} />
+          )}
+        </div>
+
+        <div className="study-captions">
+          <Rationale detail={detail} selected={selectedFinding} part="caption" />
+          {detail.datastore_note && !show3D && (
+            <p className="note datastore-note" role="note" data-testid="datastore-note">{detail.datastore_note}</p>
           )}
         </div>
       </div>

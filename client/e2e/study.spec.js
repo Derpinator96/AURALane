@@ -55,3 +55,17 @@ test("brain study offers the four series by sequence name", async ({ page }) => 
   await series.getByRole("button", { name: "FLAIR" }).click();
   await expect(series.getByRole("button", { name: "FLAIR" })).toHaveAttribute("aria-pressed", "true");
 });
+
+// The verdict is in the first screen of the page, without scrolling, on a laptop and on a large monitor.
+for (const size of [{ width: 1280, height: 720 }, { width: 1440, height: 900 }]) {
+  test(`the verdict buttons are on screen when a study opens at ${size.width} by ${size.height}`, async ({ page }) => {
+    await page.setViewportSize(size);
+    await open(page, "Nodule");
+    const agree = page.getByRole("button", { name: "Agree with the lane" });
+    await expect(agree).toBeVisible();
+    const box = await agree.boundingBox();
+    expect(box.y).toBeGreaterThan(0);
+    expect(box.y + box.height).toBeLessThan(size.height);
+    await expect(agree).toBeInViewport({ ratio: 1 });
+  });
+}
