@@ -279,6 +279,8 @@ tbody tr:hover td { background: var(--tint); }
   padding: 28px 30px 30px; display: grid; gap: 22px;
 }
 .modal-card.wide-modal { width: min(760px, 100%); }
+/* Grid items may shrink below their content, so a wide child scrolls instead of widening the card. */
+.modal-card > * { min-width: 0; }
 .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .modal-title { font-size: var(--fs-heading); font-weight: 500; letter-spacing: -0.02em; }
 .crumbs { display: flex; align-items: center; gap: 6px; margin-top: 6px; color: var(--ink-2); font-size: var(--fs-meta); }

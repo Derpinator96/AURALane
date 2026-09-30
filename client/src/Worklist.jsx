@@ -8,13 +8,14 @@ import PatientHistoryView from "./components/PatientHistoryView.jsx";
 import ReportsView from "./components/ReportsView.jsx";
 import SettingsView from "./components/SettingsView.jsx";
 import SimulatePanel from "./components/SimulatePanel.jsx";
+import UploadPanel from "./components/UploadPanel.jsx";
 import DistributePanel from "./components/DistributePanel.jsx";
 import SheetShell from "./components/SheetShell.jsx";
 import OpinionsView from "./components/OpinionsView.jsx";
 import QueueCard from "./components/QueueCard.jsx";
 import { GaugeCard, ReadersCard, StatRow, WaitingCard } from "./components/DashboardCards.jsx";
 import ErrorBoundary, { Failed } from "./components/ErrorBoundary.jsx";
-import { PlayIcon, UsersIcon } from "./components/Icons.jsx";
+import { PlayIcon, UploadIcon, UsersIcon } from "./components/Icons.jsx";
 import { Overlay } from "./components/ui.jsx";
 import { loadSettings } from "./settings.js";
 
@@ -39,7 +40,7 @@ export default function Worklist({ load, token }) {
   const [activeNav, setActiveNav] = useState("worklist");
   const [specialty, setSpecialty] = useState("ALL");
   const [selectedStudyId, setSelectedStudyId] = useState(null);
-  const [panel, setPanel] = useState(null);             // "simulate" | "distribute"
+  const [panel, setPanel] = useState(null);             // "simulate" | "upload" | "distribute"
   const [chosenScope, setScope] = useState(null);       // "mine" | "all"
   const [refresh, setRefresh] = useState(() => loadSettings().refreshSeconds);
   const [poolTab, setPoolTab] = useState("ALL");        // "ALL" or a pool name
@@ -173,6 +174,9 @@ export default function Worklist({ load, token }) {
       {panel === "simulate" && (
         <SimulatePanel token={token} readers={readers} me={data.me} onClose={() => setPanel(null)} onProgress={fetchWorklist} />
       )}
+      {panel === "upload" && (
+        <UploadPanel token={token} onClose={() => setPanel(null)} onProgress={fetchWorklist} />
+      )}
       {panel === "distribute" && (
         <DistributePanel token={token} readers={readers} studies={data.studies}
                          onClose={() => setPanel(null)} onDone={fetchWorklist} />
@@ -188,6 +192,8 @@ export default function Worklist({ load, token }) {
           <div className="page-actions">
             <button type="button" className="pill pill-primary" onClick={() => setPanel("simulate")}
                     data-testid="btn-simulate"><PlayIcon size={15} />Simulate ingest</button>
+            <button type="button" className="pill" onClick={() => setPanel("upload")}
+                    data-testid="btn-upload"><UploadIcon size={16} />Upload study</button>
             <button type="button" className="pill" onClick={() => setPanel("distribute")}
                     disabled={readers.length === 0} data-testid="btn-distribute"><UsersIcon size={16} />Distribute worklist</button>
           </div>

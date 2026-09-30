@@ -26,6 +26,10 @@ confidence readout.
 - **Second opinions.** A reader can send a study, in any lane, with a message, to other radiologists. It
   works like mail: the study stays on the sender's worklist. They find it under *Second opinions*, write
   reports of their own, and everyone on the study reads them from a dropdown.
+- **Upload study.** A reader can send their own files: a study's DICOM folder, several studies, or chest
+  X-ray images (PNG, JPEG). The API sorts them into studies and runs each through the same pipeline, which
+  de-identifies it before anything is stored. Each study lands on the uploader's own worklist, in the pool
+  its modality belongs to.
 - **The study view.** Images (Cornerstone3D for 2D, NiiVue for 3D), a per-finding Grad-CAM shown only here,
   a drafted report assembled from structured output, and the reader's own edits saved to Reports.
 - **Admin screens.** Audit log, pipeline timings, lane mix, thresholds and the model registry. Admins cannot

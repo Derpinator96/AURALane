@@ -168,7 +168,7 @@ export default function QueueCard({
       )}
 
       {emptyOwn && (
-        <div className="empty-line" data-testid="empty-worklist"><WorklistIcon size={20} />Your worklist is empty. Simulate an ingest to add studies.</div>
+        <div className="empty-line" data-testid="empty-worklist"><WorklistIcon size={20} />Your worklist is empty. Simulate an ingest or upload a study to add studies.</div>
       )}
       {nothingRead && <div className="empty-line" data-testid="nothing-read">Nothing read yet</div>}
 

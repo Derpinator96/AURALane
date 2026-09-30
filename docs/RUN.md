@@ -159,6 +159,27 @@ data/chest/studies, and 60 more in data/chest/extra, built by
 study's DICOM folder in data/ct/raw/ and stage again. The S3 pool is a separate
 copy of the same staging, so after adding studies run the `--stack` command too.
 
+## Upload study: your own files
+
+Radiologist screen, "Upload study". Choose files, or a folder, and upload. Two
+kinds are taken: DICOM files (one study, or several; chest X-ray CR, brain MR with
+its four sequences, head CT) and PNG or JPEG chest X-ray images (each is wrapped
+as a frontal PA Computed Radiography study with a generated identity). Each study
+runs through the real pipeline, which de-identifies it first, and lands on your
+own worklist in the pool its modality belongs to. A reader who does not read that
+pool is told before anything is sent. The fixture preview has no pipeline and says
+so. Use public, synthetic or openly licensed studies only.
+
+The limits are 1,000 files, 64 MB a file, 400 MB and 20 studies in one upload.
+Files go to the API one request each as the raw body, so a file name (which can
+carry a patient's name) is never sent, stored or audited. The API holds them in a
+temporary folder only until they are handed to the pipeline and deletes each as
+its study finishes. On AWS they go to S3 `upload/` and the ingest task takes them
+from there, as for the edge agent (docs/DEPLOY.md step 7).
+
+"Distribute worklist" deals every unread study, critical first, round robin
+among the readers you choose. The fixture preview has no pipeline and says so.
+
 ## Reset after any change to de-identification
 
     docker compose -f docker-compose.local.yml down
