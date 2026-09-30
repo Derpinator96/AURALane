@@ -350,7 +350,7 @@ class CloudDispatch:
 
     def __call__(self, item: dict, batch: str, index: int, set_fields, audit_receive):
         from types import SimpleNamespace
-        from core.upload import RESULTS, copy_pool_study
+        from core.upload import RESULTS, copy_pool_study, wait_result
         name = f"{index:03d}"
         _, n = copy_pool_study(
             self.s3, self.bucket, f"{self.pool_prefix}{item['type']}/{item['study']}/",
@@ -360,17 +360,9 @@ class CloudDispatch:
             raise FileNotFoundError(f"no DICOM under {item['type']}/{item['study']}")
         audit_receive(n)
         set_fields(status="running")
-        key = f"{RESULTS}sim-{batch}/{name}.json"
-        deadline = time.monotonic() + self.timeout_s
-        while time.monotonic() < deadline:
-            try:
-                r = json.loads(self.s3.get_object(Bucket=self.bucket, Key=key)["Body"].read())
-                return SimpleNamespace(status=r.get("status"), lane=r.get("lane"),
-                                       error=r.get("error"))
-            except self.s3.exceptions.NoSuchKey:
-                time.sleep(self.poll_s)
-        raise TimeoutError(f"the ingest task wrote no result in {int(self.timeout_s // 60)} min "
-                           f"(see the IngestTask log group in CloudWatch)")
+        r = wait_result(self.s3, self.bucket, f"{RESULTS}sim-{batch}/{name}.json",
+                        self.timeout_s, self.poll_s)
+        return SimpleNamespace(status=r.get("status"), lane=r.get("lane"), error=r.get("error"))
 
 
 def study_uid(path: Path) -> str:

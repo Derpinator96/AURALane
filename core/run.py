@@ -307,17 +307,70 @@ def _simulator(prov: dict):
         # instances read, four volumes built), is held to one at a time.
         return Simulator(pool, ingest_one, table, runtime, on_study=on_study, workers=4)
 
-    shared = {}
-
-    def ingest_local(paths, **kw):
-        if "p" not in shared:           # the models load once, on first use
-            shared["p"] = providers(for_ingest=True)
-        p = shared["p"]
-        return ingest(paths, blob=p["blob"], datastore=p["datastore"], table=p["table"],
-                      inference=p["inference"], registry=registry, identity=None,
-                      regional=regional, **kw)
     # Local models share this process: one study at a time.
-    return Simulator(LocalPool(), ingest_local, table, runtime, on_study=on_study, workers=1)
+    return Simulator(LocalPool(), _local_ingest(prov, registry, regional), table, runtime,
+                     on_study=on_study, workers=1)
+
+
+def _local_ingest(prov: dict, registry, regional):
+    """The local runtime's pipeline, in this process. Simulated ingest and uploads share the one
+    (it is kept on prov): the models load once, on first use, and only one study runs at a time.
+    identity=None where the studies are already de-identified (the staged pool); uploads pass the
+    identity map, and the study is de-identified first."""
+    import threading
+    if "ingest_local" not in prov:
+        from core.pipeline import ingest
+        lock, shared = threading.Lock(), {}
+
+        def ingest_local(paths, **kw):
+            kw.setdefault("identity", None)
+            with lock:
+                if "p" not in shared:
+                    shared["p"] = providers(for_ingest=True)
+                p = shared["p"]
+                return ingest(paths, blob=p["blob"], datastore=p["datastore"], table=p["table"],
+                              inference=p["inference"], registry=registry, regional=regional, **kw)
+        prov["ingest_local"] = ingest_local
+    return prov["ingest_local"]
+
+
+def _uploads(prov: dict):
+    """Upload your own studies (radiologist screen). Unavailable, with the reason, where there is
+    no pipeline."""
+    import datetime
+    from core.assign import assign_row
+    from core.own_uploads import CloudUpload, Uploads
+    runtime, table = prov["runtime"], prov["table"]
+
+    def on_study(row, reader, actor):
+        if reader is not None:
+            assign_row(table, row, reader, actor,
+                       datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
+
+    if runtime == "fixture":
+        return Uploads(table, runtime, unavailable=(
+            "this preview serves fixed rows and has no pipeline; uploads run on the AWS runtime "
+            "and locally"))
+    if runtime == "aws":
+        import boto3
+        from core.providers.aws.config import REGION
+        bucket = os.environ.get("AURALANE_BUCKET")
+        if not bucket:
+            return Uploads(table, runtime, unavailable="AURALANE_BUCKET is not set on this API")
+        # The ingest task de-identifies, imports and scores; this process only forwards the files.
+        return Uploads(table, runtime, on_study=on_study, workers=4, dispatch=CloudUpload(
+            boto3.client("s3", region_name=REGION), bucket,
+            site_state=os.environ.get("AURALANE_SITE_STATE") or None))
+    from core.regional import setting
+    from core.registry import Registry
+    try:
+        regional = setting()
+    except ValueError as e:
+        return Uploads(table, runtime, unavailable=str(e))
+    ingest_local = _local_ingest(prov, Registry(), regional)
+    # The identity map is SQLite, which is per thread: one per study, made in the worker.
+    return Uploads(table, runtime, ingest_one=lambda paths, **kw: ingest_local(
+        paths, identity=_identity(), **kw), on_study=on_study, workers=1)
 
 
 def cmd_serve(args) -> int:
@@ -336,6 +389,7 @@ def cmd_serve(args) -> int:
     prov = providers()
     prov["intake"] = _intake(prov["runtime"])
     prov["simulate"] = _simulator(prov)
+    prov["uploads"] = _uploads(prov)
     if prov["runtime"] != "aws" and not os.environ.get("AURALANE_DEV_PASSWORD"):
         print(f"dev sign-in password: {DEV_PASSWORD_FILE.relative_to(ROOT)}")
     origins = cors_origins()

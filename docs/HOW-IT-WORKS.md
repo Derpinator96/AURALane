@@ -164,6 +164,29 @@ How it is kept:
 The abstention tray's "Get a second opinion" is this same option. There is no hand-over: an abstained study
 that another radiologist has been sent is still the first reader's to place, set aside or leave.
 
+## Upload study (`/api/uploads`, `core/own_uploads.py`)
+
+A reader sends their own files. The client opens an upload (`POST /api/uploads`), sends each file as the raw
+body of its own request (`POST /api/uploads/{upload}/files/{n}`, numbered, never named), then submits
+(`POST /api/uploads/{upload}/submit`) and polls `GET /api/uploads/{upload}`. There is no multipart form, so the
+deployed API needs no extra library, and a file name, which can carry a patient's name, never reaches it.
+
+Submitting checks the upload as a whole. DICOM files are grouped by StudyInstanceUID, one study each; only the
+modalities a model is registered for are taken (CR, MR, CT), and a report or directory object inside a study is
+skipped and counted. A PNG or JPEG becomes one Computed Radiography study, wrapped with a generated synthetic
+identity and taken as a frontal view; the pipeline's de-identifier then masks any text burned into it like any
+other. A modality without a model, a reader who does not read the study's pool, or more than 20 studies stops the
+whole upload before anything runs, with the reason and no file name.
+
+Each study then runs `core.pipeline.ingest`, which de-identifies before the datastore sees anything. Locally that
+is this process; on AWS the files go to S3 `upload/own-<upload>/<n>/` with a manifest and a Fargate task does
+the rest (the same path as the edge agent), and the API only waits for its result. The study is assigned to the
+uploader as it finishes, and the raw file is deleted. Uploads are private to the reader who opened them; nothing
+about a file name is stored or audited, and the audit event counts files, studies and types.
+
+The pipeline also fills in SOPClassUID from the file meta when a file lacks it (the RSNA head CTs do), because
+Orthanc's STOW-RS rejects an instance without it.
+
 ## The web app (`client/`)
 
 One screen, dark and dense for a reading room, split by reading pool: Neuro
