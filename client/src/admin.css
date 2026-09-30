@@ -11,7 +11,7 @@ table.admin { margin: 0; }
 table.admin th { padding: 8px 16px 8px 12px; }
 table.admin td { padding: 11px 16px 11px 12px; }
 table.admin .num { text-align: right; }
-table.admin .detail { color: var(--ink-2); font-size: 12px; max-width: 520px; overflow-wrap: anywhere; }
+table.admin .detail { color: var(--ink-2); font-size: var(--fs-micro); max-width: 520px; overflow-wrap: anywhere; }
 table.admin tr.overdue td { background: var(--alert-bg); color: var(--alert-ink); }
 .barcol { width: 240px; }
 .bar { display: block; height: 6px; background: var(--ink-3); border-radius: var(--r-pill); }
@@ -39,10 +39,10 @@ td.lanetag::before { display: none; }
 .pipe-label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
 .pipe-stage.idle .pipe-label::before { background: var(--idle); }
 .pipe-stage.idle { color: var(--ink-2); }
-.pipe-service { font-size: 12px; color: var(--ink-2); min-height: 30px; }
+.pipe-service { font-size: var(--fs-micro); color: var(--ink-2); min-height: 30px; }
 .pipe-count { font-size: var(--fs-stat); font-weight: 500; line-height: 1; letter-spacing: -0.03em; margin-top: auto; }
-.pipe-times { font-size: 12px; color: var(--ink-2); }
-.pipe-failed { color: var(--alert-ink); font-size: 12px; }
+.pipe-times { font-size: var(--fs-micro); color: var(--ink-2); }
+.pipe-failed { color: var(--alert-ink); font-size: var(--fs-micro); }
 .pipe-overdue { padding: 14px 18px; background: var(--alert-bg); color: var(--alert-ink); border-radius: var(--r-card); }
 .pipe-live { display: flex; flex-direction: column; gap: 6px; }
 .pipe-live-row {

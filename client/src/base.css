@@ -27,7 +27,7 @@ a { color: inherit; text-decoration: none; }
 strong, .bold { font-weight: 500; }
 /* Geist Mono is for study identifiers and scores only. .mono keeps tabular figures in the sans. */
 .mono { font-family: var(--sans); font-variant-numeric: tabular-nums; }
-.mono-id, code { font-family: var(--mono); font-size: 0.93em; letter-spacing: 0; }
+.mono-id, code { font-family: var(--mono); font-size: var(--fs-mono); letter-spacing: 0; }
 .num { text-align: right; }
 .note { color: var(--ink-2); font-size: var(--fs-meta); }
 .error, .error-text { color: var(--alert-ink); }
@@ -205,11 +205,11 @@ tbody tr:hover td { background: var(--tint); }
 }
 .foot {
   flex: none; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 20px 12px;
-  color: var(--ink-3); font-size: 12px; text-align: center; flex-wrap: wrap;
+  color: var(--ink-3); font-size: var(--fs-micro); text-align: center; flex-wrap: wrap;
 }
 .foot a { color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; }
 .foot a:hover { color: var(--blue-ink); }
-.brand { display: inline-flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 500; letter-spacing: -0.02em; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-size: var(--fs-card); font-weight: 500; letter-spacing: -0.02em; }
 .brand:hover { color: var(--blue-ink); }
 
 /* Signed-out: one centred glass card on the field. */
@@ -280,7 +280,7 @@ tbody tr:hover td { background: var(--tint); }
 }
 .modal-card.wide-modal { width: min(760px, 100%); }
 .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.modal-title { font-size: 24px; font-weight: 500; letter-spacing: -0.02em; }
+.modal-title { font-size: var(--fs-heading); font-weight: 500; letter-spacing: -0.02em; }
 .crumbs { display: flex; align-items: center; gap: 6px; margin-top: 6px; color: var(--ink-2); font-size: var(--fs-meta); }
 .crumbs strong { color: var(--ink); }
 .modal-actions { display: flex; align-items: center; gap: 10px; }

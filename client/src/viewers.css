@@ -64,7 +64,7 @@
 .ct-mode-btn {
   background: transparent;
   border: none;
-  font-size: 11.5px;
+  font-size: var(--fs-micro);
   font-weight: 500;
   color: var(--ink-2);
   padding: 4px 10px;
@@ -95,7 +95,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11.5px;
+  font-size: var(--fs-micro);
   color: var(--ink-2);
 }
 
@@ -114,14 +114,14 @@
   min-width: 34px;
   font-weight: 500;
   color: var(--ink);
-  font-size: 11px;
+  font-size: var(--fs-hud);
 }
 
 .ct-toggles {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 11.5px;
+  font-size: var(--fs-micro);
   color: var(--ink-2);
 }
 
@@ -168,7 +168,7 @@
 }
 
 .ct-panel-title {
-  font-size: 12.5px;
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--ink);
   margin: 0;
@@ -222,7 +222,7 @@
   right: 6px;
   background: rgba(0, 0, 0, 0.75);
   color: #38bdf8;
-  font-size: 9.5px;
+  font-size: var(--fs-hud);
   padding: 2px 6px;
   border-radius: 3px;
   pointer-events: none;
@@ -234,7 +234,7 @@
   left: 6px;
   background: rgba(0, 0, 0, 0.7);
   color: #a1a1aa;
-  font-size: 9px;
+  font-size: var(--fs-hud);
   padding: 2px 6px;
   border-radius: 3px;
   pointer-events: none;
@@ -262,7 +262,7 @@
   left: -2px;
   background: #00ff00;
   color: #000000;
-  font-size: 9.5px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   padding: 1px 5px;
   border-radius: 2px;
@@ -358,7 +358,7 @@
 }
 
 .toolbar-label {
-  font-size: 11px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   color: #a1a1aa;
 
@@ -377,7 +377,7 @@
   background: transparent;
   border: none;
   color: #a1a1aa;
-  font-size: 11.5px;
+  font-size: var(--fs-micro);
   font-weight: 500;
   padding: 5px 10px;
   border-radius: 5px;
@@ -408,7 +408,7 @@
   gap: 6px;
   background: #18181b;
   color: #a1a1aa;
-  font-size: 11.5px;
+  font-size: var(--fs-micro);
   font-weight: 500;
   padding: 5px 10px;
   border-radius: 6px;
@@ -439,7 +439,7 @@
 /* The dark chip belongs to the dark MRI toolbar only; everywhere else a slider label is
    plain text on the glass (see study.css). */
 .mri-3d-workstation .slider-label {
-  font-size: 11px;
+  font-size: var(--fs-hud);
   color: #a1a1aa;
   display: flex;
   align-items: center;
@@ -459,7 +459,7 @@
 .btn-tool-action {
   background: #18181b;
   color: #a1a1aa;
-  font-size: 11px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   padding: 5px 10px;
   border-radius: 6px;
@@ -513,7 +513,7 @@
   background: rgba(9, 9, 11, 0.85);
   backdrop-filter: blur(4px);
   color: #f4f4f5;
-  font-size: 10px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   padding: 3px 8px;
   border-radius: 4px;
@@ -526,12 +526,12 @@
 
 .badge-coords {
   color: #a1a1aa;
-  font-size: 9px;
+  font-size: var(--fs-hud);
 }
 
 .orientation-tag {
   position: absolute;
-  font-size: 10px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   color: #71717a;
   pointer-events: none;
@@ -549,7 +549,7 @@
   right: 8px;
   background: rgba(9, 9, 11, 0.8);
   color: #a1a1aa;
-  font-size: 9.5px;
+  font-size: var(--fs-hud);
   padding: 2px 6px;
   border-radius: 4px;
   pointer-events: none;
@@ -566,7 +566,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--fs-micro);
   color: #a1a1aa;
   padding: 6px 0;
 }
@@ -589,7 +589,7 @@
 }
 
 .metrics-bar-label {
-  font-size: 11px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   color: #a1a1aa;
 
@@ -600,7 +600,7 @@
   background: #18181b;
   padding: 5px 10px;
   border-radius: 6px;
-  font-size: 11.5px;
+  font-size: var(--fs-micro);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -645,12 +645,12 @@
 }
 .viewer-tools button {
   display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; background: transparent; color: rgba(255, 255, 255, 0.88);
-  border: 0; border-radius: var(--r-pill); box-shadow: none; font: inherit; font-size: 12.5px; cursor: pointer;
+  border: 0; border-radius: var(--r-pill); box-shadow: none; font: inherit; font-size: var(--fs-meta); cursor: pointer;
 }
 .viewer-tools button:hover { background: rgba(255, 255, 255, 0.16); }
 .viewer-tools button[aria-pressed="true"] { background: #ffffff; color: #16181d; }
-.slice { margin: 0 8px; font-size: 12.5px; color: rgba(255, 255, 255, 0.78); }
-.viewer-label { margin: 0 10px 0 4px; font-weight: 500; letter-spacing: 0; font-size: 12.5px; color: rgba(255, 255, 255, 0.78); }
+.slice { margin: 0 8px; font-size: var(--fs-meta); color: rgba(255, 255, 255, 0.78); }
+.viewer-label { margin: 0 10px 0 4px; font-weight: 500; letter-spacing: 0; font-size: var(--fs-meta); color: rgba(255, 255, 255, 0.78); }
 .overlay-layer { position: absolute; pointer-events: none; image-rendering: auto; }
 .pinpoint-active-mode .viewport, .pinpoint-active-mode .mri-canvas { cursor: crosshair; }
 
@@ -690,7 +690,7 @@
 .annotations-count-badge {
   background: var(--tint);
   color: var(--ink);
-  font-size: 11px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   padding: 2px 7px;
   border-radius: 12px;
@@ -699,7 +699,7 @@
 .btn-add-pinpoint, .btn-pin-mode {
   background: var(--tint);
   color: var(--ink);
-  font-size: 11.5px;
+  font-size: var(--fs-micro);
   font-weight: 500;
   padding: 5px 12px;
   border-radius: 6px;
@@ -726,7 +726,7 @@
   gap: 8px;
   background: rgba(0, 0, 0, 0.12);
   color: #a1a1aa;
-  font-size: 11.5px;
+  font-size: var(--fs-micro);
   padding: 8px 12px;
   border-radius: 6px;
   animation: fade-in 0.2s ease-out;
@@ -791,7 +791,7 @@
 }
 
 .ann-region-pill, .hud-region-badge {
-  font-size: 10px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   padding: 2px 6px;
   border-radius: 4px;
@@ -830,7 +830,7 @@
 }
 
 .ann-coords-tag {
-  font-size: 10px;
+  font-size: var(--fs-hud);
   color: var(--ink-2);
   background: rgba(0, 0, 0, 0.05);
   padding: 2px 5px;
@@ -846,7 +846,7 @@
 .btn-ann-action {
   background: transparent;
   color: var(--ink-2);
-  font-size: 10.5px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   padding: 2px 6px;
   border-radius: 4px;
@@ -877,7 +877,7 @@
 
 .ann-text-body {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--fs-micro);
   color: var(--ink);
   line-height: 1.4;
   word-break: break-word;
@@ -887,7 +887,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: var(--fs-hud);
   padding-top: 4px;
 }
 
@@ -957,7 +957,7 @@
   color: #f4f4f5;
   padding: 6px 10px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: var(--fs-hud);
   white-space: nowrap;
   max-width: 220px;
   overflow: hidden;
@@ -1017,7 +1017,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   color: #ffffff;
   position: relative;
@@ -1067,7 +1067,7 @@
   max-width: 220px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
   color: #f1f5f9;
-  font-size: 11px;
+  font-size: var(--fs-hud);
   line-height: 1.4;
   pointer-events: auto;
   z-index: 50;
@@ -1147,7 +1147,7 @@
 }
 
 .popover-region-badge {
-  font-size: 9.5px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   padding: 1px 5px;
   border-radius: 4px;
@@ -1156,13 +1156,13 @@
 }
 
 .popover-note-text {
-  font-size: 11.5px;
+  font-size: var(--fs-micro);
   color: #ffffff;
   word-break: break-word;
 }
 
 .popover-meta {
-  font-size: 10px;
+  font-size: var(--fs-hud);
   color: #94a3b8;
   display: flex;
   justify-content: space-between;
@@ -1182,7 +1182,7 @@
   align-items: center;
   gap: 8px;
   z-index: 22;
-  font-size: 11px;
+  font-size: var(--fs-hud);
   color: #cbd5e1;
 }
 
@@ -1199,7 +1199,7 @@
   background: #ef4444;
   box-shadow: 0 0 0 1px #ffffff;
   color: #ffffff;
-  font-size: 10px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -1227,7 +1227,7 @@
   background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   color: #f1f5f9;
-  font-size: 10px;
+  font-size: var(--fs-hud);
   font-weight: 500;
   padding: 3px 7px;
   cursor: pointer;
@@ -1324,7 +1324,7 @@
 /* The toolbar inside a narrow sheet or a phone: smaller buttons, one line. */
 @container (max-width: 560px) {
   .viewer-tools { bottom: 10px; padding: 4px; }
-  .viewer-tools button { padding: 0 9px; min-height: 28px; font-size: 12px; }
+  .viewer-tools button { padding: 0 9px; min-height: 28px; font-size: var(--fs-micro); }
   .viewer-label { display: none; }
-  .slice { margin: 0 4px; font-size: 12px; }
+  .slice { margin: 0 4px; font-size: var(--fs-micro); }
 }

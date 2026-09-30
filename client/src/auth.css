@@ -1,6 +1,6 @@
 /* Sign in, request access, privacy and terms: one centred glass card. */
 
-.login h1 { font-size: 30px; letter-spacing: -0.03em; margin: 0 0 22px; line-height: 1.1; }
+.login h1 { font-size: var(--fs-stat); letter-spacing: -0.03em; margin: 0 0 22px; line-height: 1.1; }
 .login form { display: grid; gap: 18px; }
 .login .form-grid { gap: 16px; }
 .login input, .login select { width: 100%; }
@@ -10,7 +10,7 @@
 .login .error { margin: 0; }
 
 .legal { max-width: 720px; margin: 0 auto; padding: 8px 4px 16px; }
-.legal h1 { font-size: 34px; margin: 0 0 12px; letter-spacing: -0.03em; }
+.legal h1 { font-size: var(--fs-stat); margin: 0 0 12px; letter-spacing: -0.03em; }
 .legal h2 { font-size: var(--fs-card); margin: 28px 0 6px; }
 .legal p { color: var(--ink-2); margin: 6px 0 10px; }
 .legal a { text-decoration: underline; text-underline-offset: 2px; color: var(--blue-ink); }
