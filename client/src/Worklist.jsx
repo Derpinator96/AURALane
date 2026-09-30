@@ -230,8 +230,7 @@ export default function Worklist({ load, token }) {
           <SheetShell onClose={() => setSelectedStudyId(null)}>
             <ErrorBoundary key={selectedStudyId} fallback={({ reset }) => <Failed what="This study" onRetry={reset} />}>
               <LatestCasePanel studyId={selectedStudyId} token={token} me={data.me}
-                               onVerdictChange={handleVerdictUpdate} onChanged={fetchWorklist}
-                               onLeft={() => setSelectedStudyId(null)} />
+                               onVerdictChange={handleVerdictUpdate} onChanged={fetchWorklist} />
             </ErrorBoundary>
           </SheetShell>
         </Overlay>

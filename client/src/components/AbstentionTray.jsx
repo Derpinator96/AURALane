@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { askForSecondOpinion } from "./SecondOpinionBar.jsx";
 
 const LANES = [["CRITICAL", "Critical"], ["URGENT", "Urgent"], ["EXPEDITED", "Expedited"], ["ROUTINE", "Routine"]];
 
@@ -16,36 +17,22 @@ function Band({ lo, hi, value }) {
 }
 
 // The Abstention Tray, for a study the system did not place: why it did not, then
-// the three things a reader can do about it. Each action is audited by the API and
-// takes effect at once.
+// the three things a reader can do about it. Assigning a lane and marking it inadequate are audited by
+// the API and take effect at once; getting a second opinion opens the same dialog every study has, and
+// the study stays where it is.
 //
-//   onChanged(study)   the study's new row (view) after any action
-//   onLeft()           the study left this reader's worklist (a second read)
-export default function AbstentionTray({ detail, token, me = null, onChanged, onLeft }) {
+//   onChanged(study)   the study's new row (view) after an action
+export default function AbstentionTray({ detail, token, onChanged }) {
   const s = detail.study;
-  const [action, setAction] = useState(null);         // "lane" | "second" | "inadequate"
+  const [action, setAction] = useState(null);         // "lane" | "inadequate"
   const [lane, setLane] = useState("URGENT");
   const [reason, setReason] = useState("");
-  const [readers, setReaders] = useState([]);
-  const [reader, setReader] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setAction(null); setReason(""); setError(null); setReader("");
+    setAction(null); setReason(""); setError(null);
   }, [s.study]);
-
-  useEffect(() => {
-    if (action !== "second") return undefined;
-    let live = true;
-    api.readers(token).then((d) => {
-      if (!live) return;
-      // Someone else, and a reader whose pools include this study's.
-      const list = (d.readers || []).filter((r) => r.id !== me && r.pools.includes(s.pool));
-      setReaders(list);
-    }).catch((e) => live && setError(e.message));
-    return () => { live = false; };
-  }, [action, token, s.pool, me]);
 
   if (s.lane !== "ABSTAIN") return null;
 
@@ -91,7 +78,7 @@ export default function AbstentionTray({ detail, token, me = null, onChanged, on
       {!action && (
         <div className="tray-actions" role="group" aria-label="Abstention actions">
           <button type="button" className="pill pill-primary" onClick={() => setAction("lane")} data-testid="tray-lane">Assign a lane</button>
-          <button type="button" className="pill" onClick={() => setAction("second")} data-testid="tray-second">Request a second read</button>
+          <button type="button" className="pill" onClick={askForSecondOpinion} data-testid="tray-second">Get a second opinion</button>
           <button type="button" className="pill" onClick={() => setAction("inadequate")} data-testid="tray-inadequate">Mark technically inadequate</button>
         </div>
       )}
@@ -118,28 +105,6 @@ export default function AbstentionTray({ detail, token, me = null, onChanged, on
             <button type="button" className="pill pill-quiet" onClick={() => setAction(null)}>Cancel</button>
             <button type="submit" className="pill pill-primary" disabled={busy || Boolean(need("A lane"))}
                     data-testid="tray-lane-confirm">Place in {LANES.find(([id]) => id === lane)[1]}</button>
-          </div>
-        </form>
-      )}
-
-      {action === "second" && (
-        <form className="tray-form" onSubmit={(e) => {
-          e.preventDefault();
-          if (!reader) return;
-          run(() => api.secondRead(token, s.study, reader), (res) => { onChanged(res.study); if (onLeft) onLeft(); });
-        }}>
-          <label className="field-label">Send to
-            <select value={reader} onChange={(e) => setReader(e.target.value)} aria-label="Second reader"
-                    data-testid="tray-reader">
-              <option value="">Choose a radiologist</option>
-              {readers.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-            </select>
-          </label>
-          {readers.length === 0 && <p className="note">No other radiologist reads the {s.pool} pool.</p>}
-          <div className="tray-buttons">
-            <button type="button" className="pill pill-quiet" onClick={() => setAction(null)}>Cancel</button>
-            <button type="submit" className="pill pill-primary" disabled={busy || !reader}
-                    data-testid="tray-second-confirm">Send for a second read</button>
           </div>
         </form>
       )}

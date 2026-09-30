@@ -7,8 +7,12 @@ import { Overlay } from "./ui.jsx";
 // Where a request has got to, from the radiologist asked.
 export const OPINION_STATUS = { waiting: "Waiting", opened: "Opened", draft: "Draft saved", reported: "Reported" };
 
-// Pick the radiologists to ask, add a note if wanted, send. Only those who read the study's pool, and
-// have not been asked, are offered.
+// Sending a study to another radiologist, as mail: choose who, write a message if wanted, send. Only those
+// who read the study's pool, and have not been sent it, are offered. Anything on screen can open it
+// (the abstention tray's button does) with askForSecondOpinion().
+const ASK = "auralane:ask-opinion";
+export const askForSecondOpinion = () => window.dispatchEvent(new CustomEvent(ASK));
+
 function AskDialog({ detail, token, me, onClose, onSent }) {
   const s = detail.study;
   const [readers, setReaders] = useState(null);
@@ -41,11 +45,12 @@ function AskDialog({ detail, token, me, onClose, onSent }) {
 
   return (
     <Overlay onClose={onClose}>
-      <div className="modal-card" role="dialog" aria-modal="true" aria-label="Ask for a second opinion" data-testid="ask-opinion-dialog">
+      <div className="modal-card" role="dialog" aria-modal="true" aria-label="Get a second opinion" data-testid="ask-opinion-dialog">
         <div className="modal-header">
           <div>
-            <h2 className="modal-title">Ask for a second opinion</h2>
+            <h2 className="modal-title">Get a second opinion</h2>
             <div className="crumbs"><span className="mono-id">{s.patient_id || s.study}</span> <span aria-hidden="true">›</span> <strong>{s.pool} pool</strong></div>
+            <p className="meta">It stays on your worklist.</p>
           </div>
           <div className="modal-actions">
             <button type="button" className="pill pill-quiet" onClick={onClose}>Cancel</button>
@@ -55,7 +60,7 @@ function AskDialog({ detail, token, me, onClose, onSent }) {
         </div>
 
         <fieldset className="reader-picker" data-testid="opinion-readers">
-          <legend>Radiologists ({chosen.length} chosen)</legend>
+          <legend>To ({chosen.length} chosen)</legend>
           {readers && options.length === 0 && (
             <p className="note" data-testid="opinion-no-readers">
               {asked.size ? "Everyone who reads the " : "No other radiologist reads the "}{s.pool} pool {asked.size ? "has been asked." : "yet."}
@@ -72,9 +77,9 @@ function AskDialog({ detail, token, me, onClose, onSent }) {
           </div>
         </fieldset>
 
-        <label className="field-label">Note for them (optional)
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={3}
-                    aria-label="Note for the radiologists" data-testid="opinion-note" />
+        <label className="field-label">Message (optional)
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={4}
+                    aria-label="Message for the radiologists" data-testid="opinion-note" />
         </label>
         {error && <p className="error" role="alert">{error}</p>}
       </div>
@@ -90,6 +95,14 @@ export default function SecondOpinionBar({ detail, token, me, onChanged }) {
   const ops = detail.opinions || [];
   const from = detail.my_opinion;
   const canAsk = detail.can_request_opinion !== false;
+
+  useEffect(() => {
+    if (!canAsk) return undefined;
+    const open = () => setAsking(true);
+    window.addEventListener(ASK, open);
+    return () => window.removeEventListener(ASK, open);
+  }, [canAsk]);
+
   if (!ops.length && !from && !canAsk) return null;
 
   return (
@@ -108,7 +121,7 @@ export default function SecondOpinionBar({ detail, token, me, onChanged }) {
           <ul className="opinion-people">
             {ops.map((o) => (
               <li key={o.to} className={`chip chip-quiet opinion-${o.status}`} data-testid="opinion-person"
-                  title={`Asked by ${o.requested_by_name || o.requested_by} at ${timeUTC(o.at)} UTC`}>
+                  title={`Sent by ${o.requested_by_name || o.requested_by} at ${timeUTC(o.at)} UTC${o.note ? `: ${o.note}` : ""}`}>
                 <span className="dot" aria-hidden="true" />
                 {o.to === me ? "You" : o.to_name || o.to}
                 <span className="opinion-state">{OPINION_STATUS[o.status]}</span>
@@ -119,7 +132,7 @@ export default function SecondOpinionBar({ detail, token, me, onChanged }) {
       )}
       {canAsk && (
         <button type="button" className="pill pill-sm opinion-ask" onClick={() => setAsking(true)} data-testid="ask-opinion">
-          <UsersIcon size={15} />{ops.length ? "Ask another radiologist" : "Ask for a second opinion"}
+          <UsersIcon size={15} />{ops.length ? "Send to another radiologist" : "Get a second opinion"}
         </button>
       )}
       {asking && (
