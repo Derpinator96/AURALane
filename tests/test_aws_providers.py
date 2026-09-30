@@ -219,6 +219,42 @@ def test_frame_url_is_a_short_lived_presigned_dicomweb_url(healthimaging):
     assert "/medical-imaging/aws4_request" in q["X-Amz-Credential"][0]
 
 
+def _ct_file(folder, name, study_uid, with_sop_class=True):
+    """A one-slice CT file. The RSNA head CTs carry the SOP class only in the file meta."""
+    import datetime
+    import random
+
+    import numpy as np
+
+    from sim.generator import make_dicom as md
+    when = datetime.datetime(2026, 1, 1)
+    ident = md.make_identity(1, random.Random(1), when, False)
+    ident["study_uid"] = study_uid
+    ds = md.build_instance(np.tile(np.arange(64, dtype=np.uint8), (64, 1)), 255, ident, when, "a test")   # big enough for the fake to encode
+    ds.Modality = "CT"
+    if not with_sop_class:
+        del ds.SOPClassUID
+    path = folder / name
+    ds.save_as(path, enforce_file_format=True)
+    return path
+
+
+def test_an_import_that_completes_but_rejects_every_file_says_why(healthimaging, tmp_path):
+    """On 2026-10-01 the live service completed an import of the RSNA head CTs, made no image set, and the
+    pipeline reported only "no primary image set for study ...". The job's manifest had the reason."""
+    files = [_ct_file(tmp_path, f"{i}.dcm", "1.2.826.0.1.3680043.10.1422.7", with_sop_class=False) for i in range(3)]
+    with pytest.raises(RuntimeError) as e:
+        healthimaging.import_study(files)
+    assert "rejected 3 of 3 files" in str(e.value)
+    assert "DICOM attribute SOPClassUID does not exist (3 files)" in str(e.value)
+    assert "no primary image set" not in str(e.value)
+
+
+def test_an_import_that_works_is_unchanged_by_the_manifest_check(healthimaging, tmp_path):
+    ref = healthimaging.import_study([_ct_file(tmp_path, "ok.dcm", "1.2.826.0.1.3680043.10.1422.8")])
+    assert ref.study_uid == "1.2.826.0.1.3680043.10.1422.8" and ref.datastore_id
+
+
 def test_import_job_failure_surfaces_its_message(healthimaging, tmp_path):
     corpus = Path(__file__).resolve().parents[1] / "data" / "chest" / "studies"
     manifest = corpus / "manifest.json"

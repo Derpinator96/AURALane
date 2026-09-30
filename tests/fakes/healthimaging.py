@@ -70,6 +70,8 @@ class FakeHealthImaging:
         datasets = [pydicom.dcmread(io.BytesIO(data))
                     for (b, k), data in sorted(self.objects.items())
                     if b == bucket and k.startswith(prefix)]
+        rejected = [ds for ds in datasets if "SOPClassUID" not in ds]      # the live service refuses these
+        datasets = [ds for ds in datasets if "SOPClassUID" in ds]
         for ds in datasets:
             uid, series = str(ds.StudyInstanceUID), str(ds.SeriesInstanceUID)
             set_id = next((i for i, s in self.image_sets.items() if s["study_uid"] == uid
@@ -82,6 +84,16 @@ class FakeHealthImaging:
             self.frames[frame_id] = bytes(openjpeg.encode(ds.pixel_array, bits_stored=ds.BitsStored,
                                                           use_mct=False))
             self.image_sets[set_id]["instances"][str(ds.SOPInstanceUID)] = (ds, frame_id)
+        # The job's output manifest, as the live service writes it: a summary, and one line per rejected file.
+        ob, okey = re.match(r"s3://([^/]+)/(.*)", body["outputS3Uri"]).groups()
+        self.objects[(ob, okey + "job-output-manifest.json")] = json.dumps({"jobSummary": {
+            "numberOfScannedFiles": len(datasets) + len(rejected), "numberOfImportedFiles": len(datasets),
+            "numberOfFilesWithCustomerError": len(rejected), "numberOfFilesWithServerError": 0,
+            "numberOfGeneratedImageSets": len({s for s in self.image_sets})}}).encode()
+        self.objects[(ob, okey + "FAILURE/failure.ndjson")] = "\n".join(json.dumps({
+            "inputFile": f"import/x/in/{i:05d}.dcm", "exception": {
+                "exceptionType": "ValidationException", "message": "DICOM attribute SOPClassUID does not exist"}})
+            for i, _ in enumerate(rejected)).encode()
         job_id = uuid.uuid4().hex
         self.jobs[job_id] = {"jobId": job_id, "jobName": body.get("jobName", ""),
                              "datastoreId": self.datastore_id,
