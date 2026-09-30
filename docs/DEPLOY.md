@@ -144,6 +144,13 @@ records a result under `intake/` and deletes the raw upload. The API can write
 uploads but never read them. Settings come from the stack (`--stack Auralane`),
 so nothing is exported.
 
+The task runs the image of the last `cdk deploy`, so a change to `core/` (the pipeline, the providers,
+`sim/edge`) reaches AWS only after the next deploy, which rebuilds it. On 2026-10-01 the RSNA head CTs failed
+in a Simulate ingest batch because the deployed image predated the fix that copies SOPClassUID into the
+dataset: HealthImaging completed the import job, rejected all 18 files ("DICOM attribute SOPClassUID does not
+exist") and made no image set. The import now raises with that message from the job's output manifest
+(`job-output-manifest.json`, `FAILURE/failure.ndjson`) instead of "no primary image set".
+
 Once, so the hosted Simulated intake button has studies to send (about 250 MB):
 
 ```

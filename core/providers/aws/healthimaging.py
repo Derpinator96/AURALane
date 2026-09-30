@@ -46,6 +46,7 @@ import gzip
 import json
 import time
 import uuid
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import quote, urlencode
@@ -120,20 +121,20 @@ class HealthImagingDatastore(DatastorePort):
                 datastoreId=self.datastore_id,
                 inputS3Uri=f"s3://{self.bucket}/{prefix}/in/",
                 outputS3Uri=f"s3://{self.bucket}/{prefix}/out/")
-            self._wait(job["jobId"])
+            self._reject_if_nothing_imported(self._wait(job["jobId"]))
         finally:
             with ThreadPoolExecutor(16) as pool:
                 list(pool.map(lambda k: self.s3.delete_object(Bucket=self.bucket, Key=k), keys))
         return StudyRef(study_uid=study_uid, datastore_id=",".join(self._image_sets(study_uid)))
 
-    def _wait(self, job_id: str) -> None:
+    def _wait(self, job_id: str) -> dict:
         deadline = time.monotonic() + self.import_timeout
         while True:
             props = self.mi.get_dicom_import_job(
                 datastoreId=self.datastore_id, jobId=job_id)["jobProperties"]
             status = props["jobStatus"]
             if status == "COMPLETED":
-                return
+                return props
             if status == "FAILED":
                 raise RuntimeError(f"HealthImaging import job {job_id} failed: "
                                    f"{props.get('message', 'no message')}")
@@ -141,6 +142,30 @@ class HealthImagingDatastore(DatastorePort):
                 raise TimeoutError(f"HealthImaging import job {job_id} still {status} after "
                                    f"{self.import_timeout:.0f} s")
             time.sleep(self.poll_seconds)
+
+    def _reject_if_nothing_imported(self, props: dict) -> None:
+        """A job that COMPLETED can still have rejected every file: it makes no image set and says why in
+        its output manifest. On 2026-10-01 the RSNA head CTs (no SOPClassUID in the dataset) came back as
+        "no primary image set for study ...", which names nothing; the manifest said "DICOM attribute
+        SOPClassUID does not exist" for all 18 files. So when nothing was imported, raise with HealthImaging's
+        own words. Some files rejected among others imported is left as it was. Best effort: if the manifest
+        cannot be read, the caller's lookup still fails as before."""
+        try:
+            bucket, _, key = props["outputS3Uri"].removeprefix("s3://").partition("/")
+            base = key if key.endswith("/") else key + "/"
+            summary = json.loads(self.s3.get_object(Bucket=bucket, Key=base + "job-output-manifest.json")
+                                 ["Body"].read())["jobSummary"]
+            scanned = int(summary.get("numberOfScannedFiles", 0))
+            if int(summary.get("numberOfImportedFiles", 0)) or not scanned:
+                return
+            lines = self.s3.get_object(Bucket=bucket, Key=base + "FAILURE/failure.ndjson")["Body"].read()
+            why = Counter(json.loads(l).get("exception", {}).get("message", "no message")
+                          for l in lines.decode("utf-8", "replace").splitlines() if l.strip())
+        except Exception:                                   # noqa: BLE001
+            return
+        detail = "; ".join(f"{m} ({n} {'file' if n == 1 else 'files'})" for m, n in why.most_common(3))
+        raise RuntimeError(f"HealthImaging rejected {scanned} of {scanned} files and made no image set: "
+                           f"{detail or 'no reason given'}")
 
     def _image_sets(self, study_uid: str) -> list[str]:
         """Every primary image set of the study, sorted, so the joined ref is stable."""
