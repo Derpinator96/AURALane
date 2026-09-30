@@ -10,7 +10,8 @@ import { LazyView } from "./ErrorBoundary.jsx";
 import { FindingSelector, gradcamLayer, selectedCaption } from "./GradcamFindings.jsx";
 import { ArrowUpRightIcon } from "./Icons.jsx";
 import { Spinner } from "./ui.jsx";
-import { laneName } from "../worklist.js";
+import { PatientLabel } from "../names.jsx";
+import { laneName, seriesName } from "../worklist.js";
 
 // Cornerstone (2D) and NiiVue (3D) load only when a study needs them. A chunk that fails
 // to load shows "failed to load, Retry" in its own place; the sheet stays.
@@ -42,7 +43,7 @@ function SeriesView({ token, detail, overlay }) {
   if (!instances) return <div className="loading-line"><Spinner label="Loading the images" /></div>;
   return (
     <LazyView load={loadViewer} what="Viewer" fallback={<div className="loading-line"><Spinner label="Loading the viewer" /></div>}
-              instances={instances} overlay={overlay} label={series.description} />
+              instances={instances} overlay={overlay} label={seriesName(series)} />
   );
 }
 
@@ -146,7 +147,7 @@ export default function LatestCasePanel({ studyId, token, me = null, onVerdictCh
         <span className={`lanetag lane-${s.lane}`}>{laneName(s.lane, s.lane_label)}</span>
         <h2 className="sheet-title">{finding}</h2>
         <div className="sheet-ids">
-          <span className="mono-id">{s.patient_id || s.study}</span>
+          <PatientLabel id={s.patient_id} fallback={s.study} inline detail />
           <span className="chip chip-quiet">{s.pool} pool</span>
           {scored && <span className="chip chip-quiet">Acuity <span className="mono-id">{fmt(s.acuity, 1)}</span></span>}
         </div>

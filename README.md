@@ -30,6 +30,9 @@ confidence readout.
   X-ray images (PNG, JPEG). The API sorts them into studies and runs each through the same pipeline, which
   de-identifies it before anything is stored. Each study lands on the uploader's own worklist, in the pool
   its modality belongs to.
+- **Patient names.** A demo display layer puts a fictional name above the pseudonym for the demo's placeholder
+  patients (`SIM^PATIENT^NNNN`) and for nobody else: an uploaded image, the RSNA and CQ500 head CTs and any
+  record without a name show the pseudonym alone. Names are labelled as fictional wherever they appear.
 - **The study view.** Images (Cornerstone3D for 2D, NiiVue for 3D), a per-finding Grad-CAM shown only here,
   a drafted report assembled from structured output, and the reader's own edits saved to Reports.
 - **Admin screens.** Audit log, pipeline timings, lane mix, thresholds and the model registry. Admins cannot

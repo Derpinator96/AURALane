@@ -18,6 +18,7 @@ import ErrorBoundary, { Failed } from "./components/ErrorBoundary.jsx";
 import { PlayIcon, UploadIcon, UsersIcon } from "./components/Icons.jsx";
 import { Overlay } from "./components/ui.jsx";
 import { loadSettings } from "./settings.js";
+import { useNames } from "./names.jsx";
 
 const VIEW_KEY = "auralane.worklistView";
 
@@ -45,6 +46,7 @@ export default function Worklist({ load, token }) {
   const [refresh, setRefresh] = useState(() => loadSettings().refreshSeconds);
   const [poolTab, setPoolTab] = useState("ALL");        // "ALL" or a pool name
   const [onlyTriage, setOnlyTriage] = useState(false);
+  const { names, ensure } = useNames();
   const [view, setViewState] = useState(loadView);      // "list" | "board"
   const searchRef = useRef(null);
   const setView = (v) => {
@@ -67,6 +69,9 @@ export default function Worklist({ load, token }) {
   }, [load]);
 
   useEffect(() => { fetchWorklist(); }, [fetchWorklist]);
+
+  // Names for every patient on the list, so that search finds one by name, not only the rows on screen.
+  useEffect(() => { if (data?.studies) ensure(data.studies.map((s) => s.patient_id)); }, [data, ensure]);
 
   // Refresh on a timer, but only while this tab is visible; coming back to the tab
   // refreshes at once.
@@ -111,11 +116,11 @@ export default function Worklist({ load, token }) {
     if (activeNav === "recent") list = list.filter((s) => !isUnread(s));
     const q = query.toLowerCase().trim();
     if (q) {
-      list = list.filter((s) => [s.patient_id, s.study, s.exam, s.driver, s.driver_label, s.assigned_name]
+      list = list.filter((s) => [s.patient_id, names[s.patient_id]?.name, s.study, s.exam, s.driver, s.driver_label, s.assigned_name]
         .some((v) => v && String(v).toLowerCase().includes(q)));
     }
     return list;
-  }, [scopeStudies, specialty, activeNav, query]);
+  }, [scopeStudies, specialty, activeNav, query, names]);
 
   const pools = useMemo(
     () => (data ? arrangePools(filteredStudies, data.pools, data.lanes,

@@ -9,9 +9,10 @@ import NoteEditorModal from "./components/NoteEditorModal.jsx";
 import { DraftPanel } from "./components/DraftPanel.jsx";
 import { LazyView } from "./components/ErrorBoundary.jsx";
 import { api, loadSession } from "./api.js";
-import { laneName, timeUTC } from "./worklist.js";
+import { laneName, seriesName, timeUTC } from "./worklist.js";
 import { CheckIcon, ChevronIcon, ClockIcon } from "./components/Icons.jsx";
 import { Spinner } from "./components/ui.jsx";
+import { PatientLabel } from "./names.jsx";
 
 // The viewer pulls in Cornerstone and its codecs; load it only on this page. A chunk that
 // fails to load shows "failed to load, Retry" in its place instead of a blank app.
@@ -24,7 +25,7 @@ export { DraftPanel };
 const fmt = (v, d = 3) => (v == null ? "--" : Number(v).toFixed(d));
 
 function Patient({ study }) {
-  return <span className="mono-id bold">{study.patient_id || study.study}</span>;
+  return <PatientLabel id={study.patient_id} fallback={study.study} inline detail />;
 }
 
 // What the rationale is for this study, in words. Grad-CAM for chest, the
@@ -431,7 +432,7 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
           <div className="hud-left-section">
             <Link to="/" className="pill pill-sm btn-back-worklist"><ChevronIcon size={14} className="flip" />Back to worklist</Link>
             <div className="hud-study-tag">
-              <span className="hud-patient mono-id">{detail.study.patient_id || detail.study.study}</span>
+              <span className="hud-patient"><PatientLabel id={detail.study.patient_id} fallback={detail.study.study} inline detail /></span>
               <span className={`mod-badge mod-${detail.study.modality}`}>{detail.study.exam || detail.study.modality}</span>
             </div>
           </div>
@@ -456,9 +457,9 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
             )}
             {detail.series.length > 1 && !show3D && (
               <div className="series-switch" role="group" aria-label="Series">
-                {detail.series.map((s) => (
+                {detail.series.map((s, i) => (
                   <button key={s.series_uid} type="button" aria-pressed={s.series_uid === seriesUid}
-                          onClick={() => setSeriesUid(s.series_uid)}>{s.description}</button>
+                          onClick={() => setSeriesUid(s.series_uid)}>{seriesName(s, i)}</button>
                 ))}
               </div>
             )}
@@ -486,7 +487,7 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
             loadingLine
           ) : (
             <LazyView load={loadViewer} what="Viewer" fallback={loadingLine}
-                      instances={instances} overlay={overlay} label={current.description} {...noteProps} />
+                      instances={instances} overlay={overlay} label={seriesName(current)} {...noteProps} />
           )}
         </div>
 

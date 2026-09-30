@@ -7,9 +7,9 @@ pool or an edge agent runs:
 
     DICOM files       one study per StudyInstanceUID. CR, MR (four sequences) and CT, the modalities
                       a model is registered for.
-    PNG or JPEG       a chest X-ray image, wrapped in a Computed Radiography DICOM object with a
-                      generated synthetic identity (sim/generator/make_dicom.py) and taken as a
-                      frontal (PA) view. One study per image.
+    PNG or JPEG       a chest X-ray image, wrapped in a Computed Radiography DICOM object that carries
+                      no patient (no name, birth date or sex) and taken as a frontal (PA) view. One study
+                      per image.
 
 Nothing here de-identifies. core.pipeline.ingest does, before the datastore sees anything
 (locally, in this process; on AWS, in the ingest task, core/cloud_ingest.py). The API holds the
@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import datetime
 import json
-import random
 import secrets
 import shutil
 import tempfile
@@ -104,21 +103,28 @@ def classify(paths: list[Path]) -> tuple[list[dict], int, list[str]]:
     return studies, skipped, sorted(set(problems))
 
 
-def wrap_image(path: Path, out: Path, rng: random.Random | None = None) -> Path:
-    """A chest X-ray image -> one Computed Radiography DICOM file with a synthetic identity.
+def wrap_image(path: Path, out: Path) -> Path:
+    """A chest X-ray image -> one Computed Radiography DICOM file that carries no patient.
     The image's pixels are kept as they are; any text burned into them is the de-identifier's
-    to mask, not this function's."""
+    to mask, not this function's.
+
+    An image is not a record of a person, so nothing here gives it one: no name, no birth date, no
+    sex, no referrer, and an identifier that is plainly not a patient's (UPLOAD-<hex>, which the
+    pseudonym map still needs). The corpus generator's placeholder patients (SIM^PATIENT^NNNN) are
+    for the test corpus only, and the demo display layer would put a fictional name on one."""
+    from pydicom.uid import generate_uid
     from sim.generator import make_dicom as md
-    rng = rng or random.Random(secrets.randbits(64))
     when = datetime.datetime.now(datetime.timezone.utc)
     pixels, maxval = md.read_grayscale(path)
-    ds = md.build_instance(pixels, maxval, md.make_identity(rng.randrange(10000, 99999), rng, when, False),
-                           when, "an uploaded image")
+    ident = {"patient_name": "", "patient_id": f"UPLOAD-{secrets.token_hex(4)}", "birth_date": "", "sex": "",
+             "accession": "", "referrer": "", "study_id": secrets.token_hex(4), "burned_in": False,
+             "study_uid": generate_uid(prefix=md.UID_ROOT), "series_uid": generate_uid(prefix=md.UID_ROOT),
+             "sop_uid": generate_uid(prefix=md.UID_ROOT)}
+    ds = md.build_instance(pixels, maxval, ident, when, "an uploaded image")
     # build_instance describes a public NIH image; this is neither, and what is burned into the
     # pixels is not known here.
-    ds.PatientComments = "SIMULATED IDENTITY - wrapped by AURALane from an uploaded image"
-    ds.DerivationDescription = ("Wrapped from an uploaded image by AURALane. The identifiers are "
-                                "generated and do not belong to anyone.")
+    ds.PatientComments = "Wrapped by AURALane from an uploaded image. No patient."
+    ds.DerivationDescription = "Wrapped from an uploaded image by AURALane. The image carries no patient."
     del ds.BurnedInAnnotation
     ds.save_as(out, enforce_file_format=True)
     return out

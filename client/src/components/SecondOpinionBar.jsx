@@ -3,6 +3,7 @@ import { api } from "../api.js";
 import { timeUTC } from "../worklist.js";
 import { UsersIcon } from "./Icons.jsx";
 import { Overlay } from "./ui.jsx";
+import { PatientLabel } from "../names.jsx";
 
 // Where a request has got to, from the radiologist asked.
 export const OPINION_STATUS = { waiting: "Waiting", opened: "Opened", draft: "Draft saved", reported: "Reported" };
@@ -49,7 +50,7 @@ function AskDialog({ detail, token, me, onClose, onSent }) {
         <div className="modal-header">
           <div>
             <h2 className="modal-title">Get a second opinion</h2>
-            <div className="crumbs"><span className="mono-id">{s.patient_id || s.study}</span> <span aria-hidden="true">›</span> <strong>{s.pool} pool</strong></div>
+            <div className="crumbs"><PatientLabel id={s.patient_id} fallback={s.study} inline /> <span aria-hidden="true">›</span> <strong>{s.pool} pool</strong></div>
             <p className="meta">It stays on your worklist.</p>
           </div>
           <div className="modal-actions">

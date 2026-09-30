@@ -202,8 +202,8 @@ export default function Viewer({
           {slice.count > 1 && (
             <span className="mono slice" data-testid="slice">slice {slice.index + 1} / {slice.count}</span>
           )}
-          {label && <span className="viewer-label">{label}</span>}
         </div>
+        {label && <span className="viewer-label" data-testid="viewer-label">{label}</span>}
         {error && <p className="error viewer-error" role="alert">Viewer could not load this series: {error}</p>}
       </div>
     </div>

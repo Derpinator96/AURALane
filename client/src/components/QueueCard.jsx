@@ -2,6 +2,7 @@ import { READ_FILTERS, SORTS, laneClock, laneName, timeUTC } from "../worklist.j
 import { ArrowUpRightIcon, BoardIcon, CloseIcon, FilterIcon, ListIcon, SearchIcon, WorklistIcon } from "./Icons.jsx";
 import { SPECIALTIES } from "./Sidebar.jsx";
 import { PopoverButton, Segmented } from "./ui.jsx";
+import { PatientLabel, useNames } from "../names.jsx";
 
 const LANE_FILTERS = ["ALL", "CRITICAL", "URGENT", "EXPEDITED", "ROUTINE"];
 
@@ -39,7 +40,7 @@ function Row({ row, selected, next, who, onSelect, showLane }) {
           <Provenance row={row} />
         </span>
       </div>
-      <div className="cell-patient mono-id">{row.patient_id || row.study}</div>
+      <div className="cell-patient"><PatientLabel id={row.patient_id} fallback={row.study} /></div>
       <div className="cell-modality"><span className="chip chip-quiet">{row.exam || row.modality}</span></div>
       <div className="cell-status">
         <span className={`chip chip-quiet status-${state}`}><span className="dot" />{verdict}</span>
@@ -67,7 +68,7 @@ function BoardCard({ row, selected, who, onSelect, clock, isCritical }) {
         <span className="cell-acuity mono-id acuity"><Acuity row={row} /></span>
       </div>
       <div className="board-meta">
-        <span className="mono-id">{row.patient_id || row.study}</span>
+        <PatientLabel id={row.patient_id} fallback={row.study} inline />
         <span className="chip chip-quiet">{row.exam || row.modality}</span>
       </div>
       <div className="board-meta">
@@ -89,11 +90,14 @@ export default function QueueCard({
   const single = poolTab !== "ALL";
   const visible = pools.filter((p) => !single || p.pool === poolTab);
   const nothingRead = recent && filteredStudies.length === 0;
+  const { names } = useNames();
+  const named = filteredStudies.some((s) => names[s.patient_id]);
 
   return (
     <section className="panel queue" data-testid="queue-card" aria-label={title}>
       <div className="qhead">
         <h2 className="card-title queue-title">{title}</h2>
+        {named && <span className="meta demo-names-note" data-testid="demo-names-note">Names are fictional, from the demo layer</span>}
         <div className="qhead-right">
           {data.me && data.scope !== "own" && (
             <Segmented small label="Whose studies" value={scope} onChange={setScope} items={[

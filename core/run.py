@@ -334,6 +334,19 @@ def _local_ingest(prov: dict, registry, regional):
     return prov["ingest_local"]
 
 
+def _resolver(runtime: str):
+    """The demo display layer (sim/edge/display_names.py): {pseudonym: entry} for the patients whose
+    source record carried a placeholder name, from the local identity map, opened read-only. Only the local
+    runtime has one: the hosted API never reads the identity map, which is why it shows pseudonyms alone."""
+    if runtime != "local":
+        return None
+
+    def resolve(pseudo_ids):
+        from sim.edge import display_names, identity
+        return display_names.resolve(identity.lookup_patients(IDENTITY_DB, pseudo_ids))
+    return resolve
+
+
 def _uploads(prov: dict):
     """Upload your own studies (radiologist screen). Unavailable, with the reason, where there is
     no pipeline."""
@@ -390,6 +403,7 @@ def cmd_serve(args) -> int:
     prov["intake"] = _intake(prov["runtime"])
     prov["simulate"] = _simulator(prov)
     prov["uploads"] = _uploads(prov)
+    prov["resolver"] = _resolver(prov["runtime"])
     if prov["runtime"] != "aws" and not os.environ.get("AURALANE_DEV_PASSWORD"):
         print(f"dev sign-in password: {DEV_PASSWORD_FILE.relative_to(ROOT)}")
     origins = cors_origins()

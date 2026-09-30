@@ -4,6 +4,7 @@ import { laneName, timeUTC } from "../worklist.js";
 import { ArrowUpRightIcon } from "./Icons.jsx";
 import { OPINION_STATUS } from "./SecondOpinionBar.jsx";
 import { Segmented, Spinner } from "./ui.jsx";
+import { PatientLabel } from "../names.jsx";
 
 // The studies other radiologists asked this one to read (Received), and the ones this radiologist asked
 // others about (Sent). Studies are grouped by reading pool and never mixed; each keeps the API's
@@ -38,7 +39,7 @@ function Row({ study, selected, onOpen, status, who, at, note, sub, summary }) {
           {sub && <span className="cell-note opinion-sub" title={sub}>{sub}</span>}
         </span>
       </div>
-      <div className="cell-patient mono-id">{study.patient_id || study.study}</div>
+      <div className="cell-patient"><PatientLabel id={study.patient_id} fallback={study.study} /></div>
       <div className="cell-modality"><span className="chip chip-quiet">{study.exam || study.modality}</span></div>
       <div className="cell-status">
         <span className={`chip chip-quiet opinion-${status}`} data-testid="opinion-status"><span className="dot" />{summary || OPINION_STATUS[status]}</span>

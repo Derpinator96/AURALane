@@ -40,6 +40,31 @@ patient so a radiologist can see who a study belongs to. In production it stays
 inside the hospital; the cloud only ever sees pseudonyms. Locally it is
 `data/identity/identity.db`, which git ignores.
 
+## Patient names on screen (`sim/edge/display_names.py`, `POST /api/resolve`)
+
+The worklist shows a patient's name above the pseudonym, for the demo's placeholder patients only. The rule is
+that a name is shown only if the source record actually carried one, and nothing is ever made up for a record
+without. `display_identity(original_id, original_name, dob, sex)` answers only when the identity map's
+`original_name` is exactly `SIM^PATIENT^<digits>`, the placeholder the corpus generator (and the BraTS
+converter) injects. For that patient it returns a fictional name, deterministic (a hash of the original patient
+ID picks from fixed lists of 20 female, 20 male and 40 family names, by the recorded sex when there is one), and
+the identity map's own date of birth and sex, never generated. Every entry says `"source": "demo-layer"`.
+
+Everyone else gets no entry, and the client shows the pseudonym alone, with no "Unknown" and no placeholder text:
+an image (PNG, JPEG) wrapped for ingest, which carries no patient; the RSNA head CTs (no name in the file); the
+CQ500 head CTs (their "name" is a dataset ID); any identity-map row with a NULL, empty or other name.
+
+`POST /api/resolve {"ids": [pseudonyms]}` answers `{patients: {pseudonym: entry}}` and leaves out a pseudonym
+with no displayable name, which is not an error. It names only the patients of studies the reader may open (their
+own worklist, or a second opinion they were sent), and writes an audit event with counts, never a name. The
+identity map is opened read-only (`identity.lookup_patients`) and is never modified. Only the local runtime has an
+identity map to read; on AWS the API never reads it, so the hosted screens show pseudonyms alone. The client
+asks for the pseudonyms it shows, in one request per moment, and says "Names are fictional, from the demo layer"
+wherever a name is on screen.
+
+The names are common given names and surnames from several regions, mixed. They were not checked against a list
+of public figures, so a match with a real person is chance.
+
 ## The pipeline (`core/pipeline.py`)
 
 One function, `ingest`, takes a study's files through nine steps:
@@ -173,9 +198,9 @@ deployed API needs no extra library, and a file name, which can carry a patient'
 
 Submitting checks the upload as a whole. DICOM files are grouped by StudyInstanceUID, one study each; only the
 modalities a model is registered for are taken (CR, MR, CT), and a report or directory object inside a study is
-skipped and counted. A PNG or JPEG becomes one Computed Radiography study, wrapped with a generated synthetic
-identity and taken as a frontal view; the pipeline's de-identifier then masks any text burned into it like any
-other. A modality without a model, a reader who does not read the study's pool, or more than 20 studies stops the
+skipped and counted. A PNG or JPEG becomes one Computed Radiography study that carries no patient (no name,
+birth date or sex, and an `UPLOAD-<hex>` identifier the pseudonym map needs), taken as a frontal view; the
+pipeline's de-identifier then masks any text burned into it like any other. It is shown by pseudonym alone. A modality without a model, a reader who does not read the study's pool, or more than 20 studies stops the
 whole upload before anything runs, with the reason and no file name.
 
 Each study then runs `core.pipeline.ingest`, which de-identifies before the datastore sees anything. Locally that

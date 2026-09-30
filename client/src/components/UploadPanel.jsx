@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../api.js";
 import { UploadIcon } from "./Icons.jsx";
 import { Overlay } from "./ui.jsx";
+import { PatientLabel } from "../names.jsx";
 import { laneName } from "../worklist.js";
 
 const POLL_MS = 2000;
@@ -211,7 +212,7 @@ export default function UploadPanel({ token, onClose, onProgress }) {
               <tbody>
                 {items.map((i) => (
                   <tr key={i.n}>
-                    <td className="mono-id">{i.patient_id || `Study ${i.n}`}</td>
+                    <td>{i.patient_id ? <PatientLabel id={i.patient_id} /> : `Study ${i.n}`}</td>
                     <td>{i.label}</td>
                     <td>{i.files}</td>
                     <td>{STATUS[i.status] || i.status}{i.error ? `: ${i.error}` : ""}</td>

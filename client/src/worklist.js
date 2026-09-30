@@ -103,6 +103,18 @@ export function arrangePools(studies, pools, lanes, opts = {}) {
   }));
 }
 
+// De-identification writes "TRIAGE SERIES" into every series it cleans (sim/edge/deid.py), except the MR
+// sequences it keeps by name. That is a placeholder, not a name: several series would all read the same, and
+// it looks like something to press. Name those by number and size instead.
+const PLACEHOLDER_SERIES = /^triage series$/i;
+
+export function seriesName(series, index = 0) {
+  const d = (series?.description || "").trim();
+  if (d && !PLACEHOLDER_SERIES.test(d)) return d;
+  const n = series?.instance_count;
+  return `Series ${series?.number ?? index + 1}${n ? `, ${n} ${n === 1 ? "image" : "images"}` : ""}`;
+}
+
 export function timeUTC(iso) {
   if (!iso) return "--";
   const d = new Date(iso);

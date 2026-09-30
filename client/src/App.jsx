@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import { Backdrop } from "./components/ui.jsx";
 import { Privacy, Terms } from "./Legal.jsx";
 import Login from "./Login.jsx";
+import { NamesProvider } from "./names.jsx";
 import RequestAccess from "./RequestAccess.jsx";
 import Shell from "./Shell.jsx";
 import Study from "./Study.jsx";
@@ -56,6 +57,7 @@ export default function App() {
                          <button type="button" className="pill pill-sm pill-quiet" onClick={reset}>Try again</button>
                        </div>
                      )}>
+      <NamesProvider key={token || "signed-out"} token={token}>
       <Routes>
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
@@ -77,6 +79,7 @@ export default function App() {
           : <Navigate to={home(session)} />} />
         <Route path="*" element={<Navigate to={home(session)} />} />
       </Routes>
+      </NamesProvider>
       </ErrorBoundary>
     </Shell>
     </>

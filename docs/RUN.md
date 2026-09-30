@@ -164,7 +164,7 @@ copy of the same staging, so after adding studies run the `--stack` command too.
 Radiologist screen, "Upload study". Choose files, or a folder, and upload. Two
 kinds are taken: DICOM files (one study, or several; chest X-ray CR, brain MR with
 its four sequences, head CT) and PNG or JPEG chest X-ray images (each is wrapped
-as a frontal PA Computed Radiography study with a generated identity). Each study
+as a frontal PA Computed Radiography study that carries no patient, so it is shown by pseudonym alone). Each study
 runs through the real pipeline, which de-identifies it first, and lands on your
 own worklist in the pool its modality belongs to. A reader who does not read that
 pool is told before anything is sent. The fixture preview has no pipeline and says
