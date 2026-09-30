@@ -57,7 +57,7 @@
   --field: rgba(255, 255, 255, 0.72);
   --field-hover: rgba(255, 255, 255, 0.92);
   --tint: rgba(22, 24, 29, 0.05);            /* quiet fills: tracks, hovers, pressed */
-  --scrim: rgba(255, 255, 255, 0.42);
+  --scrim: rgba(226, 233, 243, 0.3);
   --scroll-thumb: rgba(90, 100, 118, 0.35);
   --check-off: rgba(90, 100, 118, 0.26);
   --check-hover: rgba(47, 107, 242, 0.3);
@@ -145,7 +145,7 @@
   --field: rgba(255, 255, 255, 0.08);
   --field-hover: rgba(255, 255, 255, 0.13);
   --tint: rgba(255, 255, 255, 0.07);
-  --scrim: rgba(20, 23, 28, 0.5);
+  --scrim: rgba(12, 15, 20, 0.38);
   --scroll-thumb: rgba(180, 190, 206, 0.28);
   --check-off: rgba(255, 255, 255, 0.2);
   --check-hover: rgba(110, 163, 245, 0.4);

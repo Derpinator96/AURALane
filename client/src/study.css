@@ -12,7 +12,7 @@
 /* Sheet content */
 .latest-case-panel { display: flex; flex-direction: column; gap: 22px; padding: 26px 24px 30px; min-width: 0; }
 .case-details-loading, .case-details-error { display: grid; place-items: center; gap: 12px; padding: 64px 24px; color: var(--ink-2); }
-.sheet-head { display: grid; gap: 12px; padding-right: 52px; }
+.sheet-head { display: grid; gap: 12px; padding-right: 100px; }
 .sheet-head .lanetag { justify-self: start; }
 .sheet-title { font-size: 26px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.15; overflow-wrap: anywhere; }
 .sheet-ids { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--ink-2); font-size: var(--fs-meta); }
@@ -92,6 +92,20 @@
 .finding-chip-signal { font-size: 11px; color: var(--ink-3); }
 .finding-chip[aria-pressed="true"] .finding-chip-signal, .finding-chip[aria-pressed="true"] .finding-chip-tag { color: inherit; opacity: 0.8; }
 .finding-chip-tag { font-size: 11px; color: var(--blue-ink); }
+
+/* Widened past 940 px the sheet reads as two columns: the images on the left, staying in view while the
+   right column (verdict, findings, draft) scrolls. The rows are listed so that whichever cards a study
+   lacks collapse, and the last one takes any height the images need. */
+@container sheet (min-width: 940px) {
+  .latest-case-panel {
+    display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(340px, 1fr); column-gap: 32px; row-gap: 0;
+    grid-template-rows: auto auto auto auto auto minmax(0, 1fr); align-content: start; padding: 32px 36px 36px;
+  }
+  .latest-case-panel > * { margin-bottom: 22px; }
+  .sheet-head { grid-column: 1 / -1; }
+  .sheet-viewer { grid-column: 1; grid-row: 2 / 7; position: sticky; top: 16px; align-self: start; }
+  .human-lane-note, .tray, .verdict-block, .sheet-findings, .draft-panel { grid-column: 2; }
+}
 
 /* Full analysis page */
 .study-page-layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: var(--gap); padding: 8px 28px 32px; align-items: start; }

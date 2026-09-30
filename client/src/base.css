@@ -190,6 +190,7 @@ tbody tr:hover td { background: var(--tint); }
   position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0;
   background: var(--glass-soft); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
   border-radius: var(--r-frame); box-shadow: var(--glass-hi), var(--glass-shadow); overflow: hidden;
+  overflow: clip;   /* not a scroll container, so scrollIntoView on a row never slides the frame */
 }
 .frame-body { flex: 1; min-height: 0; overflow: auto; }
 .page { display: flex; flex-direction: column; gap: var(--gap); padding: 8px 28px 32px; min-width: 0; }
@@ -256,11 +257,11 @@ tbody tr:hover td { background: var(--tint); }
 .pop-label { padding: 6px 14px 2px; color: var(--ink-3); font-size: var(--fs-meta); }
 .pop-field { display: grid; gap: 6px; font-size: var(--fs-meta); }
 
-/* Overlay: the whole app behind blurs under a light scrim; the fade is 200 ms. */
+/* Overlay: the app behind softens under a light scrim and a slight blur, so it stays recognisable; the fade is 200 ms. */
 .overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; }
 .overlay-scrim {
   position: absolute; inset: 0; background: var(--scrim);
-  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); animation: fade-in 0.2s ease-out both;
+  -webkit-backdrop-filter: blur(1.5px); backdrop-filter: blur(1.5px); animation: fade-in 0.2s ease-out both;
 }
 .overlay > :not(.overlay-scrim) { position: relative; z-index: 1; }
 .overlay-right { place-items: stretch end; padding: 16px; }
@@ -274,7 +275,7 @@ tbody tr:hover td { background: var(--tint); }
 /* Modal, in the language of a soft glass card: title and breadcrumb left, actions right. */
 .modal-card {
   position: relative; width: min(600px, 100%); max-height: calc(100dvh - 40px); overflow: auto;
-  background: var(--glass-strong); border-radius: var(--r-frame); box-shadow: var(--glass-hi), var(--pop-shadow);
+  background: var(--sheet-fill); border-radius: var(--r-frame); box-shadow: var(--glass-hi), var(--pop-shadow);
   padding: 28px 30px 30px; display: grid; gap: 22px;
 }
 .modal-card.wide-modal { width: min(760px, 100%); }
