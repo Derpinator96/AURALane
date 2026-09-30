@@ -64,6 +64,7 @@ from core.regional import apply as apply_regional
 from core.registry import Registry, rank
 from core.types import AuditEvent, Findings, StudyMeta, Verdict
 from core.volumes import series_to_nifti, sort_slices
+from core.xray import chest_pixels
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTOR = "pipeline"
@@ -181,7 +182,7 @@ def _model_inputs(entry: dict, adapter, cleaned: list, meta: StudyMeta,
     if fmt == "dicom":
         if len(cleaned) != 1:
             raise ValueError(f"{entry['id']} takes one image, study has {len(cleaned)}")
-        return {"pixels": cleaned[0].pixel_array}
+        return {"pixels": chest_pixels(cleaned[0])}    # core/xray.py: bit depth and MONOCHROME1
     if fmt == "nifti":
         channels = entry["input"]["channels"]
         if len(meta.series) != len(channels):

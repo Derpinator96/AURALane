@@ -75,6 +75,14 @@ are timed separately, so pipeline overhead is never reported as model time. Ever
 milliseconds. If any step fails, the study still gets a worklist row, with
 status FAILED and the error, so it cannot silently vanish.
 
+Chest X-ray pixels are prepared the way torchxrayvision reads a DICOM
+(`core/xray.py`): full brightness is `2**BitsStored - 1`, not the size of the
+16-bit container, and a MONOCHROME1 image (0 is white) is flipped. Without that
+the same picture scored differently depending on how the scanner stored it: a
+12-bit image arrived near-black, an inverted one as a negative, and Grad-CAM
+explained the wrong picture with an empty map. Rescale slope and VOI LUTs are
+not applied, as in the library's reader.
+
 ## The datastore
 
 Where the de-identified images live, queried with the DICOMweb standard. Locally
