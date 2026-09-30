@@ -140,9 +140,10 @@ API refuses both with 403; hiding a button is not access control.
 
 ## Second opinions (`/api/studies/{study}/opinions`, `/api/second-opinions`)
 
-A reader can ask one or more other radiologists to read the same study. The study stays on the asker's
-worklist; nothing is reassigned. Each radiologist asked finds it under the **Second opinions** tab
-(Received), reads it, and saves a report of their own with the same draft editor. On the study, everyone
+A reader can send a study, in any lane, to one or more other radiologists for a second opinion, with a
+message. It works like mail: the study stays on the sender's worklist, and its lane and assignment do not
+change. Each radiologist asked finds it under the **Second opinions** tab (Received), with the message, reads
+it, and saves a report of their own with the same draft editor. On the study, everyone
 involved sees who it was sent to (2 radiologists, 3, and so on) and how far each has got: waiting, opened,
 draft saved, reported. Under the draft there is a **Report by** dropdown: your own report, which you edit,
 and each other radiologist's, which you read.
@@ -160,8 +161,8 @@ How it is kept:
 - The Worklist response carries `opinions_waiting`, the requests the signed-in reader has not opened, for
   the number on the tab.
 
-This is not the abstention tray's "Request a second read", which hands an abstained study to another reader
-so that they place its lane; the study leaves the first reader's worklist.
+The abstention tray's "Get a second opinion" is this same option. There is no hand-over: an abstained study
+that another radiologist has been sent is still the first reader's to place, set aside or leave.
 
 ## The web app (`client/`)
 
