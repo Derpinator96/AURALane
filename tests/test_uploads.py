@@ -109,11 +109,15 @@ def test_a_modality_no_model_reads_is_refused_naming_the_modality_and_nothing_el
     assert classify([junk(tmp_path, "x")])[2] == ["none of the files is a DICOM image or a PNG or JPEG"]
 
 
-def test_an_image_becomes_a_cr_study_with_a_synthetic_identity_and_no_claim_about_burned_in_text(tmp_path):
+def test_an_image_becomes_a_cr_study_that_carries_no_patient_and_no_claim_about_burned_in_text(tmp_path):
     out = wrap_image(png(tmp_path, "scan.png"), tmp_path / "out.dcm")
     ds = pydicom.dcmread(out)
     assert ds.Modality == "CR" and ds.ViewPosition == "PA" and (ds.Rows, ds.Columns) == (64, 64)
-    assert str(ds.PatientName).startswith("SIM^PATIENT^") and str(ds.PatientID).startswith("SIMID-")
+    # No name, birth date, sex or referrer: an image is not a record of a person. The identifier is only
+    # what the pseudonym map needs, and is not the corpus generator's placeholder patient.
+    assert str(ds.PatientName) == "" and str(ds.PatientBirthDate) == "" and str(ds.PatientSex) == ""
+    assert str(ds.ReferringPhysicianName) == "" and str(ds.PatientID).startswith("UPLOAD-")
+    assert "SIM" not in str(ds.PatientID) and "SIM^" not in str(ds)
     assert "BurnedInAnnotation" not in ds          # it is not known, so it is not said
     assert "NIH" not in ds.DerivationDescription and "scan" not in str(ds)   # no file name, no NIH claim
     assert np.array_equal(ds.pixel_array, np.tile(np.arange(64, dtype=np.uint8), (64, 1)))
@@ -140,9 +144,8 @@ def test_each_study_runs_the_pipeline_lands_on_the_uploaders_worklist_and_the_ra
     rows = table.scan("worklist")
     mine = [r for r in rows if r.get("assigned_to") == READER["id"]]
     assert len(mine) == 3 and all(r["assigned_name"] == "A" for r in mine)
-    # The wrapped image was de-identified by the pipeline later; what reached it carried a synthetic name.
-    assert next(s for s in seen if s["paths"][0].name.startswith("image")
-                )["patient_name"].startswith("SIM^PATIENT^")
+    # What reached the pipeline for the wrapped image carried no name at all.
+    assert next(s for s in seen if s["paths"][0].name.startswith("image"))["patient_name"] == ""
     # Nothing raw is left, and the status carries no file name or path.
     assert not (tmp_path / "spool" / upload).exists()
     assert "_files" not in json.dumps(done) and str(tmp_path) not in json.dumps(done)

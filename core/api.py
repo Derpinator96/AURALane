@@ -111,6 +111,10 @@ class SimulateIn(BaseModel):
     readers: list[str] = Field(default_factory=list, max_length=50)
 
 
+class ResolveIn(BaseModel):
+    ids: list[str] = Field(default_factory=list, max_length=300)
+
+
 class DistributeIn(BaseModel):
     readers: list[str] = Field(min_length=1, max_length=50)
 
@@ -1263,6 +1267,25 @@ def create_app(p: dict, registry: Registry | None = None,
         except ValueError as e:
             raise HTTPException(409, str(e))
         return {"upload": upload, "discarded": True}
+
+    # -- names: the demo display layer ---------------------------------------------
+    @app.post("/api/resolve")
+    def resolve_names(body: ResolveIn, who: Principal = Depends(radiologist)):
+        """Fictional names for the pseudonyms of patients whose source record carried a placeholder name
+        (sim/edge/display_names.py), for the studies this reader may open. A pseudonym with no displayable
+        name is left out, not an error: the client shows it alone. Every entry says source "demo-layer".
+        Only the local runtime has an identity map to read; elsewhere the answer is empty."""
+        resolver = p.get("resolver")
+        if resolver is None:
+            return {"disclaimer": DISCLAIMER, "available": False, "patients": {}}
+        mine = {r.get("patient_id") for r in worklist_rows() if visible_to(r, who) or is_recipient(r, who)}
+        wanted = [i for i in dict.fromkeys(body.ids) if i in mine]
+        found = resolver(wanted) if wanted else {}
+        if wanted:
+            p["table"].append_audit(AuditEvent(
+                actor=who.email, action="resolve_names", study=NO_STUDY, at=_now(), outcome="ok",
+                duration_ms=0.0, detail={"requested": len(wanted), "resolved": len(found)}))
+        return {"disclaimer": DISCLAIMER, "available": True, "patients": found}
 
     def audit_events(days: int) -> list[dict]:
         """Recent audit events, newest first: one query per day on the by_day index;

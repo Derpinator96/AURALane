@@ -25,6 +25,7 @@ that is intentional. PS3.15 calls this pseudonymisation; the security control
 is that the mapping is held by the data controller (the hospital), not by us.
 """
 import os
+import pathlib
 import sqlite3
 import threading
 
@@ -57,6 +58,30 @@ CREATE TABLE IF NOT EXISTS studies (
 );
 CREATE INDEX IF NOT EXISTS studies_by_pseudo ON studies(pseudo_uid);
 """
+
+
+def lookup_patients(path, pseudo_ids):
+    """Patient rows by pseudonym, for the demo display layer (sim/edge/display_names.py).
+
+    Read only: the file is opened with mode=ro, so this cannot change it, and a missing file or table is
+    an empty answer, not an error. -> [{pseudo_id, original_id, original_name, original_dob, original_sex}]"""
+    ids = list(dict.fromkeys(pseudo_ids))
+    if not ids or not os.path.exists(path):
+        return []
+    c = sqlite3.connect(pathlib.Path(path).resolve().as_uri() + "?mode=ro", uri=True, timeout=30)
+    c.row_factory = sqlite3.Row
+    try:
+        out = []
+        for i in range(0, len(ids), 200):
+            chunk = ids[i:i + 200]
+            out += [dict(r) for r in c.execute(
+                "SELECT pseudo_id, original_id, original_name, original_dob, original_sex FROM patients"
+                f" WHERE pseudo_id IN ({','.join('?' * len(chunk))})", chunk)]
+        return out
+    except sqlite3.OperationalError:
+        return []
+    finally:
+        c.close()
 
 
 class IdentityMap:
