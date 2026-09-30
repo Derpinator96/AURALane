@@ -27,7 +27,7 @@ describe("the dashboard", () => {
     expect(within(screen.getByTestId("stat-triage")).getByText(String(triage))).toBeInTheDocument();
     // No verdicts in the fixture: the agreement figure is a dash, not a made-up percentage.
     expect(screen.getByTestId("stat-agreement")).toHaveTextContent("--");
-    expect(screen.getByTestId("stat-agreement")).toHaveTextContent("0 verdicts");
+    expect(screen.getByTestId("stat-agreement")).toHaveTextContent("No verdicts yet");
   });
 
   it("lists the API's readers with their pools and unread counts", async () => {
@@ -37,7 +37,7 @@ describe("the dashboard", () => {
     if (rows.length) expect(rows[0]).toHaveTextContent(/\d+ unread/);
   });
 
-  it("the Needs triage card filters the queue to abstentions, and back", async () => {
+  it("the Abstention Tray card filters the queue to abstentions, and back", async () => {
     await show();
     expect(sections().some((s) => s.endsWith("CRITICAL"))).toBe(true);
     await userEvent.click(screen.getByTestId("stat-triage"));

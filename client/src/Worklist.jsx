@@ -10,7 +10,7 @@ import SettingsView from "./components/SettingsView.jsx";
 import SimulatePanel from "./components/SimulatePanel.jsx";
 import DistributePanel from "./components/DistributePanel.jsx";
 import QueueCard from "./components/QueueCard.jsx";
-import { ArrivalsCard, GaugeCard, ReadersCard, StatRow } from "./components/DashboardCards.jsx";
+import { GaugeCard, ReadersCard, StatRow, WaitingCard } from "./components/DashboardCards.jsx";
 import ErrorBoundary, { Failed } from "./components/ErrorBoundary.jsx";
 import { CloseIcon, PlayIcon, UsersIcon } from "./components/Icons.jsx";
 import { Overlay } from "./components/ui.jsx";
@@ -203,13 +203,13 @@ export default function Worklist({ load, token }) {
       {onWorklist && (
         <div className="dash">
           <div className="dash-main">
-            <StatRow studies={scopeStudies} laneLabels={laneLabels} onlyTriage={onlyTriage}
+            <StatRow studies={scopeStudies} onlyTriage={onlyTriage}
                      onToggleTriage={() => {
                        setOnlyTriage((v) => !v);
                        document.querySelector('[data-testid="queue-card"]')?.scrollIntoView?.({ block: "start" });
                      }} />
             <div className="chart-row">
-              <ArrivalsCard studies={scopeStudies} pools={data.pools} />
+              <WaitingCard studies={scopeStudies} laneLabels={laneLabels} scopeLabel={scope === "mine" ? "My worklist" : "All studies"} />
               <GaugeCard studies={scopeStudies} scopeLabel={scope === "mine" ? "My worklist" : "All studies"} />
             </div>
             {queue}

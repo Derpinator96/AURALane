@@ -46,25 +46,14 @@ export function summarize(studies, now = Date.now()) {
   };
 }
 
-// Studies per UTC hour on the most recent day any study arrived, split by reading
-// pool. Returns null when nothing has arrived.
-export function arrivalsByHour(studies, poolNames) {
-  const stamped = studies
-    .map((s) => ({ s, t: Date.parse(s.arrived) }))
-    .filter((x) => !Number.isNaN(x.t));
-  if (!stamped.length) return null;
-  const day = new Date(Math.max(...stamped.map((x) => x.t))).toISOString().slice(0, 10);
-  const hours = Array.from({ length: 24 }, (_, hour) => ({
-    hour, counts: Object.fromEntries(poolNames.map((p) => [p, 0])), total: 0,
-  }));
-  for (const { s, t } of stamped) {
-    const d = new Date(t).toISOString();
-    if (d.slice(0, 10) !== day) continue;
-    const h = hours[Number(d.slice(11, 13))];
-    if (s.pool in h.counts) h.counts[s.pool] += 1;
-    h.total += 1;
-  }
-  return { day, hours, total: hours.reduce((a, h) => a + h.total, 0), max: Math.max(...hours.map((h) => h.total)) };
+// For each lane the dashboard tracks: how many studies nobody has read yet, and how long the
+// longest of them has been waiting. Counted from the rows' own lane, verdict and arrival time.
+export function waitingByLane(studies, now = Date.now()) {
+  return WAITING_LANES.map((lane) => {
+    const waiting = studies.filter((s) => s.lane === lane && isUnread(s));
+    const times = waiting.map((s) => Date.parse(s.arrived)).filter((t) => !Number.isNaN(t));
+    return { lane, count: waiting.length, oldestMs: times.length ? now - Math.min(...times) : null };
+  });
 }
 
 // Each reader's unread studies, from the assigned_to on the rows.
@@ -76,8 +65,11 @@ export function readerLoad(readers, studies) {
 }
 
 // The name the greeting uses: the reader's own name when the API lists one, else the
-// part of the email before the @.
+// part of the email before the @, in capitals: anurag.verma is Anurag Verma.
 export function displayName(me, readers = []) {
   if (!me) return "";
-  return readers.find((r) => r.id === me)?.name || String(me).replace(/@.*/, "");
+  const named = readers.find((r) => r.id === me)?.name;
+  if (named) return named;
+  return String(me).replace(/@.*/, "").split(/[._-]+/).filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
