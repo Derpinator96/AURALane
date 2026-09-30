@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 export function Footer() {
   return (
     <footer className="foot">
-      <span>AURALane proof of concept. Not a medical device.</span>
+      <span>AURALane. Not a medical device.</span>
       <Link to="/privacy">Privacy</Link>
       <Link to="/terms">Terms</Link>
     </footer>

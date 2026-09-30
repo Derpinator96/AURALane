@@ -32,7 +32,7 @@ export default function AnnotationsPanel({
     <div className="study-annotations-card" data-testid="annotations-panel">
       <div className="annotations-header">
         <div className="annotations-title-group">
-          <h4 className="card-section-title">Clinician Pinpoint Notes</h4>
+          <h4 className="card-section-title">Notes</h4>
           <span className="annotations-count-badge mono">
             {annotations.length}
           </span>
@@ -43,7 +43,7 @@ export default function AnnotationsPanel({
           onClick={onToggleAddNoteMode}
           title={isAddNoteMode ? "Click the image to drop a note" : "Add a note"}
         >
-          {isAddNoteMode ? "Cancel Pin Mode" : "+ Pin Note"}
+          {isAddNoteMode ? "Cancel" : "Add note"}
         </button>
       </div>
 

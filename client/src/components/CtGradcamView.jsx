@@ -163,25 +163,25 @@ export default function CtGradcamView({
             type="button"
             className={`ct-mode-btn ${viewMode === "triview" ? "active" : ""}`}
             onClick={() => setViewMode("triview")}
-            title="3-Panel Diagnostic Layout (Original | Heatmap | Overlay + Localized Region)"
+            title="Three panels: the slice, the Grad-CAM, and the overlay with the region"
           >
-            3-Panel Tri-View
+            Tri-view
           </button>
           <button
             type="button"
             className={`ct-mode-btn ${viewMode === "dual" ? "active" : ""}`}
             onClick={() => setViewMode("dual")}
-            title="Side-by-side (Original & Grad-CAM only)"
+            title="The slice and the Grad-CAM side by side"
           >
-            Dual View
+            Dual view
           </button>
           <button
             type="button"
             className={`ct-mode-btn ${viewMode === "single" ? "active" : ""}`}
             onClick={() => setViewMode("single")}
-            title="Single Slice Overlay Focus View"
+            title="One slice with the overlay"
           >
-            Overlay Focus
+            Single view
           </button>
         </div>
 
@@ -193,7 +193,7 @@ export default function CtGradcamView({
               onClick={onToggleAddNoteMode}
               title="Click the CT slice to drop a note"
             >
-              <PinIcon size={15} />{isAddNoteMode ? "Pin Active" : "Add Note"}
+              <PinIcon size={15} />{isAddNoteMode ? "Cancel" : "Add note"}
             </button>
           )}
 
@@ -227,7 +227,7 @@ export default function CtGradcamView({
                     onChange={(e) => setShowBox(e.target.checked)}
                     data-testid="toggle-lime-box"
                   />
-                  <span>Localized Box</span>
+                  <span>Localized box</span>
                 </label>
               )}
               {centroid && (

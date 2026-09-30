@@ -181,7 +181,7 @@ export function StudyPanel({ detail, onVerdict, busy, rationaleOn = true, saveDr
           <dd className="mono-id">{s.lane === "ABSTAIN" || s.lane === "FAILED" ? "--" : fmt(s.acuity, 1)}</dd>
           <dt>Confidence</dt>
           <dd>
-            {brain ? "None: the brain model reports volumes, not a probability"
+            {brain ? "Not reported: the brain model reports volumes, not a probability"
                    : <span className="mono-id">{fmt(s.confidence)}</span>}
           </dd>
           <dt>Model</dt><dd className="mono-id">{s.model_id || "--"}</dd>

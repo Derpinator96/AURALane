@@ -128,7 +128,7 @@
 .rationale .note { flex-basis: 100%; }
 .viewer-viewport-container { min-width: 0; }
 .viewer-empty-placeholder { display: grid; place-items: center; min-height: 240px; border-radius: var(--r-card); background: var(--tint); color: var(--ink-2); }
-.datastore-note { color: var(--ink-2); }
+.datastore-note { padding: 10px 14px; background: var(--tint); border-radius: var(--r-small); color: var(--ink-2); }
 
 .study-analysis-sidebar { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .study-analysis-sidebar > * {

@@ -455,10 +455,10 @@ export default function MriViewer3D({
             <span className="toolbar-label">Sequence:</span>
             <div className="segmented-group" role="group" aria-label="MRI Sequence Channels">
               {[
-                { id: "t1ce", label: "T1c (ch0)", desc: "Contrast-Enhanced Tumor" },
-                { id: "t1", label: "T1 (ch1)", desc: "Native Anatomy" },
-                { id: "t2", label: "T2 (ch2)", desc: "Edema & Water" },
-                { id: "flair", label: "FLAIR (ch3)", desc: "Peritumoral Boundary" },
+                { id: "t1ce", label: "T1c (ch0)", desc: "Contrast-enhanced tumor" },
+                { id: "t1", label: "T1 (ch1)", desc: "Native anatomy" },
+                { id: "t2", label: "T2 (ch2)", desc: "Edema and water" },
+                { id: "flair", label: "FLAIR (ch3)", desc: "Peritumoral boundary" },
               ].map((s) => (
                 <button
                   key={s.id}
@@ -498,7 +498,7 @@ export default function MriViewer3D({
                   value={opacity}
                   onChange={(e) => setOpacity(parseFloat(e.target.value))}
                   className="opacity-slider"
-                  aria-label="Mask Opacity"
+                  aria-label="Mask opacity"
                 />
               </label>
             )}
@@ -529,7 +529,7 @@ export default function MriViewer3D({
               type="button"
               className={`segmented-btn ${viewLayout === "axial" ? "active" : ""}`}
               onClick={() => setViewLayout("axial")}
-              title="Axial Focus"
+              title="Axial focus"
             >
               Axial Focus
             </button>
@@ -545,14 +545,14 @@ export default function MriViewer3D({
               onClick={onToggleAddNoteMode}
               title="Click the image to drop a note"
             >
-              <PinIcon size={15} />{isAddNoteMode ? "Pin Active" : "Add Note"}
+              <PinIcon size={15} />{isAddNoteMode ? "Cancel" : "Add note"}
             </button>
           )}
           <button
             type="button"
             className={`btn-tool-action ${showCrosshairs ? "active" : ""}`}
             onClick={toggleCrosshairs}
-            title="Toggle Orthogonal Sync Crosshairs"
+            title="Toggle synced crosshairs"
           >
             Crosshairs
           </button>

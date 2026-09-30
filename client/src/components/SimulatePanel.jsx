@@ -140,7 +140,10 @@ export default function SimulatePanel({ token, readers, me = null, onClose, onPr
         {error && <p className="error" role="alert">{error}</p>}
         {!info && !error && <p className="note">Checking the pool.</p>}
         {info && !info.available && (
-          <p className="note" data-testid="simulate-unavailable">Not available here: {info.reason}</p>
+          <p className="note" data-testid="simulate-unavailable">
+            <strong>Simulated ingest is unavailable in this environment.</strong>{" "}
+            {info.reason.charAt(0).toUpperCase() + info.reason.slice(1)}{/[.!?]$/.test(info.reason) ? "" : "."}
+          </p>
         )}
 
         {info?.available && !batch && (
