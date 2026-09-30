@@ -101,9 +101,9 @@ class VerdictIn(BaseModel):
 
 
 class Counts(BaseModel):
-    chest: int = Field(0, ge=0, le=10)
+    chest: int = Field(0, ge=0, le=25)
     brain: int = Field(0, ge=0, le=3)
-    ct: int = Field(0, ge=0, le=3)
+    ct: int = Field(0, ge=0, le=5)
 
 
 class SimulateIn(BaseModel):
@@ -239,8 +239,9 @@ def create_app(p: dict, registry: Registry | None = None,
         detail_cache.clear()
         row_cache.clear()
 
-    if p.get("simulate") is not None and hasattr(p["simulate"], "after_study"):
-        p["simulate"].after_study = _drop_caches
+    for key in ("simulate", "uploads"):
+        if p.get(key) is not None and hasattr(p[key], "after_study"):
+            p[key].after_study = _drop_caches
 
     # Server-Timing on every response: total and the time in each backing service.
     # (In place, so a caller that swaps a provider afterwards still takes effect.)
@@ -1165,6 +1166,103 @@ def create_app(p: dict, registry: Registry | None = None,
             return simulator().status(batch)
         except KeyError:
             raise HTTPException(404, "no such batch")
+
+    # -- upload your own studies -------------------------------------------------
+    # Open an upload, send its files one request each as a raw body (no multipart, and no file
+    # name: a name can carry a patient's), then submit. core/own_uploads.py sorts the files into
+    # studies and runs each through the pipeline, which de-identifies it first. A study goes on the
+    # worklist of the reader who uploaded it.
+    def uploader():
+        up = p.get("uploads")
+        if up is None:
+            raise HTTPException(409, "uploads are not configured on this API")
+        return up
+
+    def my_reader(who: Principal) -> dict:
+        known = next((r for r in readers() if r["id"] == who.email), None)
+        return known or {"id": who.email, "name": who.email, "pools": list(assignment.POOLS)}
+
+    @app.get("/api/uploads")
+    def uploads_info(who: Principal = Depends(radiologist)):
+        up = p.get("uploads")
+        if up is None:
+            return {"available": False, "reason": "not configured on this API",
+                    "runtime": p.get("runtime")}
+        return {**up.info(), "pools": my_reader(who)["pools"]}
+
+    @app.post("/api/uploads", status_code=201)
+    def uploads_open(who: Principal = Depends(radiologist)):
+        try:
+            return uploader().open(my_reader(who))
+        except RuntimeError as e:
+            raise HTTPException(409, str(e))
+
+    @app.post("/api/uploads/{upload}/files/{n}", status_code=201)
+    async def uploads_file(upload: str, n: int, request: Request,
+                           who: Principal = Depends(radiologist)):
+        """One file, as the request body. Sending the same n again replaces it."""
+        up = uploader()
+        try:
+            path, room = up.begin(upload, who.email, n)
+        except KeyError:
+            raise HTTPException(404, "no such upload")
+        except ValueError as e:
+            raise HTTPException(409, str(e))
+        declared = request.headers.get("content-length", "")
+        if declared.isdigit() and int(declared) > room:
+            raise HTTPException(413, f"a file can be at most {room // 2**20} MB here")
+        size = 0
+        try:
+            with open(path, "wb") as f:
+                async for chunk in request.stream():
+                    size += len(chunk)
+                    if size > room:
+                        raise HTTPException(413, f"a file can be at most {room // 2**20} MB here")
+                    f.write(chunk)
+        except BaseException:
+            up.abort(upload, who.email, n)
+            raise
+        if not size:
+            up.abort(upload, who.email, n)
+            raise HTTPException(400, "the file is empty")
+        return up.commit(upload, who.email, n, size)
+
+    @app.post("/api/uploads/{upload}/submit", status_code=202)
+    def uploads_submit(upload: str, who: Principal = Depends(radiologist)):
+        """Checks the upload as a whole, then starts it in the background. Audited."""
+        up = uploader()
+        try:
+            state = up.submit(upload, who.email, who.email)
+        except KeyError:
+            raise HTTPException(404, "no such upload")
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        except RuntimeError as e:
+            raise HTTPException(409, str(e))
+        p["table"].append_audit(AuditEvent(
+            actor=who.email, action="upload_studies", study=NO_STUDY, at=_now(), outcome="ok",
+            duration_ms=0.0, detail={"upload": upload, "files": state["files"],
+                                     "studies": len(state["items"]), "skipped": state["skipped"],
+                                     "types": dict(Counter(i["type"] for i in state["items"]))}))
+        return state
+
+    @app.get("/api/uploads/{upload}")
+    def uploads_status(upload: str, who: Principal = Depends(radiologist)):
+        try:
+            return uploader().status(upload, who.email)
+        except KeyError:
+            raise HTTPException(404, "no such upload")
+
+    @app.delete("/api/uploads/{upload}")
+    def uploads_discard(upload: str, who: Principal = Depends(radiologist)):
+        """Drops an upload that was not submitted, and its files."""
+        try:
+            uploader().discard(upload, who.email)
+        except KeyError:
+            raise HTTPException(404, "no such upload")
+        except ValueError as e:
+            raise HTTPException(409, str(e))
+        return {"upload": upload, "discarded": True}
 
     def audit_events(days: int) -> list[dict]:
         """Recent audit events, newest first: one query per day on the by_day index;

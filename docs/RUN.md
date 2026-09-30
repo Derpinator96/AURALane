@@ -130,8 +130,8 @@ no corpus on that host, or no pipeline.
 
 ## Simulate ingest: the radiologist screen
 
-Radiologist screen, "Simulate ingest". Choose how many chest X-rays (up to 10),
-brain MRs and head CTs (up to 3 each) to send, and which readers get them. The
+Radiologist screen, "Simulate ingest". Choose how many chest X-rays (up to 25),
+brain MRs (up to 3) and head CTs (up to 5) to send, and which readers get them. The
 panel shows the estimated AWS cost, itemised with what each line assumes, before
 you confirm. The studies come from a staged pool, already de-identified at the
 edge, and each runs through the real pipeline in the background (receive, a
@@ -151,6 +151,31 @@ staged instance without PatientIdentityRemoved YES and a
 DeidentificationMethod. New BraTS cases: put them in data/brain/raw/<case>/,
 run `python scripts/convert_brain.py`, then stage again (already-staged studies
 are skipped).
+
+What is in the pool: 100 chest X-ray studies (the 40 of the tested corpus in
+data/chest/studies, and 60 more in data/chest/extra, built by
+`python sim/generator/make_dicom.py --src images --out data/chest/extra --count 60 --seed 2026 --burn-in 0.1`),
+12 brain MRs and 9 head CTs (CQ500 and the RSNA set). More head CTs: put each
+study's DICOM folder in data/ct/raw/ and stage again. The S3 pool is a separate
+copy of the same staging, so after adding studies run the `--stack` command too.
+
+## Upload study: your own files
+
+Radiologist screen, "Upload study". Choose files, or a folder, and upload. Two
+kinds are taken: DICOM files (one study, or several; chest X-ray CR, brain MR with
+its four sequences, head CT) and PNG or JPEG chest X-ray images (each is wrapped
+as a frontal PA Computed Radiography study with a generated identity). Each study
+runs through the real pipeline, which de-identifies it first, and lands on your
+own worklist in the pool its modality belongs to. A reader who does not read that
+pool is told before anything is sent. The fixture preview has no pipeline and says
+so. Use public, synthetic or openly licensed studies only.
+
+The limits are 1,000 files, 64 MB a file, 400 MB and 20 studies in one upload.
+Files go to the API one request each as the raw body, so a file name (which can
+carry a patient's name) is never sent, stored or audited. The API holds them in a
+temporary folder only until they are handed to the pipeline and deletes each as
+its study finishes. On AWS they go to S3 `upload/` and the ingest task takes them
+from there, as for the edge agent (docs/DEPLOY.md step 7).
 
 "Distribute worklist" deals every unread study, critical first, round robin
 among the readers you choose. The fixture preview has no pipeline and says so.

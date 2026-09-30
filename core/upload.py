@@ -21,6 +21,7 @@ from __future__ import annotations
 import datetime
 import json
 import secrets
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -92,6 +93,19 @@ def copy_pool_study(s3, bucket: str, pool_prefix: str, batch: str, item: str, *,
     return _manifest(s3, bucket, batch, item, keys, site_state, modality,
                      predeidentified=True, model_id=model_id, run_id=run_id,
                      report_key=report_key), len(dcm)
+
+
+def wait_result(s3, bucket: str, key: str, timeout_s: float, poll_s: float) -> dict:
+    """The result an ingest task writes (intake/<batch>/<item>.json), polled for until it is there.
+    Raises TimeoutError, with the place to look, if it never arrives."""
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        try:
+            return json.loads(s3.get_object(Bucket=bucket, Key=key)["Body"].read())
+        except s3.exceptions.NoSuchKey:
+            time.sleep(poll_s)
+    raise TimeoutError(f"the ingest task wrote no result in {int(timeout_s // 60)} min "
+                       f"(see the IngestTask log group in CloudWatch)")
 
 
 def corpus_catalogue(s3, bucket: str) -> dict[str, list[str]]:

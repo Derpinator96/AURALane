@@ -83,3 +83,13 @@ test("worklist rows are separate cards and none of their text overlaps at a lapt
   }));
   expect(problems).toEqual([]);
 });
+
+test("Upload study opens from the worklist and the fixture preview says why it cannot take files", async ({ page }) => {
+  await signIn(page, "radiologist");
+  await page.getByTestId("btn-upload").click();
+  await expect(page.getByTestId("upload-panel")).toBeVisible();
+  await expect(page.getByTestId("upload-unavailable")).toContainText("no pipeline");
+  await expect(page.getByTestId("upload-send")).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("upload-panel")).toBeHidden();
+});

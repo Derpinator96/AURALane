@@ -67,13 +67,15 @@ export function errorMessage(status, statusText, data) {
 }
 
 async function request(path, { token, method = "GET", body } = {}) {
+  // A file goes as it is, the body of its own request; everything else is JSON.
+  const raw = typeof Blob !== "undefined" && body instanceof Blob;
   const res = await fetch(BASE + path, {
     method,
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...(body ? { "Content-Type": raw ? "application/octet-stream" : "application/json" } : {}),
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? (raw ? body : JSON.stringify(body)) : undefined,
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(res.status, errorMessage(res.status, res.statusText, data));
@@ -200,6 +202,15 @@ export const api = {
   simulateEstimate: (token, counts) => call("/api/simulate/estimate", { token, method: "POST", body: counts }),
   simulate: (token, counts, readers) => call("/api/simulate", { token, method: "POST", body: { counts, readers } }),
   simulateStatus: (token, batch) => call(`/api/simulate/${encodeURIComponent(batch)}`, { token }),
+  // Upload your own studies: open an upload, send each file as the body of its own request (its
+  // name is never sent), then submit. The API sorts the files into studies and runs each one.
+  uploadInfo: (token) => call("/api/uploads", { token }),
+  openUpload: (token) => call("/api/uploads", { token, method: "POST" }),
+  sendUploadFile: (token, upload, n, file) =>
+    call(`/api/uploads/${encodeURIComponent(upload)}/files/${n}`, { token, method: "POST", body: file }),
+  submitUpload: (token, upload) => call(`/api/uploads/${encodeURIComponent(upload)}/submit`, { token, method: "POST" }),
+  uploadStatus: (token, upload) => call(`/api/uploads/${encodeURIComponent(upload)}`, { token }),
+  discardUpload: (token, upload) => call(`/api/uploads/${encodeURIComponent(upload)}`, { token, method: "DELETE" }),
   myHistory: (token) => call("/api/me/history", { token }),
   assignments: (token) => call("/api/admin/assignments", { token }),
   reassign: (token, study, reader) =>

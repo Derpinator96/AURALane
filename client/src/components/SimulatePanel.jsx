@@ -184,6 +184,7 @@ export default function SimulatePanel({ token, readers, me = null, onClose, onPr
             <p className="meta">
               Batch <span className="mono-id">{batch.batch}</span> · {batch.running ? "running" : "finished"}
             </p>
+            <div className="table-scroll">
             <table className="simulate-counts">
               <thead><tr><th>Type</th><th>Study</th><th>Status</th><th>Lane</th><th>Reader</th></tr></thead>
               <tbody>
@@ -198,6 +199,7 @@ export default function SimulatePanel({ token, readers, me = null, onClose, onPr
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

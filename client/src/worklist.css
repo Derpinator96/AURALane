@@ -249,6 +249,20 @@
 .stepper .count-input { width: 64px; min-height: 36px; padding: 0 8px; border-radius: var(--r-pill); text-align: center; -moz-appearance: textfield; appearance: textfield; }
 .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .simulate-counts { width: 100%; }
+/* A wide table scrolls inside the dialog instead of widening it on a phone. */
+.table-scroll { max-width: 100%; overflow-x: auto; }
+
+/* Upload your own studies */
+.upload-drop {
+  display: grid; justify-items: center; gap: 10px; padding: 28px 20px; border-radius: 20px; text-align: center;
+  background: var(--tint); border: 1.5px dashed var(--check-off);
+}
+.upload-drop.over { background: var(--blue-tint); border-color: var(--blue); }
+.upload-drop .drop-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.upload-drop input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.upload-accepts { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: var(--ink-2); font-size: var(--fs-meta); }
+.upload-bar { width: 100%; height: 8px; border-radius: 8px; overflow: hidden; background: var(--tint); }
+.upload-bar > span { display: block; height: 100%; background: var(--blue); transition: width 0.2s ease-out; }
 
 @media (max-width: 1100px) {
   .history-grid { grid-template-columns: 1fr; }

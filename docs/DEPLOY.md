@@ -229,6 +229,11 @@ the memory peak (620 instances read, four NIfTI volumes built): on Render's
 fails with an out-of-memory restart, send brain studies through the Fargate
 path (step 7) instead. NOT VERIFIED on Render.
 
+"Upload study" (radiologist screen) needs nothing more: the API writes the files to `upload/own-<id>/<n>/` with
+a manifest, which the same EventBridge rule turns into a Fargate ingest task, and reads the result from
+`intake/own-<id>/`. Only AURALANE_BUCKET is needed, and the API's policy already writes `upload/` and never reads it.
+NOT VERIFIED on AWS: the path is tested against moto, and locally end to end.
+
 ### 10. Pipeline view and /metrics
 
 Admin, "Pipeline", is drawn from the audit trail. `GET /metrics` answers
