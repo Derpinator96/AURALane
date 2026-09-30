@@ -639,7 +639,7 @@
 .viewport { width: 100%; height: min(72vh, 760px); min-height: 420px; background: #000; }
 .viewer-tools {
   position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 6;
-  display: flex; align-items: center; gap: 2px; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 20px);
+  display: flex; align-items: center; gap: 2px; flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100% - 20px);
   padding: 5px; background: rgba(20, 24, 32, 0.74); border-radius: var(--r-pill); color: #fff;
   box-shadow: 0 14px 34px -12px rgba(0, 0, 0, 0.7);
 }
@@ -650,7 +650,13 @@
 .viewer-tools button:hover { background: rgba(255, 255, 255, 0.16); }
 .viewer-tools button[aria-pressed="true"] { background: #ffffff; color: #16181d; }
 .slice { margin: 0 8px; font-size: var(--fs-meta); color: rgba(255, 255, 255, 0.78); }
-.viewer-label { margin: 0 10px 0 4px; font-weight: 500; letter-spacing: 0; font-size: var(--fs-meta); color: rgba(255, 255, 255, 0.78); }
+/* What is on screen, as a caption on the image: not in the toolbar, where it read as a tool. */
+.viewer-label {
+  position: absolute; top: 12px; left: 14px; z-index: 5; max-width: calc(100% - 28px); padding: 4px 10px;
+  border-radius: 8px; background: rgba(20, 24, 32, 0.6); color: rgba(255, 255, 255, 0.86);
+  font-weight: 500; font-size: var(--fs-meta); pointer-events: none; user-select: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .overlay-layer { position: absolute; pointer-events: none; image-rendering: auto; }
 .pinpoint-active-mode .viewport, .pinpoint-active-mode .mri-canvas { cursor: crosshair; }
 
@@ -1325,6 +1331,5 @@
 @container (max-width: 560px) {
   .viewer-tools { bottom: 10px; padding: 4px; }
   .viewer-tools button { padding: 0 9px; min-height: 28px; font-size: var(--fs-micro); }
-  .viewer-label { display: none; }
   .slice { margin: 0 4px; font-size: var(--fs-micro); }
 }

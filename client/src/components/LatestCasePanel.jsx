@@ -11,7 +11,7 @@ import { FindingSelector, gradcamLayer, selectedCaption } from "./GradcamFinding
 import { ArrowUpRightIcon } from "./Icons.jsx";
 import { Spinner } from "./ui.jsx";
 import { PatientLabel } from "../names.jsx";
-import { laneName } from "../worklist.js";
+import { laneName, seriesName } from "../worklist.js";
 
 // Cornerstone (2D) and NiiVue (3D) load only when a study needs them. A chunk that fails
 // to load shows "failed to load, Retry" in its own place; the sheet stays.
@@ -43,7 +43,7 @@ function SeriesView({ token, detail, overlay }) {
   if (!instances) return <div className="loading-line"><Spinner label="Loading the images" /></div>;
   return (
     <LazyView load={loadViewer} what="Viewer" fallback={<div className="loading-line"><Spinner label="Loading the viewer" /></div>}
-              instances={instances} overlay={overlay} label={series.description} />
+              instances={instances} overlay={overlay} label={seriesName(series)} />
   );
 }
 

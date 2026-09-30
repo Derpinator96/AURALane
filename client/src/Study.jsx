@@ -9,7 +9,7 @@ import NoteEditorModal from "./components/NoteEditorModal.jsx";
 import { DraftPanel } from "./components/DraftPanel.jsx";
 import { LazyView } from "./components/ErrorBoundary.jsx";
 import { api, loadSession } from "./api.js";
-import { laneName, timeUTC } from "./worklist.js";
+import { laneName, seriesName, timeUTC } from "./worklist.js";
 import { CheckIcon, ChevronIcon, ClockIcon } from "./components/Icons.jsx";
 import { Spinner } from "./components/ui.jsx";
 import { PatientLabel } from "./names.jsx";
@@ -457,9 +457,9 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
             )}
             {detail.series.length > 1 && !show3D && (
               <div className="series-switch" role="group" aria-label="Series">
-                {detail.series.map((s) => (
+                {detail.series.map((s, i) => (
                   <button key={s.series_uid} type="button" aria-pressed={s.series_uid === seriesUid}
-                          onClick={() => setSeriesUid(s.series_uid)}>{s.description}</button>
+                          onClick={() => setSeriesUid(s.series_uid)}>{seriesName(s, i)}</button>
                 ))}
               </div>
             )}
@@ -487,7 +487,7 @@ export default function Study({ load, loadSeries, sendVerdict, saveDraft, token 
             loadingLine
           ) : (
             <LazyView load={loadViewer} what="Viewer" fallback={loadingLine}
-                      instances={instances} overlay={overlay} label={current.description} {...noteProps} />
+                      instances={instances} overlay={overlay} label={seriesName(current)} {...noteProps} />
           )}
         </div>
 
