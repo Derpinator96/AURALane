@@ -113,6 +113,7 @@ describe("the draft panel", () => {
     render(<DraftPanel detail={detail} saveDraft={save} />);
     await userEvent.click(screen.getByTestId("draft-reviewed"));
     expect(save).toHaveBeenCalledWith("S", "GENERATED DRAFT", true);
-    expect(await screen.findByTestId("draft-status")).toHaveTextContent("report version 3: find it under Reports");
+    expect(await screen.findByTestId("toast")).toHaveTextContent("Saved to Reports");
+    expect(screen.getByTestId("draft-status")).toHaveTextContent("Reviewed by r1");
   });
 });

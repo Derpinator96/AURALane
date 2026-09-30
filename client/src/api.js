@@ -69,9 +69,29 @@ const STUDY_TTL_MS = 60_000;
 const STUDY_KEEP = 6;
 const studies = new Map();
 
+// The 3D viewer's volume and segmentation links are presigned with a new signature on every
+// call, so a second mount (the study panel, then full analysis, then back) would ask for a
+// different URL and download the volume again. Reusing the answer for a minute keeps the URL
+// the same, and the browser's own cache then serves the volume.
+const volumeLinks = new Map();
+
+function cachedLink(token, id, path) {
+  const key = `${id}|${path}`;
+  const hit = volumeLinks.get(key);
+  if (hit && hit.token === token && Date.now() - hit.at < STUDY_TTL_MS) return Promise.resolve(hit.data);
+  return call(path, { token }).then((data) => {
+    volumeLinks.set(key, { token, at: Date.now(), data });
+    return data;
+  });
+}
+
 function forgetStudyFor(path) {
   const m = /^\/api\/studies\/([^/]+)/.exec(path);
-  if (m) studies.delete(decodeURIComponent(m[1]));
+  if (m) {
+    const id = decodeURIComponent(m[1]);
+    studies.delete(id);
+    for (const k of [...volumeLinks.keys()]) if (k.startsWith(`${id}|`)) volumeLinks.delete(k);
+  }
   else if (path.startsWith("/api/annotations") || path.startsWith("/api/admin/assignments") || path.startsWith("/api/distribute")) {
     studies.clear();
   }
@@ -99,7 +119,7 @@ export const api = {
     call("/api/auth/login", { method: "POST", body: { username, password } }),
   worklist: (token) => call("/api/worklist", { token }),
   study: (token, id) => cachedStudy(token, id) || fetchStudy(token, id),
-  clearCache: () => { studies.clear(); inflight.clear(); },
+  clearCache: () => { studies.clear(); volumeLinks.clear(); inflight.clear(); },
   series: (token, id, seriesUid) =>
     call(`/api/studies/${encodeURIComponent(id)}/series/${encodeURIComponent(seriesUid)}`, { token }),
   verdict: (token, id, verdict) =>
@@ -115,9 +135,9 @@ export const api = {
   startIntake: (token, count) => call("/api/admin/intake", { token, method: "POST", body: { count } }),
   // 3D viewer: each answers {url, name}, a presigned URL NiiVue loads directly.
   volume: (token, study, sequence) =>
-    call(`/api/studies/${encodeURIComponent(study)}/volume/${encodeURIComponent(sequence)}`, { token }),
+    cachedLink(token, study, `/api/studies/${encodeURIComponent(study)}/volume/${encodeURIComponent(sequence)}`),
   segmentation: (token, study) =>
-    call(`/api/studies/${encodeURIComponent(study)}/segmentation`, { token }),
+    cachedLink(token, study, `/api/studies/${encodeURIComponent(study)}/segmentation`),
   metrics: (token, study) =>
     call(`/api/studies/${encodeURIComponent(study)}/metrics`, { token }),
   saveDraft: (token, study, text, reviewed) =>

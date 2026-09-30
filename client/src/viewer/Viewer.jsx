@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PinIcon } from "../components/Icons.jsx";
 import { core, initCornerstone, loadInBackground, registerFrame, tools } from "./cornerstone.js";
 
 // Stack viewport for one series. Left drag runs the selected tool (window and
@@ -148,40 +149,6 @@ export default function Viewer({
 
   return (
     <div className={`viewer ${isAddNoteMode ? "pinpoint-active-mode" : ""}`}>
-      <div className="viewer-tools" role="toolbar" aria-label="Viewer tools">
-        {onToggleAddNoteMode && (
-          <button
-            type="button"
-            className={`btn-pin-mode ${isAddNoteMode ? "active" : ""}`}
-            onClick={onToggleAddNoteMode}
-            title="Click anywhere on the X-Ray to drop a note marker"
-          >
-            📍 {isAddNoteMode ? "Pin Active" : "Add Note"}
-          </button>
-        )}
-        {MODES.map(([key, name]) => (
-          <button key={key} type="button" aria-pressed={mode === key} onClick={() => setMode(key)}>{name}</button>
-        ))}
-        <button type="button" aria-pressed={invert}
-                onClick={() => { const v = !invert; setInvert(v); act((vp) => vp.setProperties({ invert: v }))(); }}>
-          Invert
-        </button>
-        <button type="button" onClick={() => { setInvert(false); act((vp) => { vp.resetProperties(); vp.resetCamera(); })(); }}>
-          Reset
-        </button>
-        {slice.count > 1 && (
-          <span className="mono slice" data-testid="slice">slice {slice.index + 1} / {slice.count}</span>
-        )}
-        {label && <span className="viewer-label">{label}</span>}
-      </div>
-
-      {isAddNoteMode && (
-        <div className="cxr-pin-instruction-hud">
-          <span className="pulse-dot"></span>
-          <span><strong>Pinpoint Active:</strong> Click any location on the radiograph to attach a clinical note.</span>
-        </div>
-      )}
-
       <div
         className="viewport-wrap"
         onClick={handleViewportClick}
@@ -214,6 +181,29 @@ export default function Viewer({
             </div>
           );
         })}
+        <div className="viewer-tools" role="toolbar" aria-label="Viewer tools" onClick={(e) => e.stopPropagation()}
+             onContextMenu={(e) => e.stopPropagation()}>
+          {onToggleAddNoteMode && (
+            <button type="button" aria-pressed={isAddNoteMode} onClick={onToggleAddNoteMode}
+                    title="Click the image to drop a note">
+              <PinIcon size={14} />{isAddNoteMode ? "Pin Active" : "Add Note"}
+            </button>
+          )}
+          {MODES.map(([key, name]) => (
+            <button key={key} type="button" aria-pressed={mode === key} onClick={() => setMode(key)}>{name}</button>
+          ))}
+          <button type="button" aria-pressed={invert}
+                  onClick={() => { const v = !invert; setInvert(v); act((vp) => vp.setProperties({ invert: v }))(); }}>
+            Invert
+          </button>
+          <button type="button" onClick={() => { setInvert(false); act((vp) => { vp.resetProperties(); vp.resetCamera(); })(); }}>
+            Reset
+          </button>
+          {slice.count > 1 && (
+            <span className="mono slice" data-testid="slice">slice {slice.index + 1} / {slice.count}</span>
+          )}
+          {label && <span className="viewer-label">{label}</span>}
+        </div>
         {error && <p className="error viewer-error" role="alert">Viewer could not load this series: {error}</p>}
       </div>
     </div>

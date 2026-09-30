@@ -21,6 +21,7 @@ test("radiologist sees the worklist in lane order with the abstention group", as
   await expect(page.getByRole("note", { name: "Non-diagnostic notice" })).toBeVisible();
   await page.screenshot({ path: "test-results/worklist.png", fullPage: true });
 
+  await page.getByTestId("filter-button").click();
   await page.getByLabel("Lane filter").selectOption("CRITICAL");
   const filtered = await page.getByTestId(/^section-/).evaluateAll(
     (els) => els.map((e) => e.dataset.testid.replace("section-", "")));

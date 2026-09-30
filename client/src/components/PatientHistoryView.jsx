@@ -1,7 +1,10 @@
 import { useState, useMemo } from "react";
 import { timeUTC } from "../worklist.js";
-import { SearchIcon } from "./Icons.jsx";
+import { ArrowUpRightIcon, SearchIcon } from "./Icons.jsx";
 
+const studiesText = (n) => `${n} ${n === 1 ? "study" : "studies"}`;
+
+// Patients on the left, the chosen patient's studies on the right. A row opens the study.
 export default function PatientHistoryView({ studies = [], onSelectStudy, selectedStudyId }) {
   const [selectedPatient, setSelectedPatient] = useState("ALL");
   const [search, setSearch] = useState("");
@@ -34,104 +37,51 @@ export default function PatientHistoryView({ studies = [], onSelectStudy, select
   }, [patients, selectedPatient, studies]);
 
   return (
-    <div className="patient-history-view" data-testid="patient-history-view">
-      <div className="history-header">
-        <div>
-          <h2 className="center-title">Studies by patient</h2>
-          <p className="center-subtitle">
-            Every study on the worklist, grouped by patient pseudonym
-          </p>
-        </div>
-
-        <div className="search-box patient-search">
-          <span className="search-icon"><SearchIcon size={14} /></span>
-          <input
-            type="text"
-            placeholder="Search patient pseudonym..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="search-input"
-          />
-        </div>
+    <section className="panel history" data-testid="patient-history-view" aria-label="History">
+      <div className="qhead">
+        <h2 className="card-title queue-title">{selectedPatient === "ALL" ? "All studies" : selectedPatient}</h2>
+        <label className="searchpill history-search">
+          <SearchIcon size={16} />
+          <input type="text" placeholder="Search patients" value={search} aria-label="Search patients"
+                 onChange={(e) => setSearch(e.target.value)} className="search-input" />
+        </label>
       </div>
 
-      <div className="history-content-grid">
-        {/* Patient Selection Column */}
-        <div className="patient-selector-col">
-          <div className="col-heading">Patients ({filteredPatients.length})</div>
-          <button
-            type="button"
-            className={`patient-tab ${selectedPatient === "ALL" ? "active" : ""}`}
-            onClick={() => setSelectedPatient("ALL")}
-          >
-            <span>All Patients</span>
-            <span className="patient-count">{studies.length}</span>
+      <div className="history-grid">
+        <div className="patient-selector-col" role="list" aria-label="Patients">
+          <button type="button" className={`patient-row ${selectedPatient === "ALL" ? "active" : ""}`}
+                  onClick={() => setSelectedPatient("ALL")}>
+            <span>All patients</span>
+            <span className="chip chip-quiet">{filteredPatients.length}</span>
           </button>
           {filteredPatients.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className={`patient-tab ${selectedPatient === p.id ? "active" : ""}`}
-              onClick={() => setSelectedPatient(p.id)}
-            >
-              <span className="mono bold">{p.id}</span>
-              <span className="patient-count">{p.studies.length} studies</span>
+            <button key={p.id} type="button" className={`patient-row ${selectedPatient === p.id ? "active" : ""}`}
+                    onClick={() => setSelectedPatient(p.id)}>
+              <span className="mono-id">{p.id}</span>
+              <span className="chip chip-quiet">{studiesText(p.studies.length)}</span>
             </button>
           ))}
         </div>
 
-        {/* Timeline / Studies Column */}
         <div className="patient-timeline-col">
-          <div className="col-heading">
-            {selectedPatient === "ALL" ? "All studies" : `Studies for ${selectedPatient}`}
-          </div>
-
-          <div className="timeline-list">
-            {activeStudies.map((s) => {
-              const isSelected = s.study === selectedStudyId;
-              return (
-                <div
-                  key={s.study}
-                  className={`timeline-card ${isSelected ? "selected" : ""}`}
-                  onClick={() => onSelectStudy(s.study)}
-                >
-                  <div className="timeline-card-header">
-                    <span className="timeline-date mono">Arrived {timeUTC(s.arrived)} UTC</span>
-                    <span className={`lanetag lane-${s.lane}`}>{s.lane_label || s.lane}</span>
-                  </div>
-
-                  <div className="timeline-main">
-                    <div className="timeline-modality">
-                      <span className={`mod-badge mod-${s.modality}`}>
-                        {s.exam || s.modality}
-                      </span>
-                      <span className="timeline-patient mono">{s.patient_id || s.study}</span>
-                    </div>
-
-                    <div className="timeline-driver">
-                      <span className="bold">{s.driver_label || s.driver || "--"}</span>
-                      {s.acuity != null && <span className="acuity-chip mono">Acuity: {Number(s.acuity).toFixed(1)}</span>}
-                    </div>
-                  </div>
-
-                  <div className="timeline-actions">
-                    <button
-                      type="button"
-                      className="btn-timeline-inspect"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectStudy(s.study);
-                      }}
-                    >
-                      {isSelected ? "Selected" : "Select"}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {activeStudies.length === 0 && <p className="note empty-line">No studies</p>}
+          {activeStudies.map((s) => (
+            <div key={s.study} className={`history-row ${s.study === selectedStudyId ? "selected" : ""}`}
+                 onClick={() => onSelectStudy(s.study)} data-testid="history-row">
+              <span className="cell-time mono">{s.arrived ? `${s.arrived.slice(0, 10)} ${timeUTC(s.arrived)}` : "--"}</span>
+              <span className={`lanetag lane-${s.lane}`}>{s.lane_label || s.lane}</span>
+              <span className="chip chip-quiet">{s.exam || s.modality}</span>
+              <span className="mono-id cell-patient">{s.patient_id || s.study}</span>
+              <span className="finding-text">{s.driver_label || s.driver || "--"}</span>
+              <span className="mono-id cell-acuity">{s.acuity != null ? Number(s.acuity).toFixed(1) : "--"}</span>
+              <button type="button" className="circle circle-sm" aria-label={`Open ${s.patient_id || s.study}`} title="Open"
+                      onClick={(e) => { e.stopPropagation(); onSelectStudy(s.study); }}>
+                <ArrowUpRightIcon size={15} />
+              </button>
+            </div>
+          ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 }

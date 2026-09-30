@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../api.js";
 import { loadSettings } from "../settings.js";
 import { ensureNiivue, niivueClass } from "./niivue.js";
+import { PinIcon } from "../components/Icons.jsx";
 
 // The saved first sequence (Settings) in this viewer's own ids.
 const SEQ_ID = { t1c: "t1ce", t1: "t1", t2: "t2", flair: "flair" };
@@ -542,9 +543,9 @@ export default function MriViewer3D({
               type="button"
               className={`btn-tool-action btn-pin-mode ${isAddNoteMode ? "active" : ""}`}
               onClick={onToggleAddNoteMode}
-              title="Click anywhere on the image to drop a spatially anchored note"
+              title="Click the image to drop a note"
             >
-              📍 {isAddNoteMode ? "Pin Active" : "Add Note"}
+              <PinIcon size={15} />{isAddNoteMode ? "Pin Active" : "Add Note"}
             </button>
           )}
           <button
@@ -566,24 +567,16 @@ export default function MriViewer3D({
         </div>
       </div>
 
-      {isAddNoteMode && (
+      {isAddNoteMode && currentVoxel && (
         <div className="mri-pin-instruction-hud">
           <span className="pulse-dot"></span>
-          <span>
-            <strong>Pinpoint Mode Active:</strong> Click any region on the Axial, Coronal, Sagittal, or 3D view to place a clinician note.
-            {currentVoxel && (
-              <span className="voxel-preview mono">
-                {" "}[Vox: {currentVoxel.vox?.join(", ")} | Region: {currentVoxel.region}]
-              </span>
-            )}
-          </span>
+          <span className="voxel-preview">Voxel {currentVoxel.vox?.join(", ")} · {currentVoxel.region}</span>
         </div>
       )}
 
       {loading && (
         <div className="mri-loading-indicator">
-          <div className="spinner"></div>
-          <span>Rendering 3D Multi-Planar Orthogonal Slices & Volume Shaders...</span>
+          <div className="spinner" role="status" aria-label="Loading the 3D viewer"></div>
         </div>
       )}
 
@@ -752,7 +745,6 @@ export default function MriViewer3D({
               <span className="badge-name">3D Volume Raymarching </span>
               <span className="badge-coords mono">Az: 120° El: 25°</span>
             </div>
-            <div className="raymarch-hint">Drag to Rotate • Wheel to Zoom</div>
             <div className="mri-canvas-wrapper">
               <canvas
                 ref={canvas3DRef}

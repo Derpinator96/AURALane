@@ -40,7 +40,13 @@ function passes(row, { lane, read }) {
  *   ordered by arrival time.
  * Pinned sections always appear; NEEDS HUMAN TRIAGE appears even when empty.
  */
-export function arrange(studies, lanes, { sort = "priority", lane = "ALL", read = "all" } = {}) {
+export function arrange(studies, lanes, { only = null, ...opts } = {}) {
+  const sections = arrangeAll(studies, lanes, opts);
+  // only: "ABSTAIN" keeps just that lane's section (the dashboard's Needs triage card).
+  return only ? sections.filter((s) => s.lane === only) : sections;
+}
+
+function arrangeAll(studies, lanes, { sort = "priority", lane = "ALL", read = "all" } = {}) {
   const byLane = (l) => studies.filter((r) => r.lane === l.lane);
   const pinned = lanes
     .filter((l) => l.pinned)

@@ -25,24 +25,23 @@ export default function Login({ onLogin }) {
     <main className="login">
       <h1>Sign in to the reading worklist</h1>
       <form onSubmit={submit}>
-        <label>
+        <label className="field-label">
           User
           <input autoComplete="username" value={username}
                  onChange={(e) => setUsername(e.target.value)} />
         </label>
-        <label>
+        <label className="field-label">
           Password
           <input type="password" autoComplete="current-password" value={password}
                  onChange={(e) => setPassword(e.target.value)} />
         </label>
-        <button type="submit" disabled={busy || !username || !password}>Sign in</button>
+        <button type="submit" className="pill pill-primary wide" disabled={busy || !username || !password}>Sign in</button>
         {error && <p className="error" role="alert">{error}</p>}
       </form>
-      <p className="note">
-        Radiologists see the worklist. Administrators see configuration and audit, and cannot
-        open studies.
+      <p className="note caption">
+        Radiologists see the worklist. Administrators see configuration and audit, and cannot open studies.
       </p>
-      <p className="note">No account? <Link to="/request-access">Create an account</Link>; it waits for a super admin to approve your role.</p>
+      <Link to="/request-access" className="pill pill-quiet wide">Create an account</Link>
     </main>
   );
 }

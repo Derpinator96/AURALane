@@ -10,48 +10,31 @@ export default function SettingsView({ onChange }) {
   const update = (key, value) => {
     const next = { ...settings, [key]: value };
     setSettings(next);
-    setStatus(saveSettings(next) ? "Saved in this browser." : "This browser does not allow saving; the setting lasts until reload.");
+    setStatus(saveSettings(next) ? "Saved" : "Not saved: this browser does not allow it");
     if (onChange) onChange(next);
   };
 
   return (
-    <div className="settings-view" data-testid="settings-view">
-      <div className="settings-header">
-        <h2 className="center-title">Settings</h2>
-        <p className="center-subtitle">Kept in this browser only.</p>
+    <section className="panel settings-card" data-testid="settings-view" aria-label="Settings">
+      <div className="settings-row">
+        <span className="setting-label">First MR sequence in the 3D viewer</span>
+        <select value={settings.mrSequence} onChange={(e) => update("mrSequence", e.target.value)}
+                className="settings-select" aria-label="First MR sequence">
+          {MR_SEQUENCES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+        </select>
       </div>
-      <div className="settings-form">
-        <div className="settings-card">
-          <div className="settings-row">
-            <div>
-              <span className="setting-label">First MR sequence in the 3D viewer</span>
-              <span className="setting-desc">The sequence NiiVue opens a brain MR study with.</span>
-            </div>
-            <select value={settings.mrSequence} onChange={(e) => update("mrSequence", e.target.value)}
-                    className="settings-select" aria-label="First MR sequence">
-              {MR_SEQUENCES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-            </select>
-          </div>
-          <div className="settings-row">
-            <div>
-              <span className="setting-label">Worklist refresh</span>
-              <span className="setting-desc">How often the worklist asks the API for new studies.</span>
-            </div>
-            <select value={settings.refreshSeconds} onChange={(e) => update("refreshSeconds", Number(e.target.value))}
-                    className="settings-select" aria-label="Worklist refresh">
-              {REFRESH_CHOICES.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
-            </select>
-          </div>
-          <div className="settings-row">
-            <div>
-              <span className="setting-label">Light or dark</span>
-              <span className="setting-desc">Also in the header.</span>
-            </div>
-            <ThemeToggle />
-          </div>
-        </div>
-        {status && <p className="note" role="status">{status}</p>}
+      <div className="settings-row">
+        <span className="setting-label">Worklist refresh</span>
+        <select value={settings.refreshSeconds} onChange={(e) => update("refreshSeconds", Number(e.target.value))}
+                className="settings-select" aria-label="Worklist refresh">
+          {REFRESH_CHOICES.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+        </select>
       </div>
-    </div>
+      <div className="settings-row">
+        <span className="setting-label">Light or dark</span>
+        <ThemeToggle />
+      </div>
+      {status && <p className="chip chip-quiet settings-status" role="status"><span className="dot" style={{ "--dot": "var(--ok)" }} />{status}</p>}
+    </section>
   );
 }

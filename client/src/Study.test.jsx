@@ -36,7 +36,9 @@ describe("Study", () => {
     expect(viewer).toHaveAttribute("data-overlay", detail.evidence_urls.gradcam_layer_png);
     const caption = screen.getByTestId("rationale-caption");
     expect(caption).toHaveTextContent(`Grad-CAM for ${detail.evidence.gradcam_finding}`);
-    expect(caption).toHaveTextContent("not a localisation");
+    // The caveat is the button's tooltip, not a sentence on the page.
+    expect(caption).not.toHaveTextContent("not a localisation");
+    expect(toggle).toHaveAttribute("title", expect.stringContaining("not a localisation"));
     expect(screen.getByTestId("rationale-opacity")).toBeInTheDocument();
     expect(viewer).toHaveAttribute("data-count", String(series.instances.length));
   });
@@ -63,8 +65,8 @@ describe("Study", () => {
     const save = vi.fn().mockResolvedValue({ draft_review: { text: "x", reviewed: true, by: "r1", at: "t" } });
     await show(vi.fn(), save);
     const panel = screen.getByTestId("draft-panel");
-    expect(panel).toHaveTextContent("Draft, template generated, radiologist to review");
-    expect(panel).toHaveTextContent(detail.study.driver_label);
+    expect(panel).toHaveAccessibleName("Draft report");
+    expect(panel).toHaveTextContent("Not reviewed");
     const text = screen.getByTestId("draft-text");
     expect(text.value).toBe(detail.draft);
     await userEvent.type(text, " Edited.");

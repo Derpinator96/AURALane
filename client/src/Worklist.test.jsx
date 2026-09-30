@@ -37,16 +37,19 @@ describe("Worklist", () => {
     }
   });
 
-  it("says why the list is split by reading pool", async () => {
+  it("gives each reading pool its own heading and count, and never one merged list", async () => {
     await show();
-    expect(screen.getByText(/neuroradiologist reads the MRI/)).toBeInTheDocument();
+    for (const p of fixture.pools) {
+      const section = screen.getByTestId(`pool-${p.pool}`);
+      expect(within(section).getByRole("heading", { level: 3, name: new RegExp(`^${p.label} pool`) })).toBeInTheDocument();
+      expect(section).toHaveTextContent(`${inPool(p.pool).length} studies`);
+    }
   });
 
-  it("shows the abstention group, labelled, with its reason", async () => {
+  it("shows the abstention group, labelled, with its count", async () => {
     await show();
     const group = screen.getByTestId("section-Chest-ABSTAIN");
     expect(within(group).getByRole("heading")).toHaveTextContent("NEEDS HUMAN TRIAGE");
-    expect(within(group).getByText(/not sufficient to assign a lane/)).toBeInTheDocument();
     const n = fixture.studies.filter((r) => r.lane === "ABSTAIN").length;
     expect(within(group).getAllByTestId("study-row")).toHaveLength(n);
     expect(within(group).getByRole("heading")).toHaveTextContent(`(${n})`);

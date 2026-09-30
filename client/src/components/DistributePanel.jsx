@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { api } from "../api.js";
 import { ReaderPicker } from "./SimulatePanel.jsx";
+import { Overlay } from "./ui.jsx";
 
 // Deal every unread study among the chosen readers, critical first, round robin.
 export default function DistributePanel({ token, readers, studies, onClose, onDone }) {
@@ -27,45 +28,44 @@ export default function DistributePanel({ token, readers, studies, onClose, onDo
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card" role="dialog" aria-label="Distribute worklist"
-           onClick={(e) => e.stopPropagation()} data-testid="distribute-panel">
+    <Overlay onClose={onClose}>
+      <div className="modal-card" role="dialog" aria-modal="true" aria-label="Distribute worklist" data-testid="distribute-panel">
         <div className="modal-header">
           <div>
             <h2 className="modal-title">Distribute worklist</h2>
-            <p className="modal-subtitle">
-              {unread.length} unread {unread.length === 1 ? "study" : "studies"}, dealt in priority order (critical first)
-              round robin, so each reader gets the same count and a similar share of critical work. A study goes only to
-              a reader whose pools include it. Studies you hand to another reader leave your worklist.
-            </p>
+            <div className="crumbs">Worklist <span aria-hidden="true">›</span> <strong>Distribute</strong></div>
           </div>
-          <button type="button" className="btn-close" onClick={onClose} aria-label="Close">Close</button>
+          <div className="modal-actions">
+            {!result ? (
+              <>
+                <button type="button" className="pill pill-quiet" onClick={onClose}>Cancel</button>
+                <button type="button" className="pill pill-primary" disabled={busy || gap || chosen.length === 0}
+                        onClick={send} data-testid="distribute-send">Distribute</button>
+              </>
+            ) : (
+              <button type="button" className="pill pill-primary" onClick={onClose}>Close</button>
+            )}
+          </div>
         </div>
+
         {!result && (
           <>
+            <p className="meta" data-testid="distribute-summary">{unread.length} unread · split in priority order</p>
             <ReaderPicker readers={readers} chosen={chosen} setChosen={setChosen} pools={pools} />
             {error && <p className="error" role="alert">{error}</p>}
-            <div className="modal-actions">
-              <button type="button" onClick={onClose}>Cancel</button>
-              <button type="button" className="btn-primary" disabled={busy || gap || chosen.length === 0}
-                      onClick={send} data-testid="distribute-send">Distribute</button>
-            </div>
           </>
         )}
         {result && (
-          <>
-            <table className="simulate-counts" data-testid="distribute-result">
-              <thead><tr><th>Reader</th><th className="num">Studies</th><th className="num">Critical</th></tr></thead>
-              <tbody>
-                {result.readers.map((r) => (
-                  <tr key={r.id}><td>{r.name}</td><td className="mono num">{r.studies}</td><td className="mono num">{r.critical}</td></tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="modal-actions"><button type="button" onClick={onClose}>Close</button></div>
-          </>
+          <table className="simulate-counts" data-testid="distribute-result">
+            <thead><tr><th>Reader</th><th className="num">Studies</th><th className="num">Critical</th></tr></thead>
+            <tbody>
+              {result.readers.map((r) => (
+                <tr key={r.id}><td>{r.name}</td><td className="mono num">{r.studies}</td><td className="mono num">{r.critical}</td></tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
-    </div>
+    </Overlay>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { timeUTC } from "../worklist.js";
+import { CloseIcon } from "./Icons.jsx";
 
 export default function AnnotationsPanel({
   annotations = [],
@@ -40,25 +41,14 @@ export default function AnnotationsPanel({
           type="button"
           className={`btn-add-pinpoint ${isAddNoteMode ? "active" : ""}`}
           onClick={onToggleAddNoteMode}
-          title={isAddNoteMode ? "Click anywhere on the image to drop a note marker" : "Activate pinpoint mode to add notes"}
+          title={isAddNoteMode ? "Click the image to drop a note" : "Add a note"}
         >
           {isAddNoteMode ? "Cancel Pin Mode" : "+ Pin Note"}
         </button>
       </div>
 
-      {isAddNoteMode && (
-        <div className="pin-mode-banner">
-          <span className="pulse-dot"></span>
-          <span><strong>Pinpoint Active:</strong> Click any location on the image viewer to attach a spatially anchored clinical note.</span>
-        </div>
-      )}
-
       {annotations.length === 0 ? (
-        <div className="annotations-empty-state">
-          <p className="note text-faint">
-            No clinician notes recorded for this study yet. Click <strong>+ Pin Note</strong> above or click directly on any image region to drop a persistent note.
-          </p>
-        </div>
+        <p className="note text-faint">No notes yet.</p>
       ) : (
         <div className="annotations-list">
           {annotations.map((ann) => {
@@ -109,7 +99,7 @@ export default function AnnotationsPanel({
                           className="btn-ann-action delete-cancel"
                           onClick={() => setConfirmDeleteId(null)}
                         >
-                          ✕
+                          <CloseIcon size={13} />
                         </button>
                       </div>
                     ) : (

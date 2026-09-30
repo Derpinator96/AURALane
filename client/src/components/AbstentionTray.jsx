@@ -3,6 +3,18 @@ import { api } from "../api.js";
 
 const LANES = [["CRITICAL", "Critical"], ["URGENT", "Urgent"], ["EXPEDITED", "Expedited"], ["ROUTINE", "Routine"]];
 
+// The driver's signal against the band where the model does not commit: a track from 0 to
+// 1, the band shaded, and a marker where the signal is.
+function Band({ lo, hi, value }) {
+  const pct = (v) => `${Math.max(0, Math.min(1, v)) * 100}%`;
+  return (
+    <div className="band" role="img" aria-label={`Signal ${value.toFixed(2)} in the ${lo.toFixed(2)} to ${hi.toFixed(2)} band`}>
+      <span className="band-zone" style={{ left: pct(lo), width: `${(hi - lo) * 100}%` }} />
+      <span className="band-marker" style={{ left: pct(value) }} />
+    </div>
+  );
+}
+
 // The abstention tray: for a study in NEEDS HUMAN TRIAGE, why the system did not
 // place it, first, and the three things a reader can do about it. Each action is
 // audited by the API and takes effect at once.
@@ -57,16 +69,17 @@ export default function AbstentionTray({ detail, token, me = null, onChanged, on
   const need = (label) => reason.trim().length < 3 && `${label} needs a short reason.`;
 
   return (
-    <section className="abstention-tray" data-testid="abstention-tray" aria-label="Needs human triage">
-      <h4 className="card-section-title">Needs human triage</h4>
+    <section className="card tray" data-testid="abstention-tray" aria-label="Needs human triage">
+      <h3 className="sec-title">Needs human triage</h3>
       <div className="abstain-why" data-testid="abstain-why">
-        <strong>Why the system did not place it</strong>
         {driverFinding ? (
-          <p>
-            {driverFinding.label}: signal <span className="mono">{Number(driverFinding.signal).toFixed(2)}</span> against
-            the <span className="mono">{lo.toFixed(2)}</span> to <span className="mono">{hi.toFixed(2)}</span> band
-            where the model does not commit.
-          </p>
+          <>
+            <p>
+              {driverFinding.label}: signal <strong className="mono">{Number(driverFinding.signal).toFixed(2)}</strong> against
+              the <span className="mono">{lo.toFixed(2)}</span> to <span className="mono">{hi.toFixed(2)}</span> band
+            </p>
+            <Band lo={lo} hi={hi} value={Number(driverFinding.signal)} />
+          </>
         ) : null}
         {/* The band sentence above already says it; anything the system recorded
             beyond that (the brain mask checks, the volume gate) is shown as written. */}
@@ -77,9 +90,9 @@ export default function AbstentionTray({ detail, token, me = null, onChanged, on
 
       {!action && (
         <div className="tray-actions" role="group" aria-label="Abstention actions">
-          <button type="button" className="btn" onClick={() => setAction("lane")} data-testid="tray-lane">Assign a lane</button>
-          <button type="button" className="btn" onClick={() => setAction("second")} data-testid="tray-second">Request a second read</button>
-          <button type="button" className="btn" onClick={() => setAction("inadequate")} data-testid="tray-inadequate">Mark technically inadequate</button>
+          <button type="button" className="pill pill-primary" onClick={() => setAction("lane")} data-testid="tray-lane">Assign a lane</button>
+          <button type="button" className="pill" onClick={() => setAction("second")} data-testid="tray-second">Request a second read</button>
+          <button type="button" className="pill" onClick={() => setAction("inadequate")} data-testid="tray-inadequate">Mark technically inadequate</button>
         </div>
       )}
 
@@ -89,22 +102,21 @@ export default function AbstentionTray({ detail, token, me = null, onChanged, on
           if (need("A lane")) return;
           run(() => api.setLane(token, s.study, lane, reason.trim()), (res) => onChanged(res.study));
         }}>
-          <fieldset>
-            <legend>Lane</legend>
+          <div className="lane-picker" role="radiogroup" aria-label="Lane">
             {LANES.map(([id, label]) => (
-              <label key={id} className="tray-radio">
-                <input type="radio" name="lane" value={id} checked={lane === id} onChange={() => setLane(id)} />
-                <span className={`lanetag lane-${id}`}>{label}</span>
+              <label key={id} className={`lanetag lane-${id} pickable ${lane === id ? "on" : ""}`}>
+                <input type="radio" className="sr-only" name="lane" value={id} checked={lane === id} onChange={() => setLane(id)} />
+                {label}
               </label>
             ))}
-          </fieldset>
-          <label className="tray-reason">Reason (required)
+          </div>
+          <label className="field-label">Reason (required)
             <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500}
                    aria-label="Reason for the lane" data-testid="tray-reason" />
           </label>
           <div className="tray-buttons">
-            <button type="button" className="btn" onClick={() => setAction(null)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={busy || Boolean(need("A lane"))}
+            <button type="button" className="pill pill-quiet" onClick={() => setAction(null)}>Cancel</button>
+            <button type="submit" className="pill pill-primary" disabled={busy || Boolean(need("A lane"))}
                     data-testid="tray-lane-confirm">Place in {LANES.find(([id]) => id === lane)[1]}</button>
           </div>
         </form>
@@ -116,7 +128,7 @@ export default function AbstentionTray({ detail, token, me = null, onChanged, on
           if (!reader) return;
           run(() => api.secondRead(token, s.study, reader), (res) => { onChanged(res.study); if (onLeft) onLeft(); });
         }}>
-          <label className="tray-reason">Send to
+          <label className="field-label">Send to
             <select value={reader} onChange={(e) => setReader(e.target.value)} aria-label="Second reader"
                     data-testid="tray-reader">
               <option value="">Choose a radiologist</option>
@@ -125,8 +137,8 @@ export default function AbstentionTray({ detail, token, me = null, onChanged, on
           </label>
           {readers.length === 0 && <p className="note">No other radiologist reads the {s.pool} pool.</p>}
           <div className="tray-buttons">
-            <button type="button" className="btn" onClick={() => setAction(null)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={busy || !reader}
+            <button type="button" className="pill pill-quiet" onClick={() => setAction(null)}>Cancel</button>
+            <button type="submit" className="pill pill-primary" disabled={busy || !reader}
                     data-testid="tray-second-confirm">Send for a second read</button>
           </div>
         </form>
@@ -138,13 +150,13 @@ export default function AbstentionTray({ detail, token, me = null, onChanged, on
           if (need("Marking a study inadequate")) return;
           run(() => api.markInadequate(token, s.study, reason.trim()), (res) => onChanged(res.study));
         }}>
-          <label className="tray-reason">Why it is technically inadequate (required)
+          <label className="field-label">Why it is technically inadequate (required)
             <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500}
                    aria-label="Reason it is inadequate" data-testid="tray-reason" />
           </label>
           <div className="tray-buttons">
-            <button type="button" className="btn" onClick={() => setAction(null)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={busy || Boolean(need("Marking a study inadequate"))}
+            <button type="button" className="pill pill-quiet" onClick={() => setAction(null)}>Cancel</button>
+            <button type="submit" className="pill pill-primary" disabled={busy || Boolean(need("Marking a study inadequate"))}
                     data-testid="tray-inadequate-confirm">Move to Repeat imaging</button>
           </div>
         </form>

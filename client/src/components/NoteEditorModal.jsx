@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Overlay } from "./ui.jsx";
 
 const CLINICAL_TEMPLATES = {
   MR_TUMOR: [
@@ -32,17 +33,16 @@ const CLINICAL_TEMPLATES = {
   ],
 };
 
-export default function NoteEditorModal({
-  isOpen,
-  initialData,
-  onSave,
-  onCancel,
-  busy = false,
-}) {
-  if (!isOpen || !initialData) return null;
+// The editor mounts fresh each time it opens, so its text starts from the note being
+// edited and no hook runs conditionally.
+export default function NoteEditorModal(props) {
+  if (!props.isOpen || !props.initialData) return null;
+  return <NoteEditorForm {...props} />;
+}
 
+function NoteEditorForm({ initialData, onSave, onCancel, busy = false }) {
   const [text, setText] = useState(initialData.note_text || "");
-  const [region, setRegion] = useState(initialData.segmentation_region || "");
+  const [region] = useState(initialData.segmentation_region || "");
 
   const isMri = initialData.modality === "MR" || initialData.coordinate_space === "NIFTI_WORLD";
   const isAlz = isMri && (initialData.segmentation_region?.includes("T1") || initialData.study_id?.includes("alz"));
@@ -52,7 +52,16 @@ export default function NoteEditorModal({
   const templateCategory = isAlz ? "MR_ALZHEIMER" : isMri ? "MR_TUMOR" : isCt ? "CT" : "CXR";
   const templates = CLINICAL_TEMPLATES[templateCategory] || CLINICAL_TEMPLATES.MR_TUMOR;
 
-  // Keyboard shortcut listener (Ctrl+Enter to save, Esc to cancel)
+  const submit = () => {
+    if (!text.trim() || busy) return;
+    onSave({
+      ...initialData,
+      note_text: text.trim(),
+      segmentation_region: region || initialData.segmentation_region || null,
+    });
+  };
+
+  // Ctrl+Enter saves, Esc cancels.
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
@@ -60,28 +69,12 @@ export default function NoteEditorModal({
         onCancel();
       } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
-        if (text.trim() && !busy) {
-          onSave({
-            ...initialData,
-            note_text: text.trim(),
-            segmentation_region: region || initialData.segmentation_region || null,
-          });
-        }
+        submit();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [text, region, busy, initialData, onSave, onCancel]);
-
-  const handleSave = (e) => {
-    e.preventDefault();
-    if (!text.trim()) return;
-    onSave({
-      ...initialData,
-      note_text: text.trim(),
-      segmentation_region: region || initialData.segmentation_region || null,
-    });
-  };
+  });
 
   const handleAddTemplate = (tmpl) => {
     setText((prev) => {
@@ -91,123 +84,56 @@ export default function NoteEditorModal({
   };
 
   return (
-    <div className="note-editor-overlay" role="dialog" aria-modal="true">
-      <div className="note-editor-card">
-        <div className="note-editor-header">
-          <div className="header-title-group">
-            <span className="editor-icon">📍</span>
-            <h3 className="editor-title">
-              {initialData.id ? "Edit Clinician Pinpoint Note" : "New Clinician Pinpoint Note"}
-            </h3>
+    <Overlay onClose={onCancel}>
+      <form className="modal-card" role="dialog" aria-modal="true" aria-label="Note"
+            onSubmit={(e) => { e.preventDefault(); submit(); }}>
+        <div className="modal-header">
+          <div>
+            <h2 className="modal-title">{initialData.id ? "Edit note" : "New note"}</h2>
+            <div className="crumbs">Notes <span aria-hidden="true">›</span> <strong>{initialData.id ? "Edit" : "New"}</strong></div>
           </div>
-          <button
-            type="button"
-            className="btn-modal-close"
-            onClick={onCancel}
-            aria-label="Close"
-          >
-            ✕
-          </button>
+          <div className="modal-actions">
+            <button type="button" className="pill pill-quiet" onClick={onCancel} disabled={busy}>Cancel</button>
+            <button type="submit" className="pill pill-primary" disabled={busy || !text.trim()}>
+              {busy ? "Saving" : initialData.id ? "Update note" : "Save note"}
+            </button>
+          </div>
         </div>
 
-        {/* Spatial Anchoring Metadata HUD */}
-        <div className="note-spatial-hud">
-          <div className="spatial-hud-row">
-            <span className="hud-label">Coordinate Space:</span>
-            <span className="hud-val mono bold">{initialData.coordinate_space || "IMAGE_NORMALIZED"}</span>
-          </div>
-
+        {/* Where the note is anchored. Only what the viewer recorded. */}
+        <div className="ct-chips note-anchor">
+          <span className="chip chip-quiet">{initialData.coordinate_space || "IMAGE_NORMALIZED"}</span>
           {isMri && initialData.world_mm && (
-            <div className="spatial-hud-row">
-              <span className="hud-label">World Stereotactic:</span>
-              <span className="hud-val mono text-accent">
-                X: {Number(initialData.world_mm.x).toFixed(1)} mm, Y: {Number(initialData.world_mm.y).toFixed(1)} mm, Z: {Number(initialData.world_mm.z).toFixed(1)} mm
-              </span>
-            </div>
+            <span className="chip chip-quiet">
+              X {Number(initialData.world_mm.x).toFixed(1)} mm, Y {Number(initialData.world_mm.y).toFixed(1)} mm, Z {Number(initialData.world_mm.z).toFixed(1)} mm
+            </span>
           )}
-
           {isMri && initialData.voxel && (
-            <div className="spatial-hud-row">
-              <span className="hud-label">Voxel Index:</span>
-              <span className="hud-val mono">
-                [{Math.round(initialData.voxel.x)}, {Math.round(initialData.voxel.y)}, {Math.round(initialData.voxel.z)}]
-              </span>
-            </div>
+            <span className="chip chip-quiet">
+              Voxel {Math.round(initialData.voxel.x)}, {Math.round(initialData.voxel.y)}, {Math.round(initialData.voxel.z)}
+            </span>
           )}
-
-          {/* MRI notes carry voxel indices in coordinate_x/y, shown above; not fractions. */}
           {!isMri && (isCxr || isCt || initialData.coordinate_x != null) && (
-            <div className="spatial-hud-row">
-              <span className="hud-label">Image Normalized Coords:</span>
-              <span className="hud-val mono">
-                X: {(Number(initialData.coordinate_x || 0) * 100).toFixed(1)}%, Y: {(Number(initialData.coordinate_y || 0) * 100).toFixed(1)}%
-                {initialData.slice_index != null && ` (Slice: ${initialData.slice_index + 1})`}
-              </span>
-            </div>
+            <span className="chip chip-quiet">
+              X {(Number(initialData.coordinate_x || 0) * 100).toFixed(1)}%, Y {(Number(initialData.coordinate_y || 0) * 100).toFixed(1)}%
+              {initialData.slice_index != null && `, slice ${initialData.slice_index + 1}`}
+            </span>
           )}
-
-          {initialData.segmentation_region && (
-            <div className="spatial-hud-row">
-              <span className="hud-label">Segmentation Region:</span>
-              <span className={`hud-region-badge region-${String(initialData.segmentation_region).toLowerCase().replace(/[^a-z0-9]/g, "-")}`}>
-                {initialData.segmentation_region}
-              </span>
-            </div>
-          )}
+          {initialData.segmentation_region && <span className="chip">{initialData.segmentation_region}</span>}
         </div>
 
-        {/* Quick Clinical Template Chips */}
-        <div className="editor-quick-templates">
-          <span className="quick-templates-label">Quick Clinical Findings:</span>
-          <div className="template-chips-row">
-            {templates.map((tmpl) => (
-              <button
-                key={tmpl}
-                type="button"
-                className="btn-template-chip"
-                onClick={() => handleAddTemplate(tmpl)}
-                title="Click to insert template into note text"
-              >
-                + {tmpl}
-              </button>
-            ))}
-          </div>
+        <label className="field-label">Note
+          <textarea className="note-textarea" rows={5} value={text} onChange={(e) => setText(e.target.value)}
+                    placeholder="Clinical observation" autoFocus required />
+        </label>
+
+        <div className="template-chips-row" aria-label="Quick findings">
+          {templates.map((tmpl) => (
+            <button key={tmpl} type="button" className="pill pill-sm pill-quiet" onClick={() => handleAddTemplate(tmpl)}
+                    title="Add to the note">+ {tmpl}</button>
+          ))}
         </div>
-
-        <form onSubmit={handleSave} className="note-editor-form">
-          <label className="editor-input-label">
-            <span>Clinical Findings / Radiologist Note:</span>
-            <textarea
-              className="note-textarea"
-              rows={4}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Enter clinical observations, lesion review note, surgical planning comments... (Ctrl+Enter to save)"
-              autoFocus
-              required
-            />
-          </label>
-
-          <div className="note-editor-actions">
-            <span className="editor-shortcut-hint mono">Press Ctrl+Enter to save • Esc to cancel</span>
-            <button
-              type="button"
-              className="btn-action-secondary"
-              onClick={onCancel}
-              disabled={busy}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-action-primary"
-              disabled={busy || !text.trim()}
-            >
-              {busy ? "Saving Note..." : initialData.id ? "Update Note" : "Save Pinpoint Note"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Overlay>
   );
 }
