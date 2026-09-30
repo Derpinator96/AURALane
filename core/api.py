@@ -133,6 +133,11 @@ class SecondReadIn(BaseModel):
     reader: str
 
 
+class OpinionsIn(BaseModel):
+    readers: list[str] = Field(min_length=1, max_length=8)
+    note: str = Field("", max_length=500)
+
+
 class InadequateIn(BaseModel):
     reason: str = Field(min_length=3, max_length=500)
 
@@ -170,7 +175,7 @@ FRAME_LINK_TTL = 1800          # seconds; presigning is local, so a long link co
 # drafts or series, which are the bulk of a row.
 WORKLIST_FIELDS = ["study", "patient_id", "modality", "model_id", "created_at", "lane", "triage",
                    "status", "verdict", "error", "source", "assigned_to", "assigned_name",
-                   "assigned_at", "opened_at", "human_lane", "second_read", "repeat_imaging"]
+                   "assigned_at", "opened_at", "human_lane", "second_read", "repeat_imaging", "opinions"]
 
 AUDIT_DAYS = 14                # the audit screens and a reader's history read this many days
 PIPELINE_DAYS = 7              # the pipeline view and /metrics
@@ -393,6 +398,45 @@ def create_app(p: dict, registry: Registry | None = None,
             raise HTTPException(403, "this study is on another radiologist's worklist")
         return row
 
+    # Second opinions. A reader asks other radiologists to read the same study. It stays on the asker's
+    # worklist; each of them gets it under Second opinions and saves a report of their own. The row keeps
+    # one entry per radiologist asked: {to, to_name, requested_by, requested_by_name, at, note, opened_at}.
+    # Whether they have reported is read from the reports table, not stored twice.
+    def opinions_of(row: dict) -> list[dict]:
+        return list(row.get("opinions") or [])
+
+    def is_recipient(row: dict, who: Principal) -> bool:
+        return any(o.get("to") == who.email for o in opinions_of(row))
+
+    def participants(row: dict) -> set[str]:
+        """Who may read every report on a study: its reader and everyone who asked or was asked."""
+        ops = opinions_of(row)
+        ids = [row.get("assigned_to"), *[o.get("to") for o in ops], *[o.get("requested_by") for o in ops]]
+        return {i for i in ids if i}
+
+    def open_row(study: str, who: Principal) -> dict:
+        """The row of a study this radiologist may look at: their own, or one they were asked to read."""
+        row = row_or_404(study)
+        if not (visible_to(row, who) or is_recipient(row, who)):
+            raise HTTPException(403, "this study is on another radiologist's worklist")
+        return row
+
+    def latest_by_author(versions: list[dict]) -> dict[str, dict]:
+        latest: dict[str, dict] = {}
+        for v in versions:
+            a = v.get("author")
+            if a not in latest or v["version"] > latest[a]["version"]:
+                latest[a] = v
+        return latest
+
+    def opinion_out(o: dict, latest: dict[str, dict]) -> dict:
+        """One request as the client shows it, with where that radiologist has got to."""
+        report = latest.get(o.get("to"))
+        status = (("reported" if report["status"] == "reviewed" else "draft") if report
+                  else "opened" if o.get("opened_at") else "waiting")
+        return {**{k: o.get(k) for k in ("to", "to_name", "requested_by", "requested_by_name", "at", "note", "opened_at")},
+                "status": status, "report_version": report["version"] if report else None}
+
     def pool_of(row: dict) -> str:
         """The reading pool: the registry entry's, else the one registered model
         for the row's modality (a study can fail before a model is chosen)."""
@@ -451,6 +495,8 @@ def create_app(p: dict, registry: Registry | None = None,
             "assigned_name": row.get("assigned_name"),
             "opened_at": row.get("opened_at"),
             "overdue": overdue(row),
+            "opinions": [{k: o.get(k) for k in ("to", "to_name", "requested_by", "requested_by_name", "at", "opened_at")}
+                         for o in opinions_of(row)],
         }
 
     def ordered(rows: list[dict]) -> list[dict]:
@@ -496,6 +542,8 @@ def create_app(p: dict, registry: Registry | None = None,
                   "pinned": lane in ("ABSTAIN", "FAILED", "REPEAT")}
                  for lane in sorted(LANE_ORDER, key=lambda l: (LANE_ORDER[l], l != "ABSTAIN"))]
         studies = [view(r) for r in rows]
+        waiting = sum(1 for r in worklist_rows()
+                      if any(o.get("to") == who.email and not o.get("opened_at") for o in opinions_of(r)))
         # Reading pools: every registered pool, even when empty, in alphabetical
         # order, which is not a ranking. Ranking never crosses pools.
         names = {e["reading_pool"] for e in registry.entries.values()}
@@ -503,7 +551,7 @@ def create_app(p: dict, registry: Registry | None = None,
         pools = [{"pool": n, "label": n} for n in sorted(names, key=lambda n: (n == UNASSIGNED, n))]
         body = json.dumps({"disclaimer": DISCLAIMER, "pools": pools, "lanes": lanes,
                            "studies": studies, "me": who.email, "readers": readers(),
-                           "scope": scope}, separators=(",", ":")).encode()
+                           "scope": scope, "opinions_waiting": waiting}, separators=(",", ":")).encode()
         etag = '"' + hashlib.sha1(body).hexdigest()[:20] + '"'
         headers = {"ETag": etag, "Cache-Control": "private, no-cache", "Vary": "Authorization"}
         if request.headers.get("if-none-match") == etag:
@@ -562,7 +610,7 @@ def create_app(p: dict, registry: Registry | None = None,
         if cached is not None and not (
                 cached["study"]["assigned_to"] == who.email and not cached["study"]["opened_at"]):
             return cached
-        row = own_row(study, who)
+        row = open_row(study, who)
         if row.get("assigned_to") == who.email and not row.get("opened_at"):
             # The assigned reader opened it: this stops the critical clock alarm. The
             # response shows it at once; the write and its audit event follow it.
@@ -576,6 +624,18 @@ def create_app(p: dict, registry: Registry | None = None,
                     detail={"lane": row["lane"], "assigned_at": row.get("assigned_at")}))
 
             background.add_task(record_open)
+        # A radiologist asked for a second opinion opens the study: the request has been seen.
+        asked = next((o for o in row.get("opinions") or [] if o.get("to") == who.email), None)
+        if asked is not None and not asked.get("opened_at"):
+            asked["opened_at"] = _now()
+
+            def record_opinion_open(row=copy.deepcopy(row), at=asked["opened_at"], by=asked.get("requested_by")):
+                p["table"].put_item("worklist", row)
+                p["table"].append_audit(AuditEvent(
+                    actor=who.email, action="opinion_open", study=study, at=at, outcome="ok",
+                    duration_ms=0.0, detail={"lane": row["lane"], "requested_by": by}))
+
+            background.add_task(record_opinion_open)
         entry = registry.entries.get(row.get("model_id") or "", {})
         # Models outside the registry (head CT) carry their weights on the row.
         urgency = entry.get("urgency") or (row.get("triage") or {}).get("urgency_weights") or {}
@@ -605,14 +665,23 @@ def create_app(p: dict, registry: Registry | None = None,
                 {**g, **{k.replace("_png", "_url"): p["blob"].presigned_url(g[k], check=False)
                          for k in ("layer_png", "heatmap_png", "blended_png") if g.get(k)}}
                 for g in evidence["gradcam_findings"]]
-        versions = report_versions(study)
+        latest = latest_by_author(report_versions(study))
+        team = who.email in participants(row)
+        # Your own report opens in the editor. The others' are readable by everyone on the study.
+        reports = sorted(({**r, "mine": a == who.email} for a, r in latest.items() if a == who.email or team),
+                         key=lambda r: (not r["mine"], r["at"]))
+        opinions = [opinion_out(o, latest) for o in opinions_of(row)] if team else []
         payload = {"disclaimer": DISCLAIMER, "study": view(row), "findings": findings,
                 "top_findings": (row.get("triage") or {}).get("top_findings", []),
                 "decision_reason": (row.get("triage") or {}).get("decision_reason"),
                 "abstain_band": [triage.ABSTAIN_LO, triage.ABSTAIN_HI],
                 "evidence": evidence, "evidence_urls": evidence_urls, "series": series,
-                "draft": draft, "draft_review": row.get("draft_review"),
-                "report": max(versions, key=lambda r: r["version"]) if versions else None,
+                "draft": draft,
+                "draft_review": row["draft_review"] if (row.get("draft_review") or {}).get("by") == who.email else None,
+                "report": latest.get(who.email),
+                "reports": reports, "opinions": opinions,
+                "my_opinion": next((o for o in opinions if o["to"] == who.email), None),
+                "can_request_opinion": visible_to(row, who),
                 # A datastore with no real DICOM behind it says so, and the viewer
                 # shows it. Orthanc and HealthImaging have no note.
                 "datastore_note": getattr(p["datastore"], "note", None)}
@@ -623,7 +692,7 @@ def create_app(p: dict, registry: Registry | None = None,
     def series(study: str, series_uid: str, who: Principal = Depends(radiologist)):
         """Per instance: the frame URL the browser fetches pixels from, and the
         DICOM header the viewer needs to decode them. Headers, never pixels."""
-        row = own_row(study, who)
+        row = open_row(study, who)
         ref = StudyRef(study, row["datastore_id"])
         items = series_cache.get((study, series_uid))
         if items is None:
@@ -647,7 +716,7 @@ def create_app(p: dict, registry: Registry | None = None,
                   who: Principal = Depends(radiologist)):
         """A URL the browser fetches pixels from: the datastore's own, or, with
         frame_proxy, this API's signed streaming route."""
-        row = own_row(study, who)
+        row = open_row(study, who)
         try:
             url = frame_link(StudyRef(study, row["datastore_id"]), series, instance, frame)
         except LookupError as e:
@@ -816,11 +885,14 @@ def create_app(p: dict, registry: Registry | None = None,
         report: a draft, or a reviewed report when they marked it reviewed. The row
         keeps its draft_review too, and the audit event is written as before (without
         the text); Reports no longer reads from the audit trail."""
-        row = own_row(study, who)
+        row = open_row(study, who)
         at = _now()
-        row["draft_review"] = {"text": body.text, "reviewed": body.reviewed,
-                               "by": who.email, "at": at}
-        p["table"].put_item("worklist", row)
+        review = {"text": body.text, "reviewed": body.reviewed, "by": who.email, "at": at}
+        if visible_to(row, who):
+            # A reader's own study keeps their last edit on the row. Someone asked for a second opinion
+            # writes a report of their own and leaves the row, and its reader's edit, alone.
+            row["draft_review"] = review
+            p["table"].put_item("worklist", row)
         entry = registry.entries.get(row.get("model_id") or "", {})
         versions = report_versions(study)
         report = {"study": study,
@@ -840,8 +912,9 @@ def create_app(p: dict, registry: Registry | None = None,
             actor=who.email, action="draft_reviewed" if body.reviewed else "draft_saved",
             study=study, at=at, outcome="ok", duration_ms=0.0,
             detail={"lane": row["lane"], "chars": len(body.text),
-                    "report_version": report["version"] if stored else None}))
-        out = {"disclaimer": DISCLAIMER, "draft_review": row["draft_review"],
+                    "report_version": report["version"] if stored else None,
+                    **({"second_opinion": True} if not visible_to(row, who) else {})}))
+        out = {"disclaimer": DISCLAIMER, "draft_review": review,
                "report": report if stored else None}
         if not stored:
             out["report_error"] = ("saved on the study, but the reports store is not deployed yet "
@@ -879,8 +952,70 @@ def create_app(p: dict, registry: Registry | None = None,
         if item is None:
             raise HTTPException(404, "no such report")
         if item.get("author") != who.email:
-            raise HTTPException(403, "this report belongs to another radiologist")
+            row = p["table"].get_item("worklist", {"study": study})
+            if not (row and who.email in participants(row)):
+                raise HTTPException(403, "this report belongs to another radiologist")
         return {"disclaimer": DISCLAIMER, "report": item}
+
+    # -- second opinions ---------------------------------------------------------------
+    @app.post("/api/studies/{study}/opinions")
+    def request_opinions(study: str, body: OpinionsIn, who: Principal = Depends(radiologist)):
+        """Ask one or more other radiologists for a second opinion on a study on this reader's worklist.
+        The study stays here. Each of them finds it under Second opinions, reads it, and saves a report
+        of their own, which everyone on the study can read. (Handing an abstained study over for
+        triage is /second-read.)"""
+        row = own_row(study, who)
+        chosen = pick_readers(list(dict.fromkeys(body.readers)))
+        asked = {o.get("to") for o in opinions_of(row)}
+        pool = pool_of(row)
+        for r in chosen:
+            if r["id"] == who.email:
+                raise HTTPException(409, "ask other radiologists, not yourself")
+            if r["id"] in asked:
+                raise HTTPException(409, f"{r['name']} has already been asked")
+            if pool not in r["pools"]:
+                raise HTTPException(409, f"{r['name']} does not read the {pool} pool")
+        at, note = _now(), body.note.strip()
+        row["opinions"] = opinions_of(row) + [
+            {"to": r["id"], "to_name": r["name"], "requested_by": who.email,
+             "requested_by_name": reader_name(who.email), "at": at, "note": note, "opened_at": None}
+            for r in chosen]
+        p["table"].put_item("worklist", row)
+        for r in chosen:
+            p["table"].append_audit(AuditEvent(
+                actor=who.email, action="opinion_requested", study=study, at=at, outcome="ok",
+                duration_ms=0.0, detail={"reader": r["id"], "reader_name": r["name"],
+                                         "lane": row["lane"], "note_chars": len(note)}))
+        latest = latest_by_author(report_versions(study))
+        return {"disclaimer": DISCLAIMER, "study": view(row),
+                "opinions": [opinion_out(o, latest) for o in opinions_of(row)]}
+
+    @app.get("/api/second-opinions")
+    def second_opinions(who: Principal = Depends(radiologist)):
+        """What was asked of this radiologist (received), and what they asked of others (sent). Each
+        study appears in its own reading pool's order; those still waiting on a report come first."""
+        try:
+            everything = reports_table("scan")
+        except ReportsMissing:
+            everything = []
+        by_study: dict[str, list[dict]] = {}
+        for r in everything:
+            by_study.setdefault(r["study"], []).append(r)
+        received, sent = [], []
+        for row in worklist_rows():
+            ops = opinions_of(row)
+            if not ops:
+                continue
+            latest = latest_by_author(by_study.get(row["study"], []))
+            outs = [opinion_out(o, latest) for o in ops]
+            mine = next((o for o in outs if o["to"] == who.email), None)
+            if mine:
+                received.append({"study": view(row), "opinion": mine})
+            asked = [o for o in outs if o["requested_by"] == who.email]
+            if asked:
+                sent.append({"study": view(row), "opinions": asked})
+        received.sort(key=lambda x: x["opinion"]["status"] in ("reported",))      # stable: priority order kept
+        return {"disclaimer": DISCLAIMER, "received": received, "sent": sent}
 
     # -- the abstention tray: what a reader can do with a study the system would not place
     def _abstained(study: str, who: Principal) -> dict:
@@ -943,7 +1078,7 @@ def create_app(p: dict, registry: Registry | None = None,
     # route answers with a presigned URL (S3, or this API's signed /api/blob),
     # never the bytes, the same rule as every other evidence image.
     def _evidence(study: str, who: Principal) -> dict:
-        return own_row(study, who).get("evidence") or {}
+        return open_row(study, who).get("evidence") or {}
 
     @app.get("/api/studies/{study}/volume/{sequence}")
     def study_volume(study: str, sequence: str, who: Principal = Depends(radiologist)):
