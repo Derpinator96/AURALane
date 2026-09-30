@@ -85,6 +85,18 @@ describe("Study", () => {
       detail.findings.map((f) => f.signal.toFixed(3)));
   });
 
+  it("the verdict sits in the decision tile with the lane, finding and acuity, ahead of the draft", async () => {
+    await show();
+    const tile = screen.getByRole("region", { name: "Decision" });
+    expect(within(tile).getByRole("button", { name: "Agree with the lane" })).toBeInTheDocument();
+    expect(within(tile).getByRole("button", { name: "Disagree" })).toBeInTheDocument();
+    expect(within(tile).getByRole("heading", { level: 2 })).toHaveTextContent(detail.study.driver_label);
+    expect(tile).toHaveTextContent(laneName(detail.study.lane, detail.study.lane_label));
+    // The draft comes later in the page than the verdict, so the verdict never waits behind it.
+    const draft = screen.getByTestId("draft-panel");
+    expect(tile.compareDocumentPosition(draft) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("agree writes through the API and updates the verdict in place", async () => {
     const updated = { ...detail.study, verdict: { value: "agree", by: "radiologist@dev.auralane.local", at: "2026-09-26T09:00:00+00:00" } };
     const send = vi.fn().mockResolvedValue({ study: updated });
