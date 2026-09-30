@@ -34,7 +34,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from core.intake import CORPUS  # noqa: E402
+from core.intake import CORPUS, catalogue  # noqa: E402
 
 TYPES = {"chest": "CR", "brain": "MR", "ct": "CT"}
 LOCAL_POOL = ROOT / "data" / "pool"
@@ -42,10 +42,8 @@ STAGED = LOCAL_POOL / "staged.json"
 
 
 def sources(kind: str) -> list[Path]:
-    root = CORPUS[TYPES[kind]]
-    if not root.is_dir():
-        return []
-    return sorted(d for d in root.iterdir() if d.is_dir() and any(d.rglob("*.dcm")))
+    """The corpus's studies of this type, and any in the extra folders beside it (core/intake.py)."""
+    return catalogue()[TYPES[kind]]
 
 
 def clean(study_dir: Path, identity, workers: int | None):

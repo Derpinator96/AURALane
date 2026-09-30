@@ -45,9 +45,9 @@ REPORT = "deid_report.json"        # {SOPInstanceUID: text regions masked at the
 # TODO: the Alzheimer T1 model ("alz") once its weights exist; MR then routes by
 # content (four sequences to BraTS, T1 only to Alzheimer).
 TYPES = {
-    "chest": ("CR", "cxr-densenet-v1", "Chest", 10),
+    "chest": ("CR", "cxr-densenet-v1", "Chest", 25),
     "brain": ("MR", "brain-brats-monai-v0.5.4", "Neuro", 3),
-    "ct": ("CT", "ct-ich-vit-v1", "Neuro", 3),
+    "ct": ("CT", "ct-ich-vit-v1", "Neuro", 5),
 }
 LABELS = {"chest": "Chest X-ray", "brain": "Brain MR (BraTS)", "ct": "Head CT"}
 

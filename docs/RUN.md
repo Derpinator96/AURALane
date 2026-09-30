@@ -130,8 +130,8 @@ no corpus on that host, or no pipeline.
 
 ## Simulate ingest: the radiologist screen
 
-Radiologist screen, "Simulate ingest". Choose how many chest X-rays (up to 10),
-brain MRs and head CTs (up to 3 each) to send, and which readers get them. The
+Radiologist screen, "Simulate ingest". Choose how many chest X-rays (up to 25),
+brain MRs (up to 3) and head CTs (up to 5) to send, and which readers get them. The
 panel shows the estimated AWS cost, itemised with what each line assumes, before
 you confirm. The studies come from a staged pool, already de-identified at the
 edge, and each runs through the real pipeline in the background (receive, a
@@ -152,8 +152,12 @@ DeidentificationMethod. New BraTS cases: put them in data/brain/raw/<case>/,
 run `python scripts/convert_brain.py`, then stage again (already-staged studies
 are skipped).
 
-"Distribute worklist" deals every unread study, critical first, round robin
-among the readers you choose. The fixture preview has no pipeline and says so.
+What is in the pool: 100 chest X-ray studies (the 40 of the tested corpus in
+data/chest/studies, and 60 more in data/chest/extra, built by
+`python sim/generator/make_dicom.py --src images --out data/chest/extra --count 60 --seed 2026 --burn-in 0.1`),
+12 brain MRs and 9 head CTs (CQ500 and the RSNA set). More head CTs: put each
+study's DICOM folder in data/ct/raw/ and stage again. The S3 pool is a separate
+copy of the same staging, so after adding studies run the `--stack` command too.
 
 ## Reset after any change to de-identification
 

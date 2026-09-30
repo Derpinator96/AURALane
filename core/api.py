@@ -101,9 +101,9 @@ class VerdictIn(BaseModel):
 
 
 class Counts(BaseModel):
-    chest: int = Field(0, ge=0, le=10)
+    chest: int = Field(0, ge=0, le=25)
     brain: int = Field(0, ge=0, le=3)
-    ct: int = Field(0, ge=0, le=3)
+    ct: int = Field(0, ge=0, le=5)
 
 
 class SimulateIn(BaseModel):

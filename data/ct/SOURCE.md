@@ -22,3 +22,14 @@ de-identification decompresses a slice when it masks one
 
 The readers' labels are used here only to pick one positive and one negative
 study. No figure is computed from them.
+
+## RSNA head CT studies (seven)
+
+Seven studies from the RSNA Intracranial Hemorrhage Detection set, supplied by the
+team in `ct scan data/` and copied one folder each to `data/ct/raw/RSNA-ID_<id>/`
+(17 to 53 slices). They are public, but the licence terms were not checked here, so
+check them before any of these goes in a deck or a repository. The files carry an
+`ID_<hash>` StudyInstanceUID, which is not a valid UID, and no SOPClassUID in the
+dataset (only in the file meta); de-identification remaps the UIDs and
+`core.pipeline._conform` fills the SOP class in, so Orthanc accepts them. Scored by
+the head CT model they spread across every lane, two of them into the abstention tray.

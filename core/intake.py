@@ -30,10 +30,23 @@ CORPUS = {
 }
 
 
-def catalogue(corpus: dict[str, Path] = CORPUS) -> dict[str, list[Path]]:
-    """Study directories on this machine, by modality."""
-    return {m: sorted(d for d in root.iterdir() if d.is_dir() and any(d.rglob("*.dcm")))
-            if root.is_dir() else [] for m, root in corpus.items()}
+# More studies, built beside the tested corpus: data/chest/studies is exactly the 40 the privacy gate
+# counts, so further chest studies go in data/chest/extra:
+#   python sim/generator/make_dicom.py --src images --out data/chest/extra --count 60 --seed 2026 --burn-in 0.1
+EXTRA = {"CR": [ROOT / "data" / "chest" / "extra"]}
+
+
+def _study_dirs(root: Path) -> list[Path]:
+    return sorted(d for d in root.iterdir() if d.is_dir() and any(d.rglob("*.dcm"))) if root.is_dir() else []
+
+
+def catalogue(corpus: dict[str, Path] | None = None) -> dict[str, list[Path]]:
+    """Study directories on this machine, by modality: the corpus, and the extra folders beside it.
+    A corpus passed in (a test's) is taken as it is."""
+    if corpus is not None:
+        return {m: _study_dirs(root) for m, root in corpus.items()}
+    return {m: _study_dirs(root) + [d for e in EXTRA.get(m, []) for d in _study_dirs(e)]
+            for m, root in CORPUS.items()}
 
 
 def pick(studies: dict[str, list[Path]], count: int, rng: random.Random) -> list[tuple[str, Path]]:

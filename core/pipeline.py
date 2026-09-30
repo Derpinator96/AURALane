@@ -110,6 +110,15 @@ class _Run:
             detail={"run_id": self.id, **detail}))
 
 
+def _conform(ds) -> None:
+    """Some public sets (the RSNA head CTs) carry the SOP class only in the file meta. DICOM
+    requires it in the dataset too, and Orthanc's STOW-RS rejects an instance without it, so it is
+    copied across. The value is the file's own; nothing is invented."""
+    meta = getattr(ds, "file_meta", None)
+    if "SOPClassUID" not in ds and meta is not None and meta.get("MediaStorageSOPClassUID"):
+        ds.SOPClassUID = meta.MediaStorageSOPClassUID
+
+
 def _workers(n: int | None) -> int:
     return max(1, n or os.cpu_count() or 1)
 
@@ -340,6 +349,7 @@ def ingest(paths: Iterable[Path], *, blob: BlobPort, datastore: DatastorePort,
             with run.step("blob_put", service=service(blob)) as d:
                 files, items = [], []
                 for ds in cleaned:
+                    _conform(ds)
                     buf = io.BytesIO()
                     ds.save_as(buf, enforce_file_format=True)
                     items.append((f"transient/{run.id}/{ds.SOPInstanceUID}.dcm", buf.getvalue()))
