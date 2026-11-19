@@ -124,6 +124,14 @@ export const PrintIcon = (p) => (
 export const EyeIcon = (p) => (
   <Icon {...p}><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="2.8" /></Icon>
 );
+export const EyeOffIcon = (p) => (
+  <Icon {...p}>
+    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 9.5 7 9.5 7a13.16 13.16 0 0 1-1.67 2.68" />
+    <path d="M6.61 6.61A13.5 13.5 0 0 0 2.5 12S6 18.5 12 18.5a9.74 9.74 0 0 0 5.39-1.61" />
+    <path d="M2 2l20 20" />
+  </Icon>
+);
 export const RefreshIcon = (p) => (
   <Icon {...p}><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v5h-5" /></Icon>
 );

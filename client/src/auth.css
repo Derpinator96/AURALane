@@ -9,6 +9,105 @@
 .login .pill-quiet { margin-top: 14px; }
 .login .error { margin: 0; }
 
+/* Demo credentials box */
+.demo-credentials-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  background: var(--field);
+  border: 1px solid var(--glass-soft);
+  border-radius: var(--r-card);
+  box-shadow: var(--glass-hi);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  transition: background 0.15s var(--ease), box-shadow 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.demo-credentials-box:hover {
+  background: var(--field-hover);
+  border-color: var(--blue-tint);
+  box-shadow: var(--pill-shadow), var(--glass-hi);
+}
+.demo-credentials-box:active {
+  transform: translateY(1px);
+}
+.demo-credentials-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.demo-credentials-title {
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--ink);
+}
+.demo-credentials-badge {
+  font-size: var(--fs-meta);
+  font-weight: 500;
+  color: var(--blue-ink);
+  background: var(--blue-tint);
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+}
+.demo-credentials-creds {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: var(--fs-meta);
+  color: var(--ink-2);
+}
+.demo-credentials-creds strong {
+  font-weight: 500;
+  color: var(--ink);
+  font-family: "Geist Mono", monospace;
+}
+.demo-credentials-sep {
+  color: var(--ink-3);
+}
+
+/* Password field with toggle */
+.password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.password-input-wrap input {
+  width: 100%;
+  padding-right: 42px;
+}
+.password-toggle-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-pill);
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.password-toggle-btn:hover {
+  color: var(--ink);
+  background: var(--tint);
+}
+.password-toggle-btn:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+}
+
 .legal { max-width: 720px; margin: 0 auto; padding: 8px 4px 16px; }
 .legal h1 { font-size: var(--fs-stat); margin: 0 0 12px; letter-spacing: -0.03em; }
 .legal h2 { font-size: var(--fs-card); margin: 28px 0 6px; }
